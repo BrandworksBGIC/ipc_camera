@@ -1,0 +1,7 @@
+comment "Host utilities"
+
+menu "Host utilities"
+
+source "$BR2_EXTERNAL_platform_PATH/package/buildroot/Config.in.host"
+
+endmenu

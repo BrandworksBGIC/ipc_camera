@@ -1,0 +1,230 @@
+menu "Config build settings"
+
+config BR2_OPTION_OVERRIDE
+	bool "Switch On to override some buildroot options"
+	default n
+	depends on BR2_mips || BR2_mipsel
+	help
+	  Some RSDK components require specific override to buildroot
+	  default options.
+
+config BR2_GCC_TARGET_ARCH
+	string "RSDK toolchain -march override"
+	depends on BR2_OPTION_OVERRIDE
+	help
+	  The buildroot calculates -march=mips32 for Generic MIPS32 arch,
+	  however this is not expected by RSDK toolchain, which expects
+	  one specified in -march=3081|4081|4180|4181|4281|5181|5280|5281.
+	  The value of this option overrides the default -march for gcc.
+
+	  This must not be empty for RSDK toolchain.
+
+config BR2_MAX_JLEVEL
+	int "Max number of jobs to run simultaneously (0 for auto)"
+	default "6"
+	help
+	  Maximum number of jobs to run simultaneously. If 0, determine
+	  automatically according to number of CPUs on the host system.
+
+config BR2_CONFIG_LSTRIP
+	bool "Use lstrip to shrink/strip target binaries"
+	default y
+	help
+	  Binaries and libraries in the target filesystem will be stripped
+	  using 'lstrip' command in toolchain. This allows to save space,
+	  mainly by removing unused shared libraries, shrinking libraries,
+	  and stripping executables and libraries.
+
+config BR2_CONFIG_LSTRIP_LIB_IN_STAGING
+	bool "Shrink libraries in staging dir"
+	default n
+	depends on BR2_CONFIG_LSTRIP
+	help
+	  Add extra staging dir to shrink libraries.
+
+endmenu
+
+choice
+  prompt "Selected target chip"
+
+config BR2_CONFIG_HW_VER_RTS3917
+  bool "rts3917"
+  select BR2_PACKAGE_HOST_UBOOT_TOOLS
+  select BR2_PACKAGE_HOST_UBOOT_TOOLS_FIT_SUPPORT
+  select BR2_PACKAGE_HOST_UBOOT_TOOLS_FIT_SIGNATURE_SUPPORT
+
+config BR2_CONFIG_HW_VER_RTS3921
+  bool "rts3921"
+  select BR2_PACKAGE_HOST_UBOOT_TOOLS
+  select BR2_PACKAGE_HOST_UBOOT_TOOLS_FIT_SUPPORT
+  select BR2_PACKAGE_HOST_UBOOT_TOOLS_FIT_SIGNATURE_SUPPORT
+endchoice
+
+config BR2_CONFIG_CRYPTO_BOOT
+	bool "Support crypto boot"
+	default n
+	select BR2_PACKAGE_RTSKEY
+	select BR2_TARGET_ROOTFS_INITRAMFS_MINI if BR2_CONFIG_DM_INIT != y
+	help
+	  Enable Crypto boot for Linux and Rootfs.
+
+config BR2_CONFIG_CRYPTO_BOOT_USER_PARTITION
+	bool "enable user partition"
+	default y
+	depends on BR2_CONFIG_CRYPTO_BOOT
+	depends on BR2_FW_PACK_USERDATA_UBIFS || BR2_FW_PACK_USERDATA_EXT4
+
+choice
+	prompt "Select crypto boot mode"
+	default BR2_CONFIG_FULL_DISK_ENCRYPTION
+	depends on BR2_CONFIG_CRYPTO_BOOT
+
+config BR2_CONFIG_FULL_DISK_ENCRYPTION
+	bool "Full-disk encryption"
+	depends on BR2_TARGET_ROOTFS_SQUASHFS || BR2_TARGET_ROOTFS_EXT2
+	select BR2_PACKAGE_LVM2
+	select BR2_PACKAGE_HOST_CRYPTSETUP
+	select BR2_PACKAGE_HOST_PYTHON3_PYCRYPTODOMEX
+
+config BR2_CONFIG_FILE_BASED_ENCRYPTION
+	bool "File-based encryption"
+	depends on BR2_TARGET_ROOTFS_UBIFS
+	select BR2_PACKAGE_FSCRYPTCTL
+
+endchoice
+
+choice
+	prompt "Select FBE cipher type"
+	default BR2_CONFIG_FBE_AES_256_XTS
+	depends on BR2_CONFIG_FILE_BASED_ENCRYPTION
+
+config BR2_CONFIG_FBE_AES_128_CBC
+	bool "FBE cipher AES_128_CBC"
+
+config BR2_CONFIG_FBE_AES_256_XTS
+	bool "FBE cipher AES_256_XTS"
+
+endchoice
+
+config BR2_CONFIG_SECURE_BOOT
+	bool "Support secure boot"
+	default n
+	select BR2_TARGET_ARM_TRUSTED_FIRMWARE if y
+	select BR2_PACKAGE_RTSKEY
+	select BR2_TARGET_ROOTFS_INITRAMFS_MINI if BR2_CONFIG_DM_INIT != y
+	help
+	  Enable secure boot for U-Boot, Linux and Rootfs.
+
+config BR2_CONFIG_SECURE_BOOT_USER_PARTITION
+	bool "enable user partition"
+	default n
+	depends on BR2_CONFIG_SECURE_BOOT
+	depends on BR2_FW_PACK_USERDATA_UBIFS || BR2_FW_PACK_USERDATA_EXT4
+	select BR2_PACKAGE_CRYPTSETUP if BR2_FW_PACK_USERDATA_EXT4 = y
+	help
+	  Please note that enabling this option may cause performance and other
+	  potential problems, so please read the SDK's security guide carefully
+	  before enabling it. The security guide provides detailed information
+	  and advice to help you decide whether to enable this option.
+
+config BR2_CONFIG_SECURE_BOOT_PACK_DMINTEGRITY
+	bool "pack dm-integrity format"
+	default n
+	depends on BR2_CONFIG_SECURE_BOOT_USER_PARTITION
+	depends on BR2_FW_PACK_USERDATA_EXT4
+	help
+	  please confirm superuser privileges (need sudo) to pack dm-integrity format
+
+choice
+	prompt "Select secure boot mode"
+	default BR2_CONFIG_SECURE_DM_MAPPER
+	depends on BR2_CONFIG_SECURE_BOOT
+
+config BR2_CONFIG_SECURE_DM_MAPPER
+	bool "dm-verity or dm-integrity"
+	depends on BR2_TARGET_ROOTFS_SQUASHFS || BR2_TARGET_ROOTFS_EXT2
+	select BR2_PACKAGE_LVM2
+	select BR2_PACKAGE_HOST_CRYPTSETUP
+	select BR2_PACKAGE_HOST_PYTHON3_PYCRYPTODOMEX
+	help
+	  Use dm-verity on read-only filesystem.
+	  Use dm-integrity on read-write filesystem.
+
+
+config BR2_CONFIG_UBIFS_FS_AUTHENTICATION
+	bool "ubifs fs authentication"
+	depends on BR2_TARGET_ROOTFS_UBIFS
+	select BR2_PACKAGE_KEYUTILS
+endchoice
+
+config BR2_CONFIG_DM_INIT
+	bool "Support dm init"
+	default n
+	depends on BR2_CONFIG_SECURE_DM_MAPPER || BR2_CONFIG_FULL_DISK_ENCRYPTION
+	help
+	  Enable dm init.
+
+config BR2_CONFIG_UBOOT_AS_BL33
+	bool "Select uboot as bl33"
+	default n
+	depends on BR2_CONFIG_SECURE_BOOT
+	select BR2_TARGET_ARM_TRUSTED_FIRMWARE_UBOOT_AS_BL33 if y
+	help
+	  U-boot is as bl33 or bl2, default is bl2.
+
+
+source "$BR2_EXTERNAL_platform_PATH/package/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/Config.in.host"
+
+comment "Firmware pack"
+config BR2_FW_PACK_MERGE_FILE
+	string "Merge setting file"
+	default "$(BR2_EXTERNAL)/board/common/pack_merge.ini"
+	help
+	  Firmware merge setting file for make pack
+
+choice
+	prompt "Select the filesystem of user data"
+	default BR2_FW_PACK_USERDATA_UBIFS if BR2_TARGET_ROOTFS_UBIFS
+	default BR2_FW_PACK_USERDATA_JFFS2 if BR2_TARGET_ROOTFS_SQUASHFS
+	default BR2_FW_PACK_USERDATA_EXT4 if BR2_TARGET_ROOTFS_EXT2
+
+config BR2_FW_PACK_USERDATA_JFFS2
+	bool "jffs2"
+config BR2_FW_PACK_USERDATA_UBIFS
+	bool "ubifs"
+config BR2_FW_PACK_USERDATA_EXT4
+	bool "ext4"
+config BR2_FW_PACK_USERDATA_SQUASHFS
+	bool "squashfs"
+endchoice
+
+config BR2_CONFIG_BUNDLE_OTA
+	bool "Support ota update file"
+	select BR2_PACKAGE_OTA_UPFW
+	default n
+	help
+	  ota,support rauc and swupdate
+
+if BR2_CONFIG_BUNDLE_OTA
+choice
+	prompt "Selected pack method to use"
+	default BR2_CONFIG_BUNDLE_RAUCB
+
+	config BR2_CONFIG_BUNDLE_RAUCB
+		bool "Support raucb file"
+		select BR2_PACKAGE_RAUC_UPFW
+		select BR2_PACKAGE_HOST_RAUC
+		help
+		  Enable rauc for bundle raucb file.
+
+	config BR2_CONFIG_BUNDLE_SWU
+		bool "Support swu file"
+		select BR2_PACKAGE_SWU_UPFW
+		select BR2_PACKAGE_HOST_CPIO
+		help
+		  Enable rauc for bundle swu file.
+endchoice
+
+endif
+

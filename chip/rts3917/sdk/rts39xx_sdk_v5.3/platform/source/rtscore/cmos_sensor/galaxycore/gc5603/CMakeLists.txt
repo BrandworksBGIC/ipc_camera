@@ -1,0 +1,1 @@
+add_sensor(gc5603)

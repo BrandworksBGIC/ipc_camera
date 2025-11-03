@@ -1,0 +1,51 @@
+/*
+ *  Copyright (C) 2019 Realtek Semiconductor Corp.
+ *  All Rights Reserved
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+#ifndef __RF_ERROR_H__
+#define __RF_ERROR_H__
+
+enum rf_msg_error {
+	RF_ERR_OK = 0,
+	RF_ERR_DOMAIN_NOT_SUPPORT,
+	RF_ERR_REQUEST_NOT_SUPPORT,
+	RF_ERR_UBUS_CONNECT,
+	RF_ERR_UBUS_INVOKE,
+	RF_ERR_UBUS_NOTIFY_REGISTER,
+	RF_ERR_CHN_BIND,
+	RF_ERR_CHN_ENABLE,
+	RF_ERR_CREAT_STREAM,
+	RF_ERR_OPENFILE,
+	RF_ERR_RB_READ,
+	RF_ERR_RB_WRITE,
+	RF_ERR_RB_SET_FMT,
+	RF_ERR_GET_KEY_FRAME,
+	RF_ERR_GET_ISP_CTL,
+	RF_ERR_SET_ISP_CTL,
+	RF_ERR_QUERY_MJPEG,
+	RF_ERR_CTRL_MJPEG,
+	RF_ERR_SNAPSHOT,
+	RF_ERR_GET_ENCODE_ATTR,
+	RF_ERR_SET_ENCODE_ATTR,
+	RF_ERR_CREAT_OSD_CHN,
+	RF_ERR_GET_OSD_ATTR,
+	RF_ERR_SET_OSD_ATTR,
+	RF_ERR_QUERY_ISP,
+	RF_ERR_QUERY_MASK,
+	RF_ERR_QUERY_OSDI,
+	RF_ERR_PARAM,
+	RF_ERR_GET_MASK,
+	RF_ERR_SET_MASK,
+	RF_ERR_GRID_NUM,
+	RF_ERR_GET_PLAY_VOLUME,
+	RF_ERR_GET_CAPTURE_VOLUME,
+	RF_ERR_SET_PLAY_VOLUME,
+	RF_ERR_SET_CAPTURE_VOLUME,
+};
+
+#endif

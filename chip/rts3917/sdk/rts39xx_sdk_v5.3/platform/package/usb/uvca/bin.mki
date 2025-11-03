@@ -1,0 +1,12 @@
+
+UVCA_SITE = $(UVCA_BIN_TARGET)
+
+define UVCA_INSTALL_STAGING_CMDS
+	cp -afrv $(@D)/* $(STAGING_DIR)/
+endef
+
+define UVCA_INSTALL_TARGET_CMDS
+	cp -afrv $(@D)/* $(TARGET_DIR)/
+endef
+
+$(eval $(generic-package))

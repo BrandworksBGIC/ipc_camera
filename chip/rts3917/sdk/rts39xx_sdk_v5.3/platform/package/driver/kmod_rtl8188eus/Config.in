@@ -1,0 +1,8 @@
+config BR2_PACKAGE_KMOD_RTL8188EUS
+	bool "Realtek RTL8188E USB WiFi"
+	depends on BR2_LINUX_KERNEL &&  BR2_LINUX_KERNEL_CUSTOM_VERSION_VALUE = "4.9"
+	help
+	  realtek rtl8188e usb wifi card driver
+
+comment "kmod_rtl8188eus needs a Linux kernel to be built"
+	depends on !BR2_LINUX_KERNEL

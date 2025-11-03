@@ -1,0 +1,80 @@
+config BR2_PACKAGE_RTS_SAMPLE
+	bool "sample"
+	default n
+	help
+	  sample for rtscore
+
+if BR2_PACKAGE_RTS_SAMPLE
+
+config BR2_PACKAGE_RTS_SAMPLE_RTSTREAM_AUDIO
+	bool "rtstream audio sample"
+	select BR2_PACKAGE_RTSTREAM
+	default y
+	help
+	  rtstream audio sample
+
+config BR2_PACKAGE_RTS_SAMPLE_RTSTREAM_VIDEO
+	bool "rtstream video sample"
+	select BR2_PACKAGE_LIBRTSMCU if !BR2_CONFIG_HW_VER_RTS3915 && !BR2_CONFIG_HW_VER_RTS3917
+	select BR2_PACKAGE_LIBRTSIO if !BR2_CONFIG_HW_VER_RTS3915 && !BR2_CONFIG_HW_VER_RTS3917
+	select BR2_PACKAGE_RTSTREAM
+	select BR2_PACKAGE_RTSTREAM_VIDEO
+	select BR2_PACKAGE_RTSTREAM_H26X
+	select BR2_PACKAGE_RTSTREAM_MJPEG
+	default y
+	help
+	  rtstream video sample
+
+config BR2_PACKAGE_RTS_SAMPLE_RTSSED
+	bool "rtssed sample"
+	select BR2_PACKAGE_REALVOICE
+	select BR2_PACKAGE_RTSSED
+	default n
+	help
+	  rtssed sample
+
+config BR2_PACKAGE_RTS_SAMPLE_RTSAAC
+	bool "rtsaac sample"
+	select BR2_PACKAGE_VO_AACENC
+	default n
+	help
+	  rtsaac sample
+
+config BR2_PACKAGE_RTS_SAMPLE_RTSMP3
+	bool "rtsmp3 sample"
+	select BR2_PACKAGE_ALURE
+	select BR2_PACKAGE_ALURE_MINIMP3_DECODER
+	default n
+	help
+	  rtsmp3 sample
+
+config BR2_PACKAGE_RTS_SAMPLE_LIBRTSIO
+	bool "librtsio sample"
+	select BR2_PACKAGE_LIBRTSIO
+	default y
+	help
+	  librtsio sample
+
+config BR2_PACKAGE_RTS_SAMPLE_LIBRTSCRYPT
+	bool "librtscrypt sample"
+	select BR2_PACKAGE_LIBRTSCRYPT
+	default y
+	help
+	  librtscrypt sample
+
+choice
+        prompt "Selected library format"
+	default BR2_PACKAGE_RTS_SAMPLE_SHARE
+
+config BR2_PACKAGE_RTS_SAMPLE_SHARE
+        bool "dynamic library"
+        help
+          sample using dynamic library.
+
+config BR2_PACKAGE_RTS_SAMPLE_STATIC
+        bool "static library"
+        help
+          sample using static library.
+
+endchoice
+endif

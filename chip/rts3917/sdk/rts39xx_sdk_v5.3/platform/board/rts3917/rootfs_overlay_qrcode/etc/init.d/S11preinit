@@ -1,0 +1,47 @@
+#!/bin/sh
+#
+# Run the preinit scripts
+#
+
+start() {
+	if [ -d /sys/bus/usb/devices ]; then
+		find /sys/bus/usb/devices -type f -name 'uevent' -maxdepth 3 \
+			-follow | while read dev_event; do
+			echo add > $dev_event;
+        	done
+	fi
+
+	#preinit script
+        if [ -d /etc/preinit ]; then
+                for pi_source_file in /etc/preinit/*; do
+                        . $pi_source_file
+                done
+        fi
+
+	#set sys_tz
+	if [ -x /sbin/hwclock ]; then
+		hwclock -u --systz
+	fi
+}
+
+stop() {
+	:
+}
+
+case "$1" in
+  start)
+        start
+        ;;
+  stop)
+        stop
+        ;;
+  restart|reload)
+        stop
+        start
+        ;;
+  *)
+        echo "Usage: $0 {start|stop|restart}"
+        exit 1
+esac
+
+exit $?

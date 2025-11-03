@@ -1,0 +1,194 @@
+config BR2_PACKAGE_RTSTREAM
+	bool "rtstream"
+	default n
+	help
+	  Realtek Stream Lib
+
+if BR2_PACKAGE_RTSTREAM
+
+config BR2_PACKAGE_RTSTREAM_VIDEO
+	bool "rtstream video support"
+	select BR2_PACKAGE_LIBRTSMCU if BR2_CONFIG_HW_VER_RTS3903 || BR2_CONFIG_HW_VER_RTS3913
+	select BR2_PACKAGE_LIBRTSISP if BR2_CONFIG_HW_VER_RTS3915 || BR2_CONFIG_HW_VER_RTS3917
+	default y
+
+if BR2_PACKAGE_RTSTREAM_VIDEO
+
+config BR2_PACKAGE_LIBRTSMCU
+	bool "librtsmcu"
+	select BR2_LINUX_KERNEL
+	depends on BR2_CONFIG_HW_VER_RTS3903 || BR2_CONFIG_HW_VER_RTS3913
+	default n
+	help
+	  Realtek mcu lib
+
+config BR2_PACKAGE_LIBRTSISP
+	bool "librtsisp"
+	select BR2_PACKAGE_ISP_ALGO
+	select BR2_LINUX_KERNEL
+	depends on BR2_CONFIG_HW_VER_RTS3915 || BR2_CONFIG_HW_VER_RTS3917
+	default n
+	help
+	  Realtek isp library
+
+if BR2_PACKAGE_LIBRTSISP
+
+config BR2_PACKAGE_LIBRTSISP_UNIT_TEST
+	bool "ISP unit test enable"
+	select BR2_PACKAGE_CHECK
+	default n
+	help
+	  ISP unit test
+
+endif
+
+config BR2_PACKAGE_RTSTREAM_H26X
+	bool "rtstream h26x"
+	default n
+	help
+	  Realtek Stream H265/H264 Lib
+
+if BR2_PACKAGE_RTSTREAM_H26X
+choice
+	prompt "Selected h26x lib"
+config BR2_PACKAGE_H1_ENCODER
+	bool "h1 H264 encoder"
+	select BR2_LINUX_KERNEL
+	depends on BR2_CONFIG_HW_VER_RTS3903 || BR2_PACKAGE_FREE_IC
+	help
+	  H264 encoder, for h264 stream
+
+config BR2_PACKAGE_WAVE420
+	bool "h265 encoder library"
+	select BR2_LINUX_KERNEL
+	depends on BR2_CONFIG_HW_VER_RTS3913 || BR2_PACKAGE_FREE_IC
+
+config BR2_PACKAGE_WAVE521
+	bool "h265&h264 encoder library"
+	select BR2_LINUX_KERNEL
+	depends on BR2_CONFIG_HW_VER_RTS3915 || BR2_CONFIG_HW_VER_RTS3917 || BR2_PACKAGE_FREE_IC
+
+endchoice
+
+if BR2_PACKAGE_H1_ENCODER
+config BR2_DLOPEN_H1_ENCODER
+	bool "dlopen h264 library"
+	default n
+	help
+	  dlopen h264 encoder library for Realtek rts3903
+endif
+
+if BR2_PACKAGE_WAVE420
+config BR2_DLOPEN_WAVE420
+	bool "dlopen h265 library"
+	default n
+	help
+	  dlopen h265 encoder library for Realtek rts3913
+endif
+
+if BR2_PACKAGE_WAVE521
+config BR2_DLOPEN_WAVE521
+	bool
+	default n
+	help
+	  dlopen h265&h264 encoder library for Realtek rts3915 or rts3917
+
+config BR2_WAVE521_RLE0849
+	bool
+	default n
+
+config BR2_WAVE521_RTS3917
+	bool
+	default y
+endif
+
+endif
+
+config BR2_PACKAGE_RTSTREAM_MJPEG
+	bool "rtstream mjpeg"
+	default n
+	help
+	  Realtek Stream MJPEG Lib
+
+if BR2_PACKAGE_RTSTREAM_MJPEG
+choice
+	prompt "Selected mjpeg lib"
+config BR2_PACKAGE_CODAJ12
+	bool "mjpeg codec library"
+	select BR2_LINUX_KERNEL
+	depends on BR2_CONFIG_HW_VER_RTS3915 || BR2_PACKAGE_FREE_IC
+	help
+	  mjpeg codec library for Realtek RTS3915
+
+config BR2_PACKAGE_RTSTREAM_JPEG
+	bool "rtstream mjpeg library for rts3917"
+	select BR2_LINUX_KERNEL
+	depends on BR2_CONFIG_HW_VER_RTS3917 || BR2_PACKAGE_FREE_IC
+	help
+	  mjpeg for Realtek RTS3917
+endchoice
+
+if BR2_PACKAGE_CODAJ12
+config BR2_DLOPEN_CODAJ12
+	bool "dlopen mjpeg codec library"
+	default n
+	help
+	  dlopen mjpeg codec library for Realtek rts3915
+endif
+
+endif
+
+config BR2_PACKAGE_RTSTREAM_OSD2_HW
+	bool
+
+config BR2_PACKAGE_RTSTREAM_OSD2
+	bool "rtstream osd2 support"
+	select BR2_LINUX_KERNEL
+	select BR2_PACKAGE_RTSTREAM_OSD2_HW
+	default y
+
+config BR2_PACKAGE_RTSTREAM_OSDI
+	bool "rtstream osdi support"
+	depends on BR2_CONFIG_HW_VER_RTS3917
+	default y
+
+config BR2_PACKAGE_RTSTREAM_MTD2
+	bool "rtstream mtd2 support"
+	depends on BR2_CONFIG_HW_VER_RTS3915 || BR2_CONFIG_HW_VER_RTS3917
+	default y
+
+config BR2_PACKAGE_RTSTREAM_VIDEO_OUT
+	bool "rtstream video out support"
+	depends on BR2_CONFIG_HW_VER_RTS3915
+	default y
+
+endif
+
+config BR2_PACKAGE_RTSTREAM_AUDIO
+	bool "rtstream audio support"
+	select BR2_PACKAGE_ALSA_LIB
+	select BR2_PACKAGE_LIBSOXR
+	default y
+
+if BR2_PACKAGE_RTSTREAM_AUDIO
+config BR2_PACKAGE_RTSTREAM_AUDIO_AEC
+	bool "rtstream audio aec support"
+	select BR2_PACKAGE_3RDPARTY
+	default y
+	help
+	  enable aec & ns when audio capture
+
+config BR2_PACKAGE_RTSTREAM_RTS_EQ_CORE_LIB
+	bool "rtstream rts_eq_core library"
+	default n
+	help
+	  Y to generate rts_eq_core dynamic library
+endif
+
+config BR2_PACKAGE_FREE_IC
+	bool "rtstream no check chip model"
+	default n
+	help
+	  Y to cancel restriction to chip model
+
+endif

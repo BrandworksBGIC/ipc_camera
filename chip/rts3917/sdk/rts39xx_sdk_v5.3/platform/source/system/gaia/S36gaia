@@ -1,0 +1,49 @@
+#!/bin/sh
+
+start_prog(){
+	CONF_DIR=/usr/conf
+
+	if [ -f /bin/gaia ] && [ -x /bin/gaia ]; then
+		gaia &
+	fi
+}
+
+stop_prog(){
+	killall gaia
+}
+
+restart_prog(){
+	stop_prog
+	start_prog
+}
+
+print_usage(){
+	echo "usage: $PN [start | stop | restart]"
+}
+
+PN="$0"
+
+if [ $# -eq 0 ]; then
+	start_prog
+elif [ $# -eq 1 ]; then
+	case $1 in
+		"start"):
+			#echo start
+			start_prog
+			;;
+		"stop"):
+			#echo stop
+			stop_prog
+			;;
+		"restart"):
+			#echo restart
+			restart_prog
+			;;
+		*):
+			print_usage
+			;;
+	esac
+else
+	print_usage
+fi
+unset PN

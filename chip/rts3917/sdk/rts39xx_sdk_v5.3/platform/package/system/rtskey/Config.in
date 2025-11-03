@@ -1,0 +1,76 @@
+menuconfig BR2_PACKAGE_RTSKEY
+	bool "rtskey"
+	depends on BR2_CONFIG_SECURE_BOOT || BR2_CONFIG_CRYPTO_BOOT
+	default n
+	help
+	  A suite to generate keys and stuffs for crypto & secure boot.
+
+	config BR2_RTSKEY_OUT_DIR
+		string "rtskey output directory"
+		depends on BR2_PACKAGE_RTSKEY
+		default "$(BASE_DIR)/rtskey"
+		help
+		  The directory where the keys are generated on the host.
+		  Note: the keys in this directory need to be kept safe in case they
+		  are lost.
+
+	config BR2_RTSKEY_TARGET_DIR
+		string "keys target directory"
+		depends on BR2_PACKAGE_RTSKEY
+		default "/etc/keys"
+		help
+		  The directory where the keys are stored on the board.
+
+	config BR2_CRYPTO_BOOT_KEY
+		string "crypto boot key name"
+		depends on BR2_PACKAGE_RTSKEY && BR2_CONFIG_CRYPTO_BOOT
+		default "crypto_key"
+		help
+		  The key used to encrypt the kernel. In FDE mode, also used to
+		  encrypt rootfs and user partitions(if supported).
+
+	config BR2_CRYPTO_BOOT_IV
+		string "crypto boot iv name"
+		depends on BR2_PACKAGE_RTSKEY && BR2_CONFIG_CRYPTO_BOOT
+		default "crypto_iv"
+
+	config BR2_SECURE_ROOT_KEY
+		string "root key name"
+		depends on BR2_PACKAGE_RTSKEY && BR2_CONFIG_SECURE_BOOT
+		default "verity_key0"
+		help
+		  The root key of the CoT(chain of trusted). Used for bootrom
+		  to verify uboot.
+
+	config BR2_SECURE_KERNEL_KEY
+		string "kernel key name"
+		depends on BR2_PACKAGE_RTSKEY && BR2_CONFIG_SECURE_BOOT
+		default "verity_key1"
+		help
+		  Used for uboot verify kernel.
+
+	config BR2_SECURE_DATA_KEY
+		string "data key name"
+		depends on BR2_PACKAGE_RTSKEY && BR2_CONFIG_SECURE_BOOT
+		default "verity_key2"
+		help
+		  In dm-verity mode, used for kernel verify rootfs. In ubifs
+		  authentication mode, the key is set to CONFIG_SYSTEM_TRUSTED_KEYS,
+		  and used for kernel verify rootfs and user partitions, and only
+		  used when the partition is mounted for the first time.
+
+	config BR2_CRYPTO_FBE_KEY
+		string "FBE key name"
+		depends on BR2_PACKAGE_RTSKEY && BR2_CONFIG_FILE_BASED_ENCRYPTION
+		default "fbe_key"
+		help
+		  In FBE mode, used to encrypt rootfs and user partitions.
+
+	config BR2_SECURE_UBIFS_AUTH_KEY
+		string "ubifs authentication key name"
+		depends on BR2_PACKAGE_RTSKEY && BR2_CONFIG_UBIFS_FS_AUTHENTICATION
+		default "ubifs_auth_key"
+		help
+		  After the partition is mounted for the first time, the ubifs
+		  authentication is converted to HMAC mode. This key is used for
+		  HMAC.

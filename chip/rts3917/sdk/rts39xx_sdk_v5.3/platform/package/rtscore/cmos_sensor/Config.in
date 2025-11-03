@@ -1,0 +1,17 @@
+config BR2_PACKAGE_CMOS_SENSOR
+	bool "cmos sensors for isp"
+	depends on BR2_PACKAGE_LIBRTSISP
+	depends on BR2_CONFIG_HW_VER_RTS3915 || BR2_CONFIG_HW_VER_RTS3917
+	default y
+	help
+	  Realtek cmos sensors support for isp
+
+if BR2_PACKAGE_CMOS_SENSOR
+
+config BR2_PACKAGE_CMOS_SENSOR_LIST
+	string "Supported sensors list"
+	default ""
+	help
+	  Sensors which need to be installed to rootfs
+
+endif

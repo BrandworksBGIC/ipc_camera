@@ -1,0 +1,11 @@
+RTSTREAM_SITE = $(RTSTREAM_BIN_TARGET)
+
+define RTSTREAM_INSTALL_STAGING_CMDS
+	cp -afrv $(@D)/* $(STAGING_DIR)/
+endef
+
+define RTSTREAM_INSTALL_TARGET_CMDS
+	cp -afrv $(@D)/* $(TARGET_DIR)/
+endef
+
+$(eval $(generic-package))

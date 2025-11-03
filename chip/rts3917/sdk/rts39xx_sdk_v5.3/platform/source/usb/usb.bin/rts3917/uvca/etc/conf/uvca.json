@@ -1,0 +1,30 @@
+{
+	"input": {
+		"device":"/dev/video61",
+		"resolution":"320x192@5fps",
+		"isp_buf_num":2
+	},
+	"od_param": {
+		"model_name":"odtiny",
+		"model_path":"/usr/share/rtsnn/rtsnn_odtiny.data",
+		"nms_thresh":0.15,
+		"sensitivity":-1,
+		"face_thresh":0.25,
+		"person_thresh":0.4,
+		"hw_norm":1
+	},
+	"mot_param": {
+		"iou_thd":0.05,
+		"up_thd":2,
+		"expand_w":0.2,
+		"expand_h":0.1,
+		"track_num":3,
+		"track_dis_num":3,
+		"update_thd":4,
+		"miss_thd":20
+	},
+	"output": {
+		"method":"serial",
+		"device":"/dev/ttyGS0"
+	}
+}

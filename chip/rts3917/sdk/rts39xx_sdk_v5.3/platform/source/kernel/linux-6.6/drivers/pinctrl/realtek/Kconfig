@@ -1,0 +1,15 @@
+config PINCTRL_RTS
+	bool "Pinctrl driver for Realtek IPCam"
+	depends on OF
+	select PINMUX
+	select PINCONF
+	select GPIOLIB
+	select GENERIC_PINCONF
+	help
+	  This is the pin controller and gpio driver for Realtek IPCam.
+	  Say Y here to enable the pinctrl/gpio driver for IPCAM pin controller
+	  available on IPCAM SoC.
+
+	  Some pins are usually muxed to some other
+	  functionality by driver,so only a small amount is available
+	  for gpio use.

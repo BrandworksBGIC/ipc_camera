@@ -1,0 +1,15 @@
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+
+PROJECT(RINGBUFFER C)
+
+ADD_LIBRARY(ringbuffer SHARED ringbuffer.c)
+
+ADD_EXECUTABLE(write_test write_test.c ringbuffer.c)
+ADD_EXECUTABLE(read_test read_test.c ringbuffer.c)
+
+install(TARGETS ringbuffer DESTINATION lib/)
+
+INSTALL(TARGETS write_test read_test DESTINATION bin
+		PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+			GROUP_READ GROUP_EXECUTE
+			WORLD_READ WORLD_EXECUTE)

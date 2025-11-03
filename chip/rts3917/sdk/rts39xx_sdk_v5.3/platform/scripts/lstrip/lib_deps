@@ -1,0 +1,4 @@
+libcrypto:libdl.a:libpthread.a:libgcc.a
+libjson-c:libgcc.a
+librtsmot_extra:librtslog4c.a
+libssl:libgcc.a

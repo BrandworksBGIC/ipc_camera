@@ -1,0 +1,193 @@
+/*
+ * Realtek Semiconductor Corp.
+ *
+ * Device Tree Structure
+ *
+ * Tony Wu (tonywu@realtek.com)
+ */
+
+#include <dt-bindings/interrupt-controller/irq.h>
+
+/ {
+	model = "Sheipa Platform";
+	compatible = "rtk,sheipa";
+
+	memory@0 {
+		device_type = "memory";
+		reg = <0x0 0x10000000>;
+	};
+
+	clocks {
+		soc_clk25mhz: oscillator {
+			compatible = "fixed-clock";
+			clock-output-names = "clk25mhz";
+			clock-frequency = <25000000>;
+			#clock-cells = <0>;
+		};
+	};
+
+	ocp {
+		compatible = "sheipa-bus", "simple-bus";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		ictl: ictl@1f000000 {
+			compatible = "snps,dw-apb-ictl";
+			reg = <0x1f000000 0x100>;
+			interrupt-controller;
+			#interrupt-cells = <1>;
+			interrupt-parent = <&cpuintc>;
+			interrupts = <2>;
+		};
+
+		gic: gic@1bdc0000 {
+			compatible = "rtk,gic", "mti,gic";
+			reg = <0x1bdc0000 0x20000>;
+			interrupt-controller;
+			#interrupt-cells = <3>;
+			interrupt-parent = <&cpuintc>;
+			interrupts = <2>;
+		};
+
+		uart0: dwapb@1fb03000 {
+			compatible = "snps,dw-apb-uart";
+			reg = <0x1fb03000 0x100>;
+			reg-shift = <2>;
+			reg-io-width = <1>;
+			clock-frequency = <25000000>;
+		};
+
+		eth0: smc91cx@1fb04000 {
+			compatible = "smsc,lan9118", "smsc,lan9115";
+			reg = <0x1fb04000 0x10000>;
+			phy-mode = "mii";
+			reg-io-width = <4>;
+			smsc,irq-active-high;
+			smsc,irq-push-pull;
+		};
+
+		eth1: rtl8168@1b007000 {
+			compatible = "realtek,sheipa-r8168", "realtek,r8168";
+			reg = <0x1b007000 0x100>;
+			mac-address = "44:77:39:3a:9b:15";
+			status = "disabled";
+		};
+
+		spi0: spi@1fb09000 {
+			compatible = "realtek,spi-rxi312";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			bus_num = <0>;
+			reg = <0x1fb09000 0x200>,
+				<0x14000000 0x1000000>;
+			clocks = <&soc_clk25mhz>;
+			spi-deactivate-delay = <0>;
+			spi-max-frequency = <25000000>;
+			spi-fifo-size = <64>;
+			flash0: flash@0 {
+				compatible = "mxicy,mx25l12805d", "mxic,m25p80",
+					     "jedec,spi-nor";
+				spi-max-frequency = <25000000>;
+				reg = <0>;
+				mode = <0>;
+				spi-num-slaves = <0>;
+				spi-fifo-size = <64>;
+				spi-baudr-div = <1>;
+				spi-rx-bus-width = <4>;
+				spi-tx-bus-width = <4>;
+
+				partitions {
+					compatible = "fixed-partitions";
+					#address-cells = <1>;
+					#size-cells = <1>;
+					partition@0 {
+						label = "Device tree blob";
+						reg = <0x40000 0xC0000>; /* 256K-1M */
+						read-only;
+					};
+					partition@1 {
+						label = "Kernel image";
+						reg = <0x200000 0x600000>; /* 2-8M */
+						read-only;
+					};
+					partition@2 {
+						label = "Squashfs filesystem";
+						reg = <0x800000 0x700000>; /* 8M-15M */
+						read-only;
+					};
+					partition@3 {
+						label = "jffs2 filesystem";
+						reg = <0xF00000 0x100000>; /* 15M-16M */
+					};
+				};
+			};
+		};
+
+		gmac: rtl8139gb@1b007000 {
+			compatible = "realtek,8139gb";
+			reg = <0x1b007000 0x400>;
+			mac-address = "00:81:39:00:00:01";
+			status = "disabled";
+		};
+
+		ohci: ohci@1a000200 {
+			compatible = "generic-ohci";
+			reg = <0x1a000200 0x200>;
+			status = "disabled";
+		};
+
+		ehci: ehci@1a000000 {
+			compatible = "generic-ehci";
+			reg = <0x1a000000 0x200>;
+			status = "disabled";
+		};
+
+		xhci: xhci@18000000 {
+			compatible = "generic-xhci", "snps,dwc3";
+			reg = <0x18000000 0x100000>;
+			status = "disabled";
+		};
+
+		dwc2: dwc2@19000000 {
+			compatible = "dwc2";
+			reg = <0x19000000 0x100000>;
+			status = "disabled";
+		};
+
+		hdmi0: hdmi@1fb05000 {
+			compatible = "realtek,sheipa-hdmi";
+			reg = <0x1fb05000 0x60>, <0x1fb0a000 0x300>;
+			sheipa,hdmi-res-x = <720>;
+			sheipa,hdmi-res-y = <480>;
+			sheipa,hdmi-bpp = <32>;
+			sheipa,hdmi-mode = <1>;
+			status = "disabled";
+		};
+
+		rxi300: rxi300@1b008f00 {
+			compatible = "realtek,rxi-300";
+			reg = <0x1b008f00 0x700>;
+			status = "disabled";
+		};
+
+		/* Only used in RLXVM */
+		keyboard: kbd@1f422000 {
+			compatible = "realtek,rlxvm_kbd";
+			reg = <0x1f422000 0x200>;
+			status = "disabled";
+		};
+
+		/* Only used in RLXVM */
+		mouse: mouse@1f423000 {
+			compatible = "realtek,rlxvm_mouse";
+			reg = <0x1f423000 0x200>;
+			status = "disabled";
+		};
+	};
+
+	chosen {
+		bootargs = "console=ttyS0,57600 init=/init";
+		stdout-path = &uart0;
+	};
+};

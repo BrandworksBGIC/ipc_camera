@@ -1,0 +1,22 @@
+config BR2_PACKAGE_KMOD_AIC8800
+	bool "AIC8800 support"
+	depends on BR2_LINUX_KERNEL
+	select BR2_PACKAGE_AIC_LOAD_FW
+	help
+	  AIC8800
+
+	comment "kmod_AIC8800D80 needs a Linux kernel to be built"
+	depends on !BR2_LINUX_KERNEL
+
+if BR2_PACKAGE_KMOD_AIC8800
+		config BR2_PACKAGE_AIC_LOAD_FW
+		bool "install aic firmware"
+		help
+			install aic firmware
+
+		config BR2_PACKAGE_AIC8800D80_FDRV
+		bool "AIC8800D80 wifi driver"
+		help
+			AIC8800D80 wifi driver
+endif
+

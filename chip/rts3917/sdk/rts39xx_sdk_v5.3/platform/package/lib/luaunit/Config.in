@@ -1,0 +1,7 @@
+config BR2_PACKAGE_LUAUNIT
+	bool "luaunit"
+	depends on BR2_PACKAGE_LUA_5_1 || BR2_PACKAGE_LUAJIT
+	help
+	  Another lua unit test framework
+
+	  https://github.com/bluebird75/luaunit

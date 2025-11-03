@@ -1,0 +1,14 @@
+config BR2_PACKAGE_UVCA
+	bool "uvca"
+	select BR2_PACKAGE_LIBSYSCONF
+	select BR2_PACKAGE_RTSTREAM
+	select BR2_PACKAGE_NNSOLU
+	select BR2_PACKAGE_REALNET
+	select BR2_PACKAGE_REALNET_OD_TINY
+	select BR2_PACKAGE_UBUS
+	select BR2_PACKAGE_REALBOX
+	select BR2_PACKAGE_RTSMOT
+	depends on BR2_PACKAGE_UVCD
+	default n
+	help
+	  a daemon do nn jobs and send metadata via serial

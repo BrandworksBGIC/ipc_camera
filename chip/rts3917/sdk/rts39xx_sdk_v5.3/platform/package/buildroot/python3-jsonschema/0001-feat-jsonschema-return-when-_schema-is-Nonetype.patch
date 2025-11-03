@@ -1,0 +1,35 @@
+From 623f1f49e130648c4b28275f92c9d69172506fd1 Mon Sep 17 00:00:00 2001
+From: todd_jin <todd_jin@realsil.com.cn>
+Date: Wed, 6 Apr 2022 17:33:07 +0800
+Subject: [PATCH] feat(jsonschema): return when _schema is Nonetype
+
+Signed-off-by: todd_jin <todd_jin@realsil.com.cn>
+---
+ jsonschema/validators.py | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/jsonschema/validators.py b/jsonschema/validators.py
+index 8d4f2a7..7e2620f 100644
+--- a/jsonschema/validators.py
++++ b/jsonschema/validators.py
+@@ -91,7 +91,7 @@ def _id_of(schema):
+     """
+     Return the ID of a schema for recent JSON Schema drafts.
+     """
+-    if schema is True or schema is False:
++    if schema is True or schema is False or schema is None:
+         return ""
+     return schema.get("$id", "")
+ 
+@@ -215,6 +215,8 @@ def create(
+                     schema=_schema,
+                 )
+                 return
++            elif _schema is None:
++                return
+ 
+             scope = id_of(_schema)
+             if scope:
+-- 
+2.25.1
+

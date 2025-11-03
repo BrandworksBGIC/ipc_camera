@@ -1,0 +1,29 @@
+config BR2_PACKAGE_OTA_UPFW
+	bool "OTA update fw"
+	default n
+	help
+	  ota,support rauc and swupdate
+
+if BR2_PACKAGE_OTA_UPFW
+
+choice
+	prompt "Selected update method to use"
+	default BR2_PACKAGE_RAUC_UPFW
+
+	config BR2_PACKAGE_RAUC_UPFW
+		bool "rauc_upfw"
+		select BR2_PACKAGE_RAUC
+		select BR2_PACKAGE_RAUC_JSON
+		help
+			system packages module
+
+	config BR2_PACKAGE_SWU_UPFW
+		bool "swupdate_upfw"
+		select BR2_PACKAGE_SWUPDATE
+		select BR2_PACKAGE_CPIO
+		help
+			system packages module
+endchoice
+
+endif
+

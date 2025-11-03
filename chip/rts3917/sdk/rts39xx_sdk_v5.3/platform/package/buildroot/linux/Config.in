@@ -1,0 +1,7 @@
+config BR2_LINUX_KERNEL_DTB_CHECK
+	bool "Device Tree Source file binding check"
+	select BR2_PACKAGE_HOST_PYTHON3
+	select BR2_PACKAGE_HOST_PYTHON3_SSL
+	default y
+	help
+		The tool which can validate dts and binding files

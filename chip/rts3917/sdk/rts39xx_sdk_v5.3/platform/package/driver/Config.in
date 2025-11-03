@@ -1,0 +1,70 @@
+menu "Module drivers"
+
+menu "wifi driver"
+
+source "$BR2_EXTERNAL_platform_PATH/package/driver/kmod_rtl8188eus/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/driver/kmod_rtl8188fu/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/driver/kmod_rtl8189es/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/driver/kmod_rtl8189fs/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/driver/kmod_rtl8192eus/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/driver/kmod_rtl8192es/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/driver/kmod_rtl8192fu/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/driver/kmod_rtl8812au/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/driver/kmod_rtl8821au/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/driver/kmod_rtl8723bu/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/driver/kmod_rtl8723du/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/driver/kmod_rtl88x2bu/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/driver/kmod_rtl8723ds/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/driver/kmod_rtl8822cs/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/driver/kmod_rtl8822cu/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/driver/kmod_rtl8733bu/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/driver/kmod_rtl8821cu/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/driver/kmod_rtl8852bu/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/driver/kmod_rtl8830au/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/driver/kmod_aic8800/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/driver/kmod_rtl8723cu/Config.in"
+
+config BR2_CONFIG_RTW_COMPILER_OPTIMIZATION
+	bool "Adjust Compiler's optimization level from O1 to Os"
+	default y
+
+config BR2_CONFIG_RTW_MINIMAL_MEMORY_USAGE
+	bool "Enable Minimal Memory Usage"
+	default y
+
+config BR2_CONFIG_RTS_MESH
+	bool "Enable RTS Mesh"
+	select BR2_PACKAGE_IW
+	default n
+
+config BR2_CONFIG_RTW_CONCURRENT_MODE
+	bool "Enable RTW Concurrent Mode"
+	default n
+	help
+	  realtek WiFi softap coexists with station mode
+
+endmenu
+
+menu "bluetooth driver"
+source "$BR2_EXTERNAL_platform_PATH/package/driver/kmod_rtl8723bt/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/driver/kmod_rtl8723dbt/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/driver/kmod_rtl8761bt/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/driver/kmod_rtl8723ds_bt/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/driver/kmod_rtl8822cs_bt/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/driver/kmod_rtl8822cu_bt/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/driver/kmod_rtl8821cu_bt/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/driver/kmod_aic8800/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/driver/kmod_rtl8723cu_bt/Config.in"
+endmenu
+
+menu "ptz driver"
+source "$BR2_EXTERNAL_platform_PATH/package/driver/kmod_ptz/Config.in"
+endmenu
+
+menu "iot driver"
+source "$BR2_EXTERNAL_platform_PATH/package/driver/kmod_gobinet/Config.in"
+endmenu
+
+endmenu
+
+

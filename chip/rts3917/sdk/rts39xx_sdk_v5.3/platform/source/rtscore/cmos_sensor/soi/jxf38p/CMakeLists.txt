@@ -1,0 +1,1 @@
+add_sensor(jxf38p_mipi)

@@ -1,0 +1,8 @@
+config BR2_PACKAGE_KMOD_RTL8723DS
+	bool "Realtek RTL8723D SDIO WiFi"
+	depends on BR2_LINUX_KERNEL &&  BR2_LINUX_KERNEL_CUSTOM_VERSION_VALUE = "4.9"
+	help
+	  realtek rtl8723d sdio wifi card driver
+
+comment "kmod_rtl8723ds needs a Linux kernel to be built"
+	depends on !BR2_LINUX_KERNEL

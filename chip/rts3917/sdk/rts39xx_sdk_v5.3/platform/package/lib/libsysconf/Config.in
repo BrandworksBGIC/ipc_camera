@@ -1,0 +1,14 @@
+config BR2_PACKAGE_LIBSYSCONF
+	bool "libsysconf"
+	select BR2_PACKAGE_JSON_C
+	default n
+	help
+	  library for conf file
+
+config BR2_PACKAGE_LIBSYSCONF_UNIT_TEST
+	bool "libsysconf unit test"
+	depends on BR2_PACKAGE_LIBSYSCONF
+	select BR2_PACKAGE_CUNIT
+	default n
+	help
+	  unit test for libsysconf

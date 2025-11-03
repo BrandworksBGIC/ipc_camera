@@ -1,0 +1,8 @@
+config BR2_PACKAGE_KMOD_RTL8733BU
+	bool "Realtek RTL8733B USB WiFi"
+	depends on BR2_LINUX_KERNEL
+	help
+	  realtek rtl8733bu usb wifi card driver
+
+comment "kmod_rtl8733bu needs a Linux kernel to be built"
+	depends on !BR2_LINUX_KERNEL

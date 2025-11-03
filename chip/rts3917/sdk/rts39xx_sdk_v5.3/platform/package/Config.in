@@ -1,0 +1,6 @@
+source "$BR2_EXTERNAL_platform_PATH/package/driver/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/rtscore/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/lib/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/system/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/usb/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/buildroot/Config.in"

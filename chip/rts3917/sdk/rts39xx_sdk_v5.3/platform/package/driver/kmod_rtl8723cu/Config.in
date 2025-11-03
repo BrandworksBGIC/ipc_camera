@@ -1,0 +1,8 @@
+config BR2_PACKAGE_KMOD_RTL8723CU
+	bool "Realtek RTL8723C USB WiFi"
+	depends on BR2_LINUX_KERNEL &&  BR2_LINUX_KERNEL_CUSTOM_VERSION_VALUE = "5.4"
+	help
+	  realtek rtl8723c usb wifi card driver
+
+comment "kmod_rtl8723cu needs a Linux kernel to be built"
+	depends on !BR2_LINUX_KERNEL

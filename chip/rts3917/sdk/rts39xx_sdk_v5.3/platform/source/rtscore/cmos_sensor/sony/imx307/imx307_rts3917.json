@@ -1,0 +1,927 @@
+{
+  "header": {"magic": "ISP_IQ_HEADER_MAGIC", "version": "ISP_IQ_HEADER_V1_6"},
+  "blc": {
+    "entries": [
+      {
+        "desc": {
+          "name": "blc",
+          "mode": "ISP_IQ_MODE_LINEAR",
+          "scene": "ISP_IQ_SCENE_NORMAL"
+        },
+        "v1": {
+          "dynamic": {
+            "nest": {
+              "bounds": {
+                "enable": true,
+                "type": "ISP_IQ_BOUND_COLOR_TEMP_GRP",
+                "def_index": 0,
+                "bounds": []
+              },
+              "dyns": [
+                {
+                  "bounds": {
+                    "enable": true,
+                    "type": "ISP_IQ_BOUND_GAIN0_INTP",
+                    "bounds": [{"th0": 16}],
+                    "def_index": 0
+                  },
+                  "items": [
+                    {
+                      "r": [240, 240],
+                      "gr": [240, 240],
+                      "gb": [240, 240],
+                      "b": [240, 240]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      }
+    ]
+  },
+  "nlsc": {
+    "entries": [
+      {
+        "desc": {
+          "name": "nlsc",
+          "mode": "ISP_IQ_MODE_LINEAR",
+          "scene": "ISP_IQ_SCENE_NORMAL"
+        },
+        "v1": {
+          "common": {
+            "item": {
+              "r_curve": [
+                128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+                128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+                128, 128, 128, 128, 128, 128
+              ],
+              "g_curve": [
+                128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+                128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+                128, 128, 128, 128, 128, 128
+              ],
+              "b_curve": [
+                128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+                128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
+                128, 128, 128, 128, 128, 128
+              ],
+              "r_center": {"x": 1536, "y": 1024},
+              "g_center": {"x": 1536, "y": 1024},
+              "b_center": {"x": 1536, "y": 1024},
+              "step": 64
+            }
+          },
+          "dynamic": {
+            "nest": {
+              "bounds": {
+                "enable": true,
+                "type": "ISP_IQ_BOUND_COLOR_TEMP_GRP",
+                "bounds": [{"th0": 4000, "th1": 3000}],
+                "def_index": 0
+              },
+              "dyns": [
+                {
+                  "bounds": {
+                    "enable": true,
+                    "type": "ISP_IQ_BOUND_GAIN0_INTP",
+                    "bounds": [
+                      {"th0": 32, "th1": 32}, {"th0": 128, "th1": 128},
+                      {"th0": 512, "th1": 512}
+                    ],
+                    "def_index": 0
+                  },
+                  "items": [
+                    {"r": 32, "g": 32, "b": 32}, {"r": 32, "g": 32, "b": 32},
+                    {"r": 32, "g": 32, "b": 32}
+                  ]
+                },
+                {
+                  "bounds": {
+                    "enable": true,
+                    "type": "ISP_IQ_BOUND_GAIN0_INTP",
+                    "bounds": [
+                      {"th0": 32, "th1": 32}, {"th0": 128, "th1": 128},
+                      {"th0": 512, "th1": 512}
+                    ],
+                    "def_index": 0
+                  },
+                  "items": [
+                    {"r": 32, "g": 32, "b": 32}, {"r": 32, "g": 32, "b": 32},
+                    {"r": 32, "g": 32, "b": 32}
+                  ]
+                }
+              ]
+            },
+            "config": {"en_thd": {"th0": 30, "th1": 5}}
+          }
+        }
+      }
+    ]
+  },
+  "mlsc": {
+    "entries": [
+      {
+        "desc": {
+          "name": "mlsc",
+          "mode": "ISP_IQ_MODE_LINEAR",
+          "scene": "ISP_IQ_SCENE_NORMAL"
+        },
+        "v1": {
+          "common": {
+            "item": {
+              "mode": 2, "matrix_r": [], "matrix_g": [], "matrix_b": []
+            }
+          }
+        }
+      }
+    ]
+  },
+  "ccm": {
+    "entries": [
+      {
+        "desc": {
+          "name": "ccm",
+          "mode": "ISP_IQ_MODE_LINEAR",
+          "scene": "ISP_IQ_SCENE_NORMAL"
+        },
+        "v1": {
+          "dynamic": {
+            "nest": {
+              "bounds": {
+                "enable": true,
+                "type": "ISP_IQ_BOUND_COLOR_TEMP_GRP",
+                "bounds": [{"th0": 4400, "th1": 4300}],
+                "def_index": 0
+              },
+              "dyns": [
+                {
+                  "bounds": {
+                    "enable": true,
+                    "type": "ISP_IQ_BOUND_GAIN0_INTP",
+                    "bounds": [{"th0": 64}, {"th0": 1024}],
+                    "def_index": 0
+                  },
+                  "items": [
+                    {"ccm": [260, 17, -21, -67, 334, -11, 18, -14, 252]},
+                    {"ccm": [256, 0, 0, 0, 256, 0, 0, 0, 256]}
+                  ]
+                },
+                {
+                  "bounds": {
+                    "enable": true,
+                    "type": "ISP_IQ_BOUND_GAIN0_INTP",
+                    "bounds": [{"th0": 64}, {"th0": 1024}],
+                    "def_index": 0
+                  },
+                  "items": [
+                    {"ccm": [257, 11, -12, -50, 352, -46, 23, 0, 233]},
+                    {"ccm": [256, 0, 0, 0, 256, 0, 0, 0, 256]}
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      }
+    ]
+  },
+  "gamma": {
+    "entries": [
+      {
+        "desc": {
+          "name": "gamma",
+          "mode": "ISP_IQ_MODE_LINEAR",
+          "scene": "ISP_IQ_SCENE_NORMAL"
+        },
+        "v1": {
+          "dynamic": {
+            "nest": {
+              "bounds": {
+                "enable": true,
+                "type": "ISP_IQ_BOUND_COLOR_TEMP_GRP",
+                "def_index": 0,
+                "bounds": []
+              },
+              "dyns": [
+                {
+                  "bounds": {
+                    "enable": true,
+                    "type": "ISP_IQ_BOUND_GAIN0_INTP",
+                    "bounds": [{"th0": 64}, {"th0": 512}],
+                    "def_index": 0
+                  },
+                  "items": [
+                    {
+                      "curve": [
+                        0, 6, 11, 22, 45, 66, 87, 168, 311, 539, 727, 904, 1080,
+                        1251, 1418, 1579, 1880, 2144, 2362, 2525, 2637, 2715,
+                        2773, 2825, 2888, 2957, 3019, 3076, 3181, 3286, 3402,
+                        3530, 3663, 3801, 3943
+                      ],
+                      "offsets": [0, 0]
+                    },
+                    {
+                      "curve": [
+                        0, 4, 7, 14, 28, 42, 55, 108, 207, 388, 548, 692, 832,
+                        968, 1100, 1227, 1465, 1679, 1866, 2019, 2140, 2238,
+                        2323, 2403, 2489, 2577, 2660, 2739, 2890, 3040, 3200,
+                        3370, 3544, 3722, 3904
+                      ],
+                      "offsets": [0, 0]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      }
+    ]
+  },
+  "ygc": {
+    "entries": [
+      {
+        "desc": {
+          "name": "ygc",
+          "mode": "ISP_IQ_MODE_LINEAR",
+          "scene": "ISP_IQ_SCENE_NORMAL"
+        },
+        "v1": {
+          "dynamic": {
+            "nest": {
+              "bounds": {
+                "enable": true,
+                "type": "ISP_IQ_BOUND_COLOR_TEMP_GRP",
+                "def_index": 0,
+                "bounds": []
+              },
+              "dyns": [
+                {
+                  "bounds": {
+                    "enable": true,
+                    "type": "ISP_IQ_BOUND_GAIN0_INTP",
+                    "bounds": [{"th0": 1024}],
+                    "def_index": 0
+                  },
+                  "items": [
+                    {
+                      "curve": [
+                        64, 128, 192, 256, 320, 384, 448, 512, 576, 640, 704,
+                        768, 832, 896, 960, 1024, 1088, 1152, 1216, 1280, 1344,
+                        1408, 1472, 1536, 1600, 1664, 1728, 1792, 1856, 1920,
+                        1984, 2048, 2112, 2176, 2240, 2304, 2368, 2432, 2496,
+                        2560, 2624, 2688, 2752, 2816, 2880, 2944, 3008, 3072,
+                        3136, 3200, 3264, 3328, 3392, 3456, 3520, 3584, 3648,
+                        3712, 3776, 3840, 3904, 3968, 4032
+                      ],
+                      "offsets": [0, 0]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      }
+    ]
+  },
+  "uvtune": {
+    "entries": [
+      {
+        "desc": {
+          "name": "uvtune",
+          "mode": "ISP_IQ_MODE_LINEAR",
+          "scene": "ISP_IQ_SCENE_NORMAL"
+        },
+        "v1": {
+          "dynamic": {
+            "nest": {
+              "bounds": {
+                "enable": true,
+                "type": "ISP_IQ_BOUND_COLOR_TEMP_GRP",
+                "def_index": 0,
+                "bounds": []
+              },
+              "dyns": [
+                {
+                  "bounds": {
+                    "enable": true,
+                    "type": "ISP_IQ_BOUND_GAIN0_INTP",
+                    "bounds": [{"th0": 32}],
+                    "def_index": 0
+                  },
+                  "items": [
+                    {
+                      "suppress": [
+                        256, 256, 256, 256, 256, 256, 256, 256, 256
+                      ],
+                      "values": []
+                    }
+                  ]
+                }
+              ],
+              "indexes": []
+            }
+          }
+        }
+      }
+    ]
+  },
+  "spe": {
+    "entries": [
+      {
+        "desc": {
+          "name": "spe",
+          "mode": "ISP_IQ_MODE_LINEAR",
+          "scene": "ISP_IQ_SCENE_NORMAL"
+        },
+        "v1": {
+          "dynamic": {
+            "nest": {
+              "bounds": {
+                "enable": true,
+                "type": "ISP_IQ_BOUND_COLOR_TEMP_GRP",
+                "def_index": 0,
+                "bounds": []
+              },
+              "dyns": [
+                {
+                  "bounds": {
+                    "enable": true,
+                    "type": "ISP_IQ_BOUND_COLOR_TEMP_GRP",
+                    "def_index": 0,
+                    "bounds": []
+                  },
+                  "items": [{"u": 0, "v": 0}]
+                }
+              ]
+            }
+          }
+        }
+      }
+    ]
+  },
+  "ygamma": {
+    "entries": [
+      {
+        "desc": {
+          "name": "ygamma",
+          "mode": "ISP_IQ_MODE_LINEAR",
+          "scene": "ISP_IQ_SCENE_NORMAL"
+        },
+        "v1": {
+          "dynamic": {
+            "nest": {
+              "bounds": {
+                "enable": true,
+                "type": "ISP_IQ_BOUND_COLOR_TEMP_GRP",
+                "def_index": 0,
+                "bounds": []
+              },
+              "dyns": [
+                {
+                  "bounds": {
+                    "enable": true,
+                    "type": "ISP_IQ_BOUND_GAIN0_INTP",
+                    "bounds": [{"th0": 256}],
+                    "def_index": 0
+                  },
+                  "items": [
+                    {
+                      "curve": [
+                        0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160,
+                        192, 224
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      }
+    ]
+  },
+  "texture": {
+    "entries": [
+      {
+        "desc": {
+          "name": "texture",
+          "mode": "ISP_IQ_MODE_LINEAR",
+          "scene": "ISP_IQ_SCENE_NORMAL"
+        },
+        "v1": {"common": {"items": []}, "dynamic": {"nests": []}}
+      }
+    ]
+  },
+  "ae": {
+    "entries": [
+      {
+        "desc": {
+          "name": "ae",
+          "mode": "ISP_IQ_MODE_LINEAR",
+          "scene": "ISP_IQ_SCENE_NORMAL"
+        },
+        "v1": {
+          "enable": true,
+          "def_exposure": 10000.0,
+          "def_gain": 1.0,
+          "win_weight": [
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1
+          ],
+          "y_mean_target": 180,
+          "same_block_en": 1,
+          "y_mean_same_block_diff_th": 20,
+          "same_block_num_stable_th": 226,
+          "same_block_num_delay_th": 128,
+          "y_mean_enter_high_light_th": 300,
+          "y_mean_exit_high_light_th": 260,
+          "ae_stable_delay": 30,
+          "total_gain_max": 4095,
+          "y_mean_delay_th_l": 40,
+          "y_mean_delay_th_h": 960,
+          "y_mean_same_block_th_l": 100,
+          "y_mean_same_block_th_h": 800,
+          "ae_enter_stable_th": 0.05,
+          "ae_exit_stable_th": 0.16,
+          "ae_enter_slow_mode_th": 0.3,
+          "ae_slow_mode_step_th_l": 0.004,
+          "ae_slow_mode_step_th_h": 0.004,
+          "ae_fast_step_greater_th_pow": 0.1,
+          "ae_fast_step_greater_th_h": 1.5,
+          "ae_fast_step_greater_th_m": 1.22,
+          "ae_fast_step_greater_th_l": 1.08,
+          "ae_fast_step_less_th_l": 0.68,
+          "ae_fast_step_less_th_h": 0.9,
+          "ae_fast_step_less_th_pow": 0.125,
+          "dyn_fps_mode": "ISP_IQ_AE_V1_DYN_FPS_BASED_ON_GAIN",
+          "dyn_fps_min": 5,
+          "dyn_gain_th": [256, 256, 256, 256, 256],
+          "dyn_fps": [30, 25, 20, 15, 10, 5],
+          "saturated_range_th1": 16,
+          "saturated_range_th2": 40,
+          "saturated_range_th3": 80,
+          "sort_weight_ratio": 50,
+          "manual_level": 64,
+          "dark_table": {
+            "bounds": {
+              "type": "ISP_IQ_BOUND_GAIN0_INTP",
+              "bounds": [{"th0": 32}],
+              "enable": false,
+              "def_index": 0
+            },
+            "tables": [6]
+          },
+          "bright_table": {
+            "bounds": {
+              "enable": true,
+              "type": "ISP_IQ_BOUND_GAIN0_INTP",
+              "bounds": [
+                {"th0": 32}, {"th0": 64}, {"th0": 128}, {"th0": 256},
+                {"th0": 512}, {"th0": 4096}
+              ],
+              "def_index": 0
+            },
+            "tables": [6, 4, 3, 2, 1, 0]
+          },
+          "sort_win_weight_low": [
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1
+          ],
+          "sort_win_weight_high": [
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 12, 12, 14, 14, 16, 16,
+            18, 18, 20, 20, 30, 30
+          ],
+          "dyn_target_etgain": {
+            "src_th0": 200,
+            "src_th1": 800,
+            "src_th2": 1600,
+            "src_th3": 3200,
+            "extent1": 12,
+            "extent2": 24,
+            "extent3": 36,
+            "enable": false
+          },
+          "dyn_target_saturate": {
+            "src_th0": 8,
+            "src_th1": 20,
+            "src_th2": 40,
+            "src_th3": 60,
+            "extent1": 28,
+            "extent2": 56,
+            "extent3": 84,
+            "enable": false
+          },
+          "y_mean_target_l": 180,
+          "y_mean_target_h": 180,
+          "hist_contrast_power": 0.4,
+          "hist_pos_th_l": 20,
+          "hist_pos_th_h": 600,
+          "hist_percentage_th_l": 40,
+          "hist_percentage_th_h": 40,
+          "hdr": {
+            "over_bin": 4,
+            "y_mean_hdr_adjust_offset": 40,
+            "hist_mean_th1": 4,
+            "hist_mean_th2": 10,
+            "hist_mean_th3": 18,
+            "inc_adj_step": 1.0,
+            "dec_adj_step": 1.0,
+            "ratio_adj_step": 1.0,
+            "over_ratio_th1": 0.0001,
+            "over_ratio_th2": 0.0008,
+            "over_ratio_th3": 0.005,
+            "hist_mean_target_offset": 0,
+            "hdr_ymean_target": 180
+          },
+          "dyn_max_et": {
+            "bounds": {
+              "type": "ISP_IQ_BOUND_EXP_GAIN0_GRP",
+              "enable": false,
+              "def_index": 0,
+              "bounds": []
+            },
+            "max_et": [1200]
+          },
+          "sort_mode": 0,
+          "frame_interval": 0,
+          "dyn_ratio_range": {
+            "bounds": {
+              "type": "ISP_IQ_BOUND_EXP_GAIN0_GRP",
+              "enable": false,
+              "def_index": 0,
+              "bounds": []
+            },
+            "ranges": [
+              {
+                "total": {"min": 2048, "max": 32768},
+                "chn_div": [
+                  {"min": 2048, "max": 32768}, {"min": 256, "max": 256},
+                  {"min": 256, "max": 256}
+                ]
+              }
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "awb": {
+    "entries": [
+      {
+        "desc": {
+          "name": "awb",
+          "mode": "ISP_IQ_MODE_LINEAR",
+          "scene": "ISP_IQ_SCENE_NORMAL"
+        },
+        "v1": {
+          "enable": true,
+          "def_r_gain": 536,
+          "def_g_gain": 256,
+          "def_b_gain": 456,
+          "ct_num": 6,
+          "ct_block_num": 7,
+          "ct": [
+            {"x": 218, "y": 85}, {"x": 192, "y": 86}, {"x": 170, "y": 111},
+            {"x": 126, "y": 146}, {"x": 116, "y": 169}, {"x": 108, "y": 199}
+          ],
+          "illum_ct": [2300, 2800, 3800, 5000, 6500, 7500],
+          "a": -0.304,
+          "b": 0.0662,
+          "c": 0.216,
+          "white_area_up": [
+            {"x": 112, "y": 226}, {"x": 124, "y": 187}, {"x": 137, "y": 164},
+            {"x": 149, "y": 142}, {"x": 166, "y": 126}, {"x": 186, "y": 113},
+            {"x": 210, "y": 102}, {"x": 232, "y": 95}
+          ],
+          "white_area_down": [
+            {"x": 97, "y": 224}, {"x": 99, "y": 180}, {"x": 102, "y": 149},
+            {"x": 120, "y": 120}, {"x": 146, "y": 97}, {"x": 174, "y": 84},
+            {"x": 203, "y": 77}, {"x": 228, "y": 73}
+          ],
+          "gray_area_up": [
+            {"x": 117, "y": 227}, {"x": 130, "y": 189}, {"x": 145, "y": 167},
+            {"x": 157, "y": 149}, {"x": 172, "y": 134}, {"x": 190, "y": 122},
+            {"x": 212, "y": 111}, {"x": 234, "y": 103}
+          ],
+          "gray_area_down": [
+            {"x": 91, "y": 223}, {"x": 93, "y": 179}, {"x": 95, "y": 146},
+            {"x": 112, "y": 114}, {"x": 140, "y": 89}, {"x": 170, "y": 75},
+            {"x": 200, "y": 68}, {"x": 227, "y": 65}
+          ],
+          "fine_gain_th": 2,
+          "final_gain_diff_th": 5,
+          "white_pixels_ratio": 5,
+          "awb_stable_delay": 300,
+          "rg_bg_num_th": 10,
+          "green": {
+            "gray_thd": 50,
+            "enter_green_thd": 50,
+            "exit_green_thd": 30,
+            "d50": {"x": 143, "y": 143},
+            "d65": {"x": 128, "y": 163},
+            "x_min": 60,
+            "y_min": 60,
+            "x_max": 145,
+            "y_max": 130,
+            "b_delta": 40,
+            "k_green_est": 1.0,
+            "k_gray_est": -1.33,
+            "d_min": 25.0,
+            "d_def": 65.0,
+            "d_max": 115.0,
+            "b_max": 350.0,
+            "b_def": 333.0,
+            "b_min": 291.0,
+            "enable": false
+          },
+          "mixct": {
+            "h_ct_index": 3,
+            "l_ct_index": 6,
+            "enter_num_th": 120,
+            "enter_th_l": 0.25,
+            "enter_th_h": 4.0,
+            "exit_th_l": 0.15,
+            "exit_th_h": 5.0,
+            "enter_h_ct_th": 0.75,
+            "exit_h_ct_th": 0.2,
+            "exit_l_ct_th": 1.5,
+            "h_ct_weight": {
+              "w_table": [4, 4, 4, 0, 0, 0], "g_table": [1, 1, 1, 0, 0, 0]
+            },
+            "l_ct_weight": {
+              "w_table": [0, 0, 0, 4, 4, 4], "g_table": [0, 0, 0, 1, 1, 1]
+            },
+            "enable": false
+          },
+          "config": {
+            "rough": {
+              "y_max": 3680,
+              "r_min": 16,
+              "r_max": 4064,
+              "g_min": 16,
+              "g_max": 4064,
+              "b_min": 16,
+              "b_max": 4064,
+              "rg_min": 8,
+              "rg_max": 2032,
+              "bg_min": 8,
+              "bg_max": 2032,
+              "y_min": 0,
+              "bgrg_k1": 0,
+              "bgrg_b1": 8,
+              "bgrg_k2": 0,
+              "bgrg_b2": 2032
+            },
+            "fine": {
+              "y_min": 320,
+              "y_max": 3600,
+              "rg_min": 208,
+              "rg_max": 304,
+              "bg_min": 208,
+              "bg_max": 304
+            },
+            "illums": {
+              "r_gain": [200, 208, 312, 336, 360, 376],
+              "b_gain": [576, 560, 512, 400, 344, 320],
+              "rg_min": 232,
+              "rg_max": 280,
+              "bg_min": 232,
+              "bg_max": 280,
+              "y_min": 320,
+              "y_max": 3840
+            }
+          },
+          "dynamic": {
+            "nest": {
+              "bounds": {
+                "type": "ISP_IQ_BOUND_COLOR_TEMP_GRP",
+                "enable": false,
+                "def_index": 0,
+                "bounds": []
+              },
+              "dyns": [
+                {
+                  "bounds": {
+                    "type": "ISP_IQ_BOUND_GAIN0_INTP",
+                    "bounds": [{"th0": 256}],
+                    "enable": false,
+                    "def_index": 0
+                  },
+                  "items": [
+                    {
+                      "adj": {"r_gain": 256, "b_gain": 256},
+                      "normal_weight": {
+                        "w_table": [1, 4, 4, 4, 4, 4, 0],
+                        "g_table": [0, 2, 2, 2, 2, 2, 0]
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "min_bright_th": 0,
+          "frame_interval": 0
+        }
+      }
+    ]
+  },
+  "af": {
+    "entries": [
+      {
+        "desc": {
+          "name": "af",
+          "mode": "ISP_IQ_MODE_LINEAR",
+          "scene": "ISP_IQ_SCENE_NORMAL"
+        },
+        "v1": {
+          "def_position": 100,
+          "fine_step": 1,
+          "fine_high_peak_ratio": 1.08,
+          "fine_low_peak_ratio": 2.0,
+          "fine_sharpness_ratio": 1.01,
+          "fine_decrease_cnt": 4,
+          "rough_step": 2,
+          "rough_high_peak_ratio": 1.12,
+          "rough_low_peak_ratio": 2.8,
+          "rough_sharpness_ratio": 1.02,
+          "rough_decrease_cnt": 2,
+          "sharpness_peak_th": 100000,
+          "sharpness_diff_ratio": 0.1,
+          "diff_cnt": 5,
+          "search_mode_th": 500000,
+          "pos": [
+            100, 110, 120, 130, 142, 154, 166, 182, 198, 214, 234, 254, 278,
+            302, 332, 362, 392, 442, 472, 502, 572, 632, 702, 767
+          ],
+          "ymean_diff_th": 20,
+          "ymean_diff_cnt_th": 128,
+          "ae_stable_delay_cnt": 15,
+          "enable": false,
+          "frame_interval": 0
+        }
+      }
+    ]
+  },
+  "flick": {
+    "entries": [
+      {
+        "desc": {
+          "name": "flick",
+          "mode": "ISP_IQ_MODE_LINEAR",
+          "scene": "ISP_IQ_SCENE_NORMAL"
+        },
+        "v1": {
+          "ymean_diff_ratio_th": 12,
+          "win_stable_th": 60,
+          "statis_ratio_min_th": 30,
+          "statis_ratio_sec_th": 40,
+          "statis_ratio_trd_th": 40,
+          "statis_ratio_max_th": 50,
+          "frame_interval": 0
+        }
+      }
+    ]
+  },
+  "wdr": {
+    "entries": [
+      {
+        "desc": {
+          "name": "wdr",
+          "mode": "ISP_IQ_MODE_LINEAR",
+          "scene": "ISP_IQ_SCENE_NORMAL"
+        },
+        "v1": {
+          "low_percent": 30,
+          "high_percent": 10,
+          "high_bins_avg_rgb_th": 768,
+          "hist_contrast_intp": 480,
+          "hist_contrast_intp_compress": 160,
+          "expand_num": 32,
+          "hist_contrast_expand": [
+            1.7, 1.7, 1.7, 1.7, 1.6, 1.6, 1.6, 1.6, 1.5, 1.5, 1.5, 1.5, 1.4,
+            1.4, 1.4, 1.4, 1.3, 1.3, 1.3, 1.3, 1.2, 1.2, 1.2, 1.2, 1.1, 1.1,
+            1.1, 1.1, 1.0, 1.0, 1.0, 1.0
+          ],
+          "power_gain": 1,
+          "map_num": 7,
+          "hist_contrast_thd": [320, 560, 800, 1040, 1280, 1520, 1760],
+          "wdr_target_map": [20, 40, 60, 80, 100, 120, 140],
+          "wdr_target_limit": 140,
+          "step": 1,
+          "mode": 0,
+          "frame_interval": 0
+        }
+      }
+    ]
+  },
+  "daynight": {
+    "entries": [
+      {
+        "desc": {
+          "name": "daynight",
+          "mode": "ISP_IQ_MODE_LINEAR",
+          "scene": "ISP_IQ_SCENE_NORMAL"
+        },
+        "v1": {
+          "exit_ir_detect_table": [
+            0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+            1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0,
+            0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0,
+            0, 0, 0
+          ],
+          "dynamic": {
+            "nest": {
+              "bounds": {
+                "type": "ISP_IQ_BOUND_COLOR_TEMP_GRP",
+                "enable": false,
+                "def_index": 0,
+                "bounds": []
+              },
+              "dyns": [
+                {
+                  "bounds": {
+                    "type": "ISP_IQ_BOUND_GAIN0_INTP",
+                    "bounds": [{"th0": 32}],
+                    "enable": false,
+                    "def_index": 0
+                  },
+                  "items": [
+                    {
+                      "exit_ir_block_th": 0.5,
+                      "exit_rgb_etgain_th": 19200,
+                      "exit_ir_etgain_th": 6000,
+                      "exit_ir_gain_th": 240,
+                      "ir2rgb_time": 5000,
+                      "rgb2ir_time": 3500
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "frame_interval": 0
+        }
+      }
+    ]
+  },
+  "high_temp": {
+    "entries": [
+      {
+        "desc": {
+          "name": "high_temp",
+          "mode": "ISP_IQ_MODE_LINEAR",
+          "scene": "ISP_IQ_SCENE_NORMAL"
+        },
+        "v1": {
+          "interval": 10000,
+          "gain": {"th0": 128, "th1": 96},
+          "temp": {"th0": 100, "th1": 80},
+          "enable": false
+        }
+      }
+    ]
+  }
+}

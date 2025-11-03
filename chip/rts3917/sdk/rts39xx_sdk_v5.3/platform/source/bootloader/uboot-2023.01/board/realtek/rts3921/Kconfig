@@ -1,0 +1,89 @@
+choice
+	prompt "DDR Type Selection"
+	default RTS3921_BGA240_DDR3_GENERAL
+	help
+	  Select ddr type
+
+config RTS3921_QFN88_DDR2_512MBIT
+	bool "QFN88 DDR2 MCM(512Mbit)"
+	depends on (TARGET_ASIC || TARGET_EMULATOR)
+	select QFN88_PACKAGE
+	help
+	 Enable option for QFN88 DDR2 512Mbit
+
+config RTS3921_BGA173_DDR2_512MBIT
+	bool "BGA173 DDR2 MCM(512Mbit)"
+	depends on (TARGET_ASIC || TARGET_EMULATOR)
+	help
+	  Enable option for BGA173 DDR2 512Mbit
+
+config RTS3921_QFN88_DDR3_1GBIT
+	bool "QFN88 DDR3 MCM(1Gbit)"
+	depends on (TARGET_ASIC || TARGET_EMULATOR)
+	select QFN88_PACKAGE
+	help
+	 Enable option for QFN88 DDR3 1Gbit
+
+config RTS3921_BGA240_DDR3_GENERAL
+	bool "BGA240 DDR3 External"
+	depends on (BOARD_RTS3921 && !TARGET_FPGA)
+	help
+	  Enable option for 1Gbit or 2Gbit DDR on demo board
+
+config RTS3921_DDR_H5TQ2G
+	bool "DDR3 H5TQ2G(Hynix 256MB)"
+	depends on TARGET_FPGA
+	help
+	  Enable option for DDR H5TQ2G
+endchoice
+
+choice
+	prompt "DDR Speed Selection"
+	default RTS3921_DDR_1066
+	depends on  (TARGET_ASIC || TARGET_EMULATOR)
+	help
+	  Select ddr clock
+
+config RTS3921_DDR_800
+	bool "DDR-800"
+	depends on (RTS3921_QFN88_DDR2_512MBIT || RTS3921_BGA173_DDR2_512MBIT)
+	help
+	  Select ddr dqs clock to 800/2
+
+config RTS3921_DDR_1066
+	bool "DDR-1066"
+	help
+	  Select ddr dqs clock to 1066/2
+
+config RTS3921_DDR_1200
+	bool "DDR-1200"
+	depends on RTS3921_QFN88_DDR2_512MBIT
+	help
+	  Select ddr dqs clock to 1200/2
+
+config RTS3921_DDR_1333
+	bool "DDR-1333"
+	depends on !(RTS3921_QFN88_DDR2_512MBIT || RTS3921_BGA173_DDR2_512MBIT)
+	help
+	  Select ddr dqs clock to 1333/2
+
+config RTS3921_DDR_1600
+	bool "DDR-1600"
+	depends on !(RTS3921_QFN88_DDR2_512MBIT || RTS3921_BGA173_DDR2_512MBIT)
+	help
+	  Select ddr dqs clock to 1600/2
+
+config RTS3921_DDR_1866
+	bool "DDR-1866"
+	depends on !(RTS3921_QFN88_DDR2_512MBIT || RTS3921_BGA173_DDR2_512MBIT)
+	help
+	  Select ddr dqs clock to 1866/2
+
+config RTS3921_DDR_2133
+	bool "DDR-2133"
+	depends on !(RTS3921_QFN88_DDR2_512MBIT || RTS3921_BGA173_DDR2_512MBIT)
+	help
+	  Select ddr dqs clock to 2133/2
+
+endchoice
+

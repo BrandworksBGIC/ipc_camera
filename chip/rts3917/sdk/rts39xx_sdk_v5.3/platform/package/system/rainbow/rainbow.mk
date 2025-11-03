@@ -1,0 +1,71 @@
+RAINBOW_SITE_METHOD = local
+RAINBOW_SITE = $(BR2_EXTERNAL)/source/system/rainbow
+RAINBOW_DEPENDENCIES = rtstream live555 ubus json-c
+
+ifeq ($(BR2_CONFIG_HW_VER_RTS3903), y)
+        VER_RTS3903 = YES
+else
+        VER_RTS3903 = NO
+endif
+
+ifeq ($(BR2_CONFIG_HW_VER_RTS3913), y)
+        VER_RTS3913 = YES
+else
+        VER_RTS3913 = NO
+endif
+
+ifeq ($(BR2_CONFIG_HW_VER_RTS3915), y)
+        VER_RTS3915 = YES
+else
+        VER_RTS3915 = NO
+endif
+
+ifeq ($(BR2_CONFIG_HW_VER_RTS3917), y)
+        VER_RTS3917 = YES
+else
+        VER_RTS3917 = NO
+endif
+
+ifeq ($(BR2_PACKAGE_WAVE521), y)
+        WAVE521_SUPPORT = YES
+else
+        WAVE521_SUPPORT = NO
+endif
+
+ifeq ($(BR2_PACKAGE_WAVE420), y)
+        WAVE420_SUPPORT = YES
+else
+        WAVE420_SUPPORT = NO
+endif
+
+ifeq ($(BR2_PACKAGE_H1_ENCODER), y)
+        H1_SUPPORT = YES
+else
+        H1_SUPPORT = NO
+endif
+
+ifeq ($(BR2_PACKAGE_OPENSSL),y)
+	RAINBOW_DEPENDENCIES += openssl
+	NO_OPENSSL = NO
+else
+	NO_OPENSSL = YES
+endif
+
+RAINBOW_CONF_OPTS += \
+	-DCONFIG_RTSTREAM_VIDEO=$(if $(BR2_PACKAGE_RTSTREAM_VIDEO),y,n) \
+	-DCONFIG_RTSTREAM_AUDIO=$(if $(BR2_PACKAGE_RTSTREAM_AUDIO),y,n)
+
+TARGET_PLATFORM = RTS
+
+RAINBOW_CONF_OPTS += \
+	-DDIR_TMPFS=$(STAGING_DIR) \
+	-DH1_SUPPORT=$(H1_SUPPORT) \
+	-DWAVE420_SUPPORT=$(WAVE420_SUPPORT) \
+	-DWAVE521_SUPPORT=$(WAVE521_SUPPORT) \
+	-DVER_RTS3903=$(VER_RTS3903) \
+	-DVER_RTS3913=$(VER_RTS3913) \
+	-DVER_RTS3915=$(VER_RTS3915) \
+	-DVER_RTS3917=$(VER_RTS3917) \
+	-DNO_OPENSSL=$(NO_OPENSSL)
+
+$(eval $(cmake-package))

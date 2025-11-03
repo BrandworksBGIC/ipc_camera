@@ -1,0 +1,8 @@
+config BR2_PACKAGE_KMOD_RTL8822CU_BT
+	bool "Realtek RTL8822CU_BT USB Bluetooth"
+	depends on BR2_LINUX_KERNEL
+	help
+	  realtek rtl8822cu_bt usb bluetooth card driver
+
+comment "kmod_rtl8822cu_bt needs a Linux kernel to be built"
+	depends on !BR2_LINUX_KERNEL

@@ -1,0 +1,10 @@
+diff a/include/rtw_mlme.h b/include/rtw_mlme.h	(rejected hunks)
+@@ -1285,4 +1287,8 @@ void dump_arp_pkt(void *sel, u8 *da, u8 *sa, u8 *arp, bool tx);
+ #define GET_TCP_ECE(_tcphdr)			BE_BITS_TO_1BYTE(((u8 *)(_tcphdr)) + 13, 6, 1)
+ #define GET_TCP_CWR(_tcphdr)			BE_BITS_TO_1BYTE(((u8 *)(_tcphdr)) + 13, 7, 1)
+ 
++#ifdef CONFIG_BCN_CNT
++void rtw_reset_bcn_cnt_info(_adapter *adapter);
++#endif
++
+ #endif /* __RTL871X_MLME_H_ */

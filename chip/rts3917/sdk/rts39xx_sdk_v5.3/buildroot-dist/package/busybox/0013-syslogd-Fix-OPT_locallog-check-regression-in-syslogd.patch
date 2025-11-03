@@ -1,0 +1,58 @@
+From fc466720b5e8611f485bc574c0114d5037525f92 Mon Sep 17 00:00:00 2001
+From: Grant Erickson <gerickson@nuovations.com>
+Date: Tue, 8 Apr 2025 15:39:30 +0200
+Subject: [PATCH] syslogd: Fix 'OPT_locallog' check regression in
+ 'syslogd_main'
+
+In the recent refactoring of 'syslogd_main', a regression was
+introduced in handling the manual bitwise OR of 'OPT_locallog' as
+follows:
+
+   if (ENABLE_FEATURE_REMOTE_LOG && !(opts & OPT_remotelog)) // -R
+       option_mask32 |= OPT_locallog;
+
+'opts' represents the locally-scoped output of 'getopt32' and
+'option_mask32' represents the globally-scoped state of the
+same. Consequently, the above performs a bitwise OR to include
+'OPT_locallog' of the globally-scoped option state, which 'opts' will
+not reflect locally.
+
+Manipulating the global, rather than local, state is correct as
+'timestamp_and_log_internal' will later need to check 'OPT_locallog'.
+
+However, when the aforementioned refactor occurred, the following
+regressing change was made:
+
+    -       if (!ENABLE_FEATURE_REMOTE_LOG || (option_mask32 & OPT_locallog)) {
+    +       if (!ENABLE_FEATURE_REMOTE_LOG || (opts & OPT_locallog)) {
+
+breaking the spatially- and temporally-removed check in
+'timestamp_and_log_internal'.
+
+Fixes: 02378ce20c6d2 ("syslogd: decrease stack usage, ~50 bytes")
+
+function                                             old     new   delta
+syslogd_init                                        1140    1137      -3
+
+Signed-off-by: Grant Erickson <gerickson@nuovations.com>
+Signed-off-by: Denys Vlasenko <vda.linux@googlemail.com>
+---
+ sysklogd/syslogd.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/sysklogd/syslogd.c b/sysklogd/syslogd.c
+index 7558051f0..2cbb22b6d 100644
+--- a/sysklogd/syslogd.c
++++ b/sysklogd/syslogd.c
+@@ -1045,7 +1045,7 @@ static int NOINLINE syslogd_init(char **argv)
+ #endif
+ 	/* If they have not specified remote logging, then log locally */
+ 	if (ENABLE_FEATURE_REMOTE_LOG && !(opts & OPT_remotelog)) // -R
+-		option_mask32 |= OPT_locallog;
++		option_mask32 = (opts |= OPT_locallog);
+ #if ENABLE_FEATURE_SYSLOGD_CFG
+ 	parse_syslogdcfg(opt_f);
+ #endif
+-- 
+2.17.1
+

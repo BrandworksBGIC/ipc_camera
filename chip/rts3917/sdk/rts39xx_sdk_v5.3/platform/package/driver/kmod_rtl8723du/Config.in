@@ -1,0 +1,8 @@
+config BR2_PACKAGE_KMOD_RTL8723DU
+	bool "Realtek RTL8723D USB WiFi"
+	depends on BR2_LINUX_KERNEL &&  BR2_LINUX_KERNEL_CUSTOM_VERSION_VALUE = "4.9"
+	help
+	  realtek rtl8723d usb wifi card driver
+
+comment "kmod_rtl8723du needs a Linux kernel to be built"
+	depends on !BR2_LINUX_KERNEL

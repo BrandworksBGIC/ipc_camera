@@ -1,0 +1,130 @@
+config BR2_PACKAGE_USB_MULTI
+	tristate "usb multi function"
+	default n
+	help
+	  usb multiple function,include uvcd/uacd/dfud
+
+config BR2_PACKAGE_CONFIGFS
+	bool "config by configfs"
+	depends on BR2_PACKAGE_USB_MULTI
+	default n
+	help
+	  support config usb multipile function by configfs
+
+config BR2_PACKAGE_UVCD
+	tristate "uvcd"
+	depends on BR2_PACKAGE_USB_MULTI
+	select BR2_PACKAGE_RTSTREAM
+	select BR2_PACKAGE_RTSTREAM_VIDEO
+	select BR2_PACKAGE_RTSTREAM_MJPEG
+	select BR2_PACKAGE_UBUS
+	select BR2_PACKAGE_JSON_C
+	select BR2_PACKAGE_REALBOX
+	select BR2_PACKAGE_RTSAEZOOM
+	default n
+	help
+	  support uvc preview
+choice
+	prompt "uvc version"
+	depends on BR2_PACKAGE_UVCD
+config BR2_PACKAGE_UVCD_UVC_11
+	bool "UVC 1.1"
+config BR2_PACKAGE_UVCD_UVC_15
+	bool "UVC 1.5"
+endchoice
+
+config BR2_PACKAGE_UVCD_H264
+	bool "Support H.264"
+	depends on BR2_PACKAGE_UVCD
+	select BR2_PACKAGE_RTSTREAM_H26X
+	default n
+	help
+	  support h.264 format
+
+config BR2_PACKAGE_UVCD_H265
+	bool "Support H.265"
+	depends on BR2_PACKAGE_UVCD
+	depends on BR2_PACKAGE_UVCD_UVC_11
+	select BR2_PACKAGE_RTSTREAM_H26X
+	default n
+	help
+	  support h.265 format
+
+config BR2_PACKAGE_NNE
+	bool "nn event notify"
+	depends on BR2_PACKAGE_UVCD
+	default n
+	help
+	  transfer nn event meta data to host.
+
+config BR2_PACKAGE_OSD_SUPPRT
+	bool "osd support"
+	depends on BR2_PACKAGE_UVCD
+	select BR2_PACKAGE_RTSTREAM_OSDI
+	select BR2_PACKAGE_FREETYPE
+	default n
+	help
+	  support osd.
+
+config BR2_PACKAGE_NOTIFY_BY_ACM
+	bool "notify by ACM"
+	depends on BR2_PACKAGE_NNE
+	default n
+	help
+	  transfer data to host by ACM.
+
+config BR2_PACKAGE_UVCD_SAMPLE
+	bool "uvcd sample"
+	depends on BR2_PACKAGE_UVCD
+	default n
+	help
+	  UVCD sample code
+
+config BR2_PACKAGE_UVCD_ZOOM
+	bool "Support ZOOM"
+	depends on BR2_PACKAGE_UVCD
+	depends on BR2_CONFIG_HW_VER_RTS3917
+	default n
+	help
+	  support zoom
+
+config BR2_PACKAGE_SENSOR_ROLL
+	int "Sensor Roll Setting"
+	depends on BR2_PACKAGE_UVCD
+	range 0 3
+	default 0
+	help
+	  Sensor roll setting
+
+config BR2_PACKAGE_UVCD_METADATA_TEST
+        bool "Support metadata test"
+        depends on BR2_PACKAGE_UVCD
+        default n
+        help
+          support metadata test
+
+config BR2_PACKAGE_UACD
+	bool "uacd"
+	select BR2_PACKAGE_ALSA_LIB
+	default n
+	help
+	  transfer data between uac and rlx internal sound card.
+
+config BR2_PACKAGE_DFUD
+	bool "dfud"
+	depends on BR2_PACKAGE_USB_MULTI
+	select BR2_PACKAGE_MTD
+	default n
+	help
+	  support device firmware update
+
+config BR2_PACKAGE_CHGROOT
+	bool "chgroot support"
+	depends on BR2_PACKAGE_DFUD
+	default y
+
+config BR2_PACKAGE_SEAMLESS_UBOOT_DFU
+	bool "seamless uboot dfu support"
+	depends on BR2_PACKAGE_DFUD
+	default n
+

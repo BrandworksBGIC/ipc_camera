@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: GPL-2.0-only
+#
+# Makefile for the Realtek network device drivers.
+#
+
+obj-$(CONFIG_8139TOO) += 8139too.o
+obj-$(CONFIG_ATP) += atp.o
+r8169-objs += r8169_main.o r8169_firmware.o r8169_phy_config.o
+obj-$(CONFIG_R8169) += r8169.o
+obj-$(CONFIG_8139GB) += 8139gb/
+obj-$(CONFIG_8168G) += 8168g/
+obj-$(CONFIG_RTL8168G_8048) += rtl8168g_8048/

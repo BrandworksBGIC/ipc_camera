@@ -1,0 +1,8 @@
+config BR2_PACKAGE_KMOD_RTL8723DS_BT
+	bool "Realtek RTL8723D SDIO Bluetooth"
+	depends on BR2_LINUX_KERNEL
+	help
+	  realtek rtl8723d sdio bluetooth card driver
+
+comment "kmod_rtl8723ds_bt needs a Linux kernel to be built"
+	depends on !BR2_LINUX_KERNEL

@@ -1,0 +1,56 @@
+#!/bin/sh
+
+start_prog(){
+	if [ -f /bin/dfud ] && [ -x /bin/dfud ]; then
+		UBOOT_DFU=$(/bin/fw_printenv | grep "boot_count_reg")
+		if [ "$UBOOT_DFU" != "" ]; then
+			BOOT_COUNT_REG=$(/bin/fw_printenv boot_count_reg)
+			BOOT_COUNT_REG="0x""${BOOT_COUNT_REG##*=}"
+			BOOT_COUNT=`devmem  $BOOT_COUNT_REG`
+			let BOOT_COUNT=$BOOT_COUNT-1
+			`devmem $BOOT_COUNT_REG 32 $BOOT_COUNT`
+		fi
+		dfud &
+	fi
+}
+
+stop_prog(){
+	killall dfud
+}
+
+restart_prog(){
+	stop_prog
+	start_prog
+}
+
+print_usage(){
+	echo "usage: $PN [start | stop | restart]"
+}
+
+PN="$0"
+
+if [ $# -eq 0 ]; then
+	start_prog
+elif [ $# -eq 1 ]; then
+	case $1 in
+		"start"):
+			#echo start
+			start_prog
+			;;
+		"stop"):
+			#echo stop
+			stop_prog
+			;;
+		"restart"):
+			#echo restart
+			restart_prog
+			;;
+		*):
+			print_usage
+			;;
+	esac
+else
+	print_usage
+fi
+unset PN
+

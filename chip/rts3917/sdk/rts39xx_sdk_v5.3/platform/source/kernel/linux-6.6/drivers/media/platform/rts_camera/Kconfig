@@ -1,0 +1,72 @@
+menu "Realtek Video Driver"
+
+config RTS_CAMERA
+	tristate "RTS Camera Subsystem"
+	select VIDEOBUF2_DMA_CONTIG
+	help
+	  Rts Soc Camera subsystem.
+
+if RTS_CAMERA
+
+config RTS_ISP_MEM
+	tristate "Video DDR Manager"
+	help
+	  This is a memory driver for Realtek Soc Camera.
+
+config RTS_CAM_LOCK
+	tristate "Video Lock"
+	help
+	  This provides a first-in-first-out mutual exclusion mechanism.
+	  Its implementation is based on completion.
+	  H264 and Mjpeg enoder can use it.
+	  You can get lock info by sysfs.
+
+config RTS_VIDEO_ISP
+	tristate "Video SoC Driver"
+	select RTS_ISP_MEM
+	help
+	  This is a camera driver for Realtek RTS3917.
+
+config RTS_W521MP_ENC
+	tristate "Video H265&H264 Encoder Driver"
+	select RTS_ISP_MEM
+	help
+	  This is a H265/H264 Encode device driver for Realtek RTS3917.
+
+config RTS_MJPEG_ENC
+	tristate "Video MJPEG Encoder Driver"
+	select RTS_ISP_MEM
+	select RTS_CAM_LOCK
+	help
+	  This is a Mjpeg Encoder device driver for Realtek RTS3917.
+
+config RTS_OSD2
+	tristate "Video OSD2 Module"
+	select RTS_CAM_LOCK
+	help
+	  This is a Realtek OSD2 device driver.
+
+config RTS_OSDI
+	tristate "Video OSDI Module"
+	help
+	  This is a Realtek OSDI device driver.
+
+config RTS_VIDEO_PP
+	tristate "Video PP Module"
+	help
+	  This is a Realtek video report info driver.
+	  mv and ssd and intra num and var
+
+config RTS_BWT_MONITOR
+	tristate "Video BWT Monitor"
+	help
+	  This is the driver for video bindwidth monitor for RTS3917.
+
+config RTS_RTSTREAM_INFO
+	tristate "Rtstream Info Driver"
+	help
+	  This driver help rtstream.
+
+endif
+
+endmenu

@@ -1,0 +1,12 @@
+config BR2_PACKAGE_LIBWEBSOCKETS3
+	bool "libwebsockets-v3.2.0"
+	depends on BR2_USE_MMU # fork()
+	select BR2_PACKAGE_ZLIB
+	help
+	  Libwebsockets is a lightweight pure C library built to use
+	  minimal CPU and memory resources, and provide fast throughput
+	  in both directions.
+
+	  Please note THAT: the default version of libwebsocket in buildroot is v2.2.1
+
+	  http://libwebsockets.org/

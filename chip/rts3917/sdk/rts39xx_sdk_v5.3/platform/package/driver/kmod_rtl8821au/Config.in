@@ -1,0 +1,8 @@
+config BR2_PACKAGE_KMOD_RTL8821AU
+	bool "Realtek RTL8821A USB WiFi"
+	depends on BR2_LINUX_KERNEL &&  BR2_LINUX_KERNEL_CUSTOM_VERSION_VALUE = "4.9"
+	help
+	  realtek rtl8812a usb wifi card driver
+
+comment "kmod_rtl8821au needs a Linux kernel to be built"
+	depends on !BR2_LINUX_KERNEL

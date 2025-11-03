@@ -1,0 +1,30 @@
+{
+	"mjpeg_mode":0,
+	"faceae_enable":0,
+	"input_isp_id":10,
+	"min_iou":"0.01",
+	"max_iou":"0.75",
+	"timeout_thd":"3",
+	"box_overtime_thd":"60",
+	"zoom": {
+		"enable":1,
+		"ability":"2",
+		"threshold":"0.04",
+		"margin":"0.02",
+		"stable_thd":"0.1",
+		"zoom_time":"1",
+		"box_miss_thd":"1.2",
+		"box_appear_thd":3,
+		"box_type":1
+	},
+	"dw_ctrl": [
+		{
+			"resolution":"640x360",
+			"face_framing":1
+		},
+		{
+			"resolution":"320x180",
+			"face_framing":1
+		}
+	]
+}

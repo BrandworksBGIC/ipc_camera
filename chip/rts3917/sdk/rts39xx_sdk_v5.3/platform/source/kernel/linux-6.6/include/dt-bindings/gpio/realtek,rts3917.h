@@ -1,0 +1,6 @@
+#ifndef _DT_BINDINGS_GPIO_RTS3917_H
+#define _DT_BINDINGS_GPIO_RTS3917_H
+
+#define RTS_NUM_GPIOS   89
+
+#endif

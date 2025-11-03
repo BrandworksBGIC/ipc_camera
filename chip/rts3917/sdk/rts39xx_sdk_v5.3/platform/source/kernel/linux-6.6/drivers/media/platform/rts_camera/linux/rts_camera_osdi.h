@@ -1,0 +1,99 @@
+/* SPDX-License-Identifier: GPL-2.0-only */
+/*
+ * Copyright (c) 2025 Realtek Semiconductor Corp. All rights reserved.
+ *
+ * THIS SOFTWARE IS CONFIDENTIAL AND PROPRIETARY TO REALTEK SEMICONDUCTOR
+ * CORP. DISCLOSURE, REPRODUCTION, REDISTRIBUTION, IN WHOLE OR IN PART, OF
+ * THIS WORK AND ITS DERIVATIVES WITHOUT EXPRESS PERMISSION IS PROHIBITED.
+ *
+ * REALTEK SEMICONDUCTOR CORP. RESERVES THE RIGHT TO UPDATE, MODIFY, OR
+ * DISCONTINUE THIS SOFTWARE AT ANY TIME WITHOUT NOTICE. THIS SOFTWARE IS
+ * PROVIDED BY THE REGENTS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE REGENTS AND CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+#ifndef _U_RTS_CAMERA_OSDI_H
+#define _U_RTS_CAMERA_OSDI_H
+
+#include <linux/types.h>
+
+#define RTSOSDI_IOC_MAGIC	'O'
+
+#define RTSOSDI_MAX_BLK_NUM	6
+
+enum osdi_fmt {
+	RTS_OSDI_PURE_COLOR,
+	RTS_OSDI_RGBA_1111,
+	RTS_OSDI_RGBA_2222,
+	RTS_OSDI_RGBA_5551,
+	RTS_OSDI_RGBA_4444,
+	RTS_OSDI_RGBA_8888,
+	RTS_OSDI_RGBA_MAX,
+};
+
+struct osdi_blk_info {
+	__u8 index;
+	__u8 enable;
+	__u8 fmt;
+	__u32 phy_addr;
+	__u16 width;
+	__u16 height;
+	__u16 start_x;
+	__u16 start_y;
+	__u16 mem_ddr;
+	__u8 transfer_length;
+	__u8 get_parameter;
+};
+
+struct osdi_all_blk_info {
+	struct osdi_blk_info infos[RTSOSDI_MAX_BLK_NUM];
+	__u8 start_flag;
+};
+
+struct osdi_frame_info {
+	__u16 width;
+	__u16 height;
+};
+
+struct osdi_color_table_info {
+	/*do not forget pure_color case*/
+	__u8 fmt;
+	__u32 val; /*from high to low: r, g, b, a*/
+	__u8 red;
+	__u8 green;
+	__u8 blue;
+	__u8 alpha;
+};
+
+#define RTSOSDI_IOC_START		_IO(RTSOSDI_IOC_MAGIC, 0)
+#define RTSOSDI_IOC_FRAME_STOP		_IO(RTSOSDI_IOC_MAGIC, 1)
+#define RTSOSDI_IOC_CONFIG_FRAME	_IOW(RTSOSDI_IOC_MAGIC, 2,	\
+						struct osdi_frame_info)
+#define RTSOSDI_IOC_SET_ALL_BLK		_IOW(RTSOSDI_IOC_MAGIC, 3,	\
+						struct osdi_all_blk_info)
+#define RTSOSDI_IOC_SET_BLK		_IOW(RTSOSDI_IOC_MAGIC, 4,	\
+						struct osdi_blk_info)
+#define RTSOSDI_IOC_GET_ALL_BLK		_IOR(RTSOSDI_IOC_MAGIC, 5,	\
+						struct osdi_all_blk_info)
+#define RTSOSDI_IOC_GET_BLK		_IOWR(RTSOSDI_IOC_MAGIC, 6,	\
+						struct osdi_blk_info)
+#define RTSOSDI_IOC_SET_COLOR_TABLE	_IOW(RTSOSDI_IOC_MAGIC, 7,	\
+						struct osdi_color_table_info)
+#define RTSOSDI_IOC_GET_COLOR_TABLE	_IOWR(RTSOSDI_IOC_MAGIC, 8,	\
+						struct osdi_color_table_info)
+#define RTSOSDI_IOC_SET_MEM	_IOW(RTSOSDI_IOC_MAGIC, 9,	\
+							struct osdi_blk_info)
+#define RTSOSDI_IOC_IMMEDIATE_STOP	_IO(RTSOSDI_IOC_MAGIC, 10)
+
+#define RTSOSDI_IOC_MAXNR	11
+
+#endif

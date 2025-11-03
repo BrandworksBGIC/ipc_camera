@@ -1,0 +1,8 @@
+config BR2_PACKAGE_KMOD_RTL8723DBT
+	bool "Realtek RTL8723D USB Bluetooth"
+	depends on BR2_LINUX_KERNEL
+	help
+	  realtek rtl8723d usb bluetooth card driver
+
+comment "kmod_rtl8723dbt needs a Linux kernel to be built"
+	depends on !BR2_LINUX_KERNEL

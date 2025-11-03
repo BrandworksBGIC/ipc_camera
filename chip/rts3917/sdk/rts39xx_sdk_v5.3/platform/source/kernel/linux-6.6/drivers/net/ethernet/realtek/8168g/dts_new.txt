@@ -1,0 +1,6 @@
+eth0: rtl8168@1b007000 {
+            compatible = "realtek,sheipa-r8168";
+            reg = <0x1b007000 0x100>;
+            interrupts = <GIC_SPI 5 IRQ_TYPE_LEVEL_HIGH>;
+            status = "okay";
+      };

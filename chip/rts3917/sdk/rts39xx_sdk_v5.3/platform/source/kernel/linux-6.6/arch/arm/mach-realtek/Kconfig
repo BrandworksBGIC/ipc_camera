@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+menuconfig ARCH_REALTEK
+	bool "Realtek SoCs"
+	select ARM_GIC
+	select ARM_GIC_V3
+	select HAVE_ARM_ARCH_TIMER
+	select COMMON_CLK
+	select GENERIC_IRQ_MULTI_HANDLER
+	select CLKDEV_LOOKUP
+	select GENERIC_CLOCKEVENTS
+	select ARCH_HAS_CPUFREQ
+	select HW_HAS_PCI
+	select HW_HAS_USB
+	select HAVE_ARM_SCU
+	select HAVE_SMP
+	select VFP
+	select NEON
+	select USE_OF
+	select CPU_HAS_L2C
+
+if ARCH_REALTEK
+
+config RTS3917_SUSPEND_TO_RAM
+	bool "RTS3917 suspend-to-RAM function"
+	depends on SUSPEND
+	help
+	  Enable RTS3917 suspend-to-RAM function.
+
+endif

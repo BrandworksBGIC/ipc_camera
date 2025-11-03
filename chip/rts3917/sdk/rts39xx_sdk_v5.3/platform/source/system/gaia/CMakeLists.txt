@@ -1,0 +1,31 @@
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+project(gaia)
+
+if (RTS_CHIP_TYPE MATCHES "RTS3917")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wl,--copy-dt-needed-entries -Wl,-rpath-link,${DIR_TMPFS}/lib")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror")
+	if (GAIA_FAST MATCHES "yes")
+		add_definitions(-DSENSOR_SUPPORT="${SENSORS_SUPPORT}")
+		SET(DEPENDENT_LIBRARIES rtstream rtsvideo)
+		add_executable(gaia fast_main.c)
+	else ()
+		SET(DEPENDENT_LIBRARIES rtstream rtsvideo json-c)
+		add_executable(gaia main.c)
+	endif ()
+	target_link_libraries(gaia ${DEPENDENT_LIBRARIES})
+
+	install(TARGETS gaia RUNTIME DESTINATION usr/bin)
+	if (GAIA_FAST MATCHES "yes")
+		install(FILES S00+gaia DESTINATION etc/init.d PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
+			GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+	else ()
+		install(FILES S36gaia DESTINATION etc/init.d PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE
+			GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+
+		install(FILES gaia.json DESTINATION etc PERMISSIONS
+			OWNER_WRITE OWNER_READ GROUP_WRITE WORLD_READ)
+	endif ()
+else ()
+	install(FILES 08_load_firmware DESTINATION etc/preinit PERMISSIONS
+		OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_WRITE GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+endif ()

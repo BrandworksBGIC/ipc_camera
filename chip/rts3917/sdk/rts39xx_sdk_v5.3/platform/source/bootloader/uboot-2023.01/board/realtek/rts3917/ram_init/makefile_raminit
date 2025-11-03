@@ -1,0 +1,91 @@
+INC := ../include -I../arch/arm/include
+LDS := init.lds
+OBJS := init.o ../board/realtek/rlxboard/bsp_init.o dma_copy.o
+#OBJS += ./dma_copy.o
+OBJS += ../board/realtek/rlxboard/dma.o
+
+include ../.config
+
+FLASHBASE ?= 0x19000800
+
+ifdef UBOOT_AS_BL33
+LOADBASE ?= 0x80040000
+else
+LOADBASE ?= 0x82800000
+endif
+
+PTR_COUNT_SHIFT ?=2
+
+CROSS_COMPILE ?= asdk-linux-
+
+CC := $(CROSS_COMPILE)gcc
+LD := $(CROSS_COMPILE)ld
+OBJCPY := $(CROSS_COMPILE)objcopy
+
+
+GCCINC := $(shell $(CC) -print-file-name=include)
+GCCLIB := $(shell dirname `$(CC) -print-libgcc-file-name`)
+ifdef CONFIG_SELF_EXTRACTING
+GENLDSFLAGS := -I$(INC) -DCONFIG_SYS_LOAD_BASE=$(LOADBASE) -DPTR_COUNT_SHIFT=$(PTR_COUNT_SHIFT) -ansi -E -P -
+CFLAGS := -Os -ffunction-sections -fdata-sections -D__KERNEL__ \
+	-DCONFIG_RAM_OFFSET=$(FLASH_VERSION_SIZE) \
+	-DCONFIG_RAM_SIZE=$(RAM_VERSION_SIZE) \
+	-DCONFIG_LOAD_BASE=$(LOADBASE) -I$(INC) -fno-builtin \
+	-ffreestanding -nostdinc -isystem $(GCCINC) -pipe \
+	-std=gnu11 -fshort-wchar -fno-strict-aliasing -fno-PIE \
+	-fno-stack-protector -fno-delete-null-pointer-checks \
+	-fmacro-prefix-map=./= -g -fstack-usage -Wno-format-nonliteral \
+	-Wno-address-of-packed-member -Werror=date-time -D__ARM__ \
+	-marm -mno-thumb-interwork -mabi=aapcs-linux -mword-relocations \
+	-fno-pic -mno-unaligned-access -ffunction-sections -fdata-sections \
+	-fno-common -ffixed-r9 -msoft-float -pipe -march=armv7-a \
+	-D__LINUX_ARM_ARCH__=7 -mtune=generic-armv7-a \
+	-fPIC -EL -Wstrict-prototypes
+
+else
+GENLDSFLAGS := -I$(INC) -DCONFIG_LOAD_BASE=$(LOADBASE) -DPTR_COUNT_SHIFT=$(PTR_COUNT_SHIFT) -ansi -E -P -
+
+CFLAGS := -Os -ffunction-sections -fdata-sections -D__KERNEL__ \
+	-DCONFIG_RAM_OFFSET=$(SYSTEM_INIT_SIZE) \
+	-DCONFIG_RAM_SIZE=$(RAM_VERSION_SIZE) \
+	-DCONFIG_LOAD_BASE=$(LOADBASE) -I$(INC) -fno-builtin \
+	-std=gnu11 -fshort-wchar -fno-strict-aliasing -fno-PIE \
+	-fno-stack-protector -fno-delete-null-pointer-checks \
+	-fmacro-prefix-map=./= -g -fstack-usage -Wno-format-nonliteral \
+	-Wno-address-of-packed-member -Werror=date-time -D__ARM__ \
+	-marm -mno-thumb-interwork -mabi=aapcs-linux -mword-relocations \
+	-fno-pic -mno-unaligned-access -ffunction-sections -fdata-sections \
+	-fno-common -ffixed-r9 -msoft-float -pipe -march=armv7-a \
+	-D__LINUX_ARM_ARCH__=7 -mtune=generic-armv7-a -g -DDEBUG
+endif
+ASFLAGS := $(CFLAGS) -D__ASSEMBLY__
+
+LDFLAGS := -T $(LDS) --gc-sections -pie -Bstatic --no-dynamic-linker \
+	 -Ttext $(FLASHBASE)
+
+OBJFLAGS := --remove-section=.dynsym --gap-fill=0xff -O binary
+
+.PHONY : all
+all : $(LDS) init.bin
+#$(LDS) : include/$(LDS)
+#	$(CC) $(GENLDSFLAGS) < include/$(LDS) > $(LDS)
+#.depend :
+#	$(CC) $(CFLAGS) -MM $(SRC) > .depend
+#-include .depend
+
+dma_copy.o : dma_copy.c
+	$(CC) $(CFLAGS) -c dma_copy.c -o dma_copy.o
+init.o : init.S
+	$(CC) $(ASFLAGS) -c init.S -o init.o
+init : $(OBJS) $(LDS)
+	$(LD) $(LDFLAGS) $(OBJS) -Map init.map -o init
+init.bin : init
+	$(OBJCPY) $(OBJFLAGS) init init.bin
+
+spi_nand.o : spi_nand.S
+	$(CC) $(ASFLAGS) -c spi_nand.S -o spi_nand.o
+
+.PHONY : clean
+clean :
+	rm -f *.o *.su .depend init.map init *.bin
+	rm -f $(OBJS)

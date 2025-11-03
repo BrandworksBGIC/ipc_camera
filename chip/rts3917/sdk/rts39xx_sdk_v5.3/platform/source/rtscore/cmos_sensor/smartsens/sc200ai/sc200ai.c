@@ -1,0 +1,687 @@
+/*
+ * Realtek Semiconductor Corp.
+ * Copyright (C) 2020 Yang Wang <yang_wang@apowertec.com>
+ */
+
+#include <stdio.h>
+#include <rts_isp_sensor.h>
+
+/* #define DEBUG */
+#ifdef DEBUG
+#define debug(fmt, ...) printf(fmt, ##__VA_ARGS__)
+#else
+#define debug(fmt, ...)
+#endif
+
+#define SUPPORTED_ISP_NUM 1
+
+#define ARRAY_SIZE(array) (sizeof(array) / sizeof(array[0]))
+#define abs(x) ((x) >= 0 ? (x) : -(x))
+
+struct fps_info {
+	uint16_t fps;
+	uint16_t hts;
+	uint32_t clk;
+};
+
+struct sc200ai_gain {
+	uint16_t ana_gain;
+	uint16_t fine_gain;
+	float total_gain;
+};
+
+struct sc200ai_status {
+	float exp_step;
+	float last_exposure;
+	uint16_t cur_fps;
+	uint16_t min_vts;
+	struct rts_isp_i2c_reg regs1[3];
+};
+
+static struct sc200ai_status g_status[SUPPORTED_ISP_NUM];
+
+static const struct fps_info g_sc200ai_fps_info[] = {
+	{30, 2200, 74250000},
+};
+
+static struct rts_isp_i2c_reg g_sc200ai_30fps_i2c_init_regs[] = {
+	{0x0103, 0x01}, {0x0100, 0x00}, {0x36e9, 0x80}, {0x36f9, 0x80},
+	{0x301f, 0x1c}, {0x3200, 0x00}, {0x3201, 0x00}, {0x3202, 0x00},
+	{0x3203, 0x00}, {0x3204, 0x07}, {0x3205, 0x8b}, {0x3206, 0x04},
+	{0x3207, 0x43}, {0x3208, 0x07}, {0x3209, 0x88}, {0x320a, 0x04},
+	{0x320b, 0x40}, {0x3210, 0x00}, {0x3211, 0x02}, {0x3212, 0x00},
+	{0x3213, 0x03}, {0x3243, 0x01}, {0x3248, 0x02}, {0x3249, 0x09},
+	{0x3253, 0x08}, {0x3271, 0x0a}, {0x3301, 0x20}, {0x3304, 0x40},
+	{0x3306, 0x32}, {0x330b, 0x88}, {0x330f, 0x02}, {0x331e, 0x39},
+	{0x3333, 0x10}, {0x3621, 0xe8}, {0x3622, 0x16}, {0x3637, 0x1b},
+	{0x363a, 0x1f}, {0x363b, 0xc6}, {0x363c, 0x0e}, {0x3670, 0x0a},
+	{0x3674, 0x82}, {0x3675, 0x76}, {0x3676, 0x78}, {0x367c, 0x48},
+	{0x367d, 0x58}, {0x3690, 0x34}, {0x3691, 0x33}, {0x3692, 0x44},
+	{0x369c, 0x40}, {0x369d, 0x48}, {0x36ea, 0x75}, {0x36eb, 0x0d},
+	{0x36ec, 0x1c}, {0x36ed, 0x24}, {0x36fa, 0x75}, {0x36fb, 0x00},
+	{0x36fc, 0x10}, {0x36fd, 0x37}, {0x3901, 0x02}, {0x3904, 0x04},
+	{0x3908, 0x41}, {0x391d, 0x14}, {0x391f, 0x18}, {0x3e01, 0x8c},
+	{0x3e02, 0x20}, {0x3e16, 0x00}, {0x3e17, 0x80}, {0x3f09, 0x48},
+	{0x5787, 0x10}, {0x5788, 0x06}, {0x578a, 0x10}, {0x578b, 0x06},
+	{0x5790, 0x10}, {0x5791, 0x10}, {0x5792, 0x00}, {0x5793, 0x10},
+	{0x5794, 0x10}, {0x5795, 0x00}, {0x5799, 0x00}, {0x57c7, 0x10},
+	{0x57c8, 0x06}, {0x57ca, 0x10}, {0x57cb, 0x06}, {0x57d1, 0x10},
+	{0x57d4, 0x10}, {0x57d9, 0x00}, {0x59e0, 0x60}, {0x59e1, 0x08},
+	{0x59e2, 0x3f}, {0x59e3, 0x18}, {0x59e4, 0x18}, {0x59e5, 0x3f},
+	{0x59e6, 0x06}, {0x59e7, 0x02}, {0x59e8, 0x38}, {0x59e9, 0x10},
+	{0x59ea, 0x0c}, {0x59eb, 0x10}, {0x59ec, 0x04}, {0x59ed, 0x02},
+	{0x59ee, 0xa0}, {0x59ef, 0x08}, {0x59f4, 0x18}, {0x59f5, 0x10},
+	{0x59f6, 0x0c}, {0x59f7, 0x10}, {0x59f8, 0x06}, {0x59f9, 0x02},
+	{0x59fa, 0x18}, {0x59fb, 0x10}, {0x59fc, 0x0c}, {0x59fd, 0x10},
+	{0x59fe, 0x04}, {0x59ff, 0x02}, {0x36e9, 0x51}, {0x36f9, 0x51},
+	{0x0100, 0x01},
+};
+
+static struct sc200ai_gain gain_mapping[] = {
+	{0x0300, 0x40, 1.000},
+	{0x0300, 0x41, 1.016},
+	{0x0300, 0x42, 1.031},
+	{0x0300, 0x43, 1.047},
+	{0x0300, 0x44, 1.063},
+	{0x0300, 0x45, 1.078},
+	{0x0300, 0x46, 1.094},
+	{0x0300, 0x47, 1.109},
+	{0x0300, 0x48, 1.125},
+	{0x0300, 0x49, 1.141},
+	{0x0300, 0x4a, 1.156},
+	{0x0300, 0x4b, 1.172},
+	{0x0300, 0x4c, 1.188},
+	{0x0300, 0x4d, 1.203},
+	{0x0300, 0x4e, 1.219},
+	{0x0300, 0x4f, 1.234},
+	{0x0300, 0x50, 1.250},
+	{0x0300, 0x51, 1.266},
+	{0x0300, 0x52, 1.281},
+	{0x0300, 0x53, 1.297},
+	{0x0300, 0x54, 1.313},
+	{0x0300, 0x55, 1.328},
+	{0x0300, 0x56, 1.344},
+	{0x0300, 0x57, 1.359},
+	{0x0300, 0x58, 1.375},
+	{0x0300, 0x59, 1.391},
+	{0x0300, 0x5a, 1.406},
+	{0x0300, 0x5b, 1.422},
+	{0x0300, 0x5c, 1.438},
+	{0x0300, 0x5d, 1.453},
+	{0x0300, 0x5e, 1.469},
+	{0x0300, 0x5f, 1.484},
+	{0x0300, 0x60, 1.500},
+	{0x0300, 0x61, 1.516},
+	{0x0300, 0x62, 1.531},
+	{0x0300, 0x63, 1.547},
+	{0x0300, 0x64, 1.563},
+	{0x0300, 0x65, 1.578},
+	{0x0300, 0x66, 1.594},
+	{0x0300, 0x67, 1.609},
+	{0x0300, 0x68, 1.625},
+	{0x0300, 0x69, 1.641},
+	{0x0300, 0x6a, 1.656},
+	{0x0300, 0x6b, 1.672},
+	{0x0300, 0x6c, 1.688},
+	{0x0300, 0x6d, 1.703},
+	{0x0300, 0x6e, 1.719},
+	{0x0300, 0x6f, 1.734},
+	{0x0300, 0x70, 1.750},
+	{0x0300, 0x71, 1.766},
+	{0x0300, 0x72, 1.781},
+	{0x0300, 0x73, 1.797},
+	{0x0300, 0x74, 1.813},
+	{0x0300, 0x75, 1.828},
+	{0x0300, 0x76, 1.844},
+	{0x0300, 0x77, 1.859},
+	{0x0300, 0x78, 1.875},
+	{0x0300, 0x79, 1.891},
+	{0x0300, 0x7a, 1.906},
+	{0x0300, 0x7b, 1.922},
+	{0x0300, 0x7c, 1.938},
+	{0x0300, 0x7d, 1.953},
+	{0x0300, 0x7e, 1.969},
+	{0x0300, 0x7f, 1.984},
+
+	{0x0700, 0x40, 2.000},
+	{0x0700, 0x41, 2.031},
+	{0x0700, 0x42, 2.063},
+	{0x0700, 0x43, 2.094},
+	{0x0700, 0x44, 2.125},
+	{0x0700, 0x45, 2.156},
+	{0x0700, 0x46, 2.188},
+	{0x0700, 0x47, 2.219},
+	{0x0700, 0x48, 2.250},
+	{0x0700, 0x49, 2.281},
+	{0x0700, 0x4a, 2.313},
+	{0x0700, 0x4b, 2.344},
+	{0x0700, 0x4c, 2.375},
+	{0x0700, 0x4d, 2.406},
+	{0x0700, 0x4e, 2.438},
+	{0x0700, 0x4f, 2.469},
+	{0x0700, 0x50, 2.500},
+	{0x0700, 0x51, 2.531},
+	{0x0700, 0x52, 2.563},
+	{0x0700, 0x53, 2.594},
+	{0x0700, 0x54, 2.625},
+	{0x0700, 0x55, 2.656},
+	{0x0700, 0x56, 2.688},
+	{0x0700, 0x57, 2.719},
+	{0x0700, 0x58, 2.750},
+	{0x0700, 0x59, 2.781},
+	{0x0700, 0x5A, 2.813},
+	{0x0700, 0x5B, 2.844},
+	{0x0700, 0x5C, 2.875},
+	{0x0700, 0x5D, 2.906},
+	{0x0700, 0x5E, 2.938},
+	{0x0700, 0x5F, 2.969},
+	{0x0700, 0x60, 3.000},
+	{0x0700, 0x61, 3.031},
+	{0x0700, 0x62, 3.063},
+	{0x0700, 0x63, 3.094},
+	{0x0700, 0x64, 3.125},
+	{0x0700, 0x65, 3.156},
+	{0x0700, 0x66, 3.188},
+	{0x0700, 0x67, 3.219},
+	{0x0700, 0x68, 3.250},
+	{0x0700, 0x69, 3.281},
+	{0x0700, 0x6A, 3.313},
+	{0x0700, 0x6B, 3.344},
+	{0x0700, 0x6C, 3.375},
+
+	{0x2300, 0x40, 3.400},
+	{0x2300, 0x41, 3.453},
+	{0x2300, 0x42, 3.506},
+	{0x2300, 0x43, 3.559},
+	{0x2300, 0x44, 3.613},
+	{0x2300, 0x45, 3.666},
+	{0x2300, 0x46, 3.719},
+	{0x2300, 0x47, 3.772},
+	{0x2300, 0x48, 3.825},
+	{0x2300, 0x49, 3.878},
+	{0x2300, 0x4a, 3.931},
+	{0x2300, 0x4b, 3.984},
+	{0x2300, 0x4c, 4.038},
+	{0x2300, 0x4d, 4.091},
+	{0x2300, 0x4e, 4.144},
+	{0x2300, 0x4f, 4.197},
+	{0x2300, 0x50, 4.250},
+	{0x2300, 0x51, 4.303},
+	{0x2300, 0x52, 4.356},
+	{0x2300, 0x53, 4.409},
+	{0x2300, 0x54, 4.463},
+	{0x2300, 0x55, 4.516},
+	{0x2300, 0x56, 4.569},
+	{0x2300, 0x57, 4.622},
+	{0x2300, 0x58, 4.675},
+	{0x2300, 0x59, 4.728},
+	{0x2300, 0x5a, 4.781},
+	{0x2300, 0x5b, 4.834},
+	{0x2300, 0x5c, 4.888},
+	{0x2300, 0x5d, 4.941},
+	{0x2300, 0x5e, 4.994},
+	{0x2300, 0x5f, 5.047},
+	{0x2300, 0x60, 5.100},
+	{0x2300, 0x61, 5.153},
+	{0x2300, 0x62, 5.206},
+	{0x2300, 0x63, 5.259},
+	{0x2300, 0x64, 5.313},
+	{0x2300, 0x65, 5.366},
+	{0x2300, 0x66, 5.419},
+	{0x2300, 0x67, 5.472},
+	{0x2300, 0x68, 5.525},
+	{0x2300, 0x69, 5.578},
+	{0x2300, 0x6a, 5.631},
+	{0x2300, 0x6b, 5.684},
+	{0x2300, 0x6c, 5.738},
+	{0x2300, 0x6d, 5.791},
+	{0x2300, 0x6e, 5.844},
+	{0x2300, 0x6f, 5.897},
+	{0x2300, 0x70, 5.950},
+	{0x2300, 0x71, 6.003},
+	{0x2300, 0x72, 6.056},
+	{0x2300, 0x73, 6.109},
+	{0x2300, 0x74, 6.163},
+	{0x2300, 0x75, 6.216},
+	{0x2300, 0x76, 6.269},
+	{0x2300, 0x77, 6.322},
+	{0x2300, 0x78, 6.375},
+	{0x2300, 0x79, 6.428},
+	{0x2300, 0x7a, 6.481},
+	{0x2300, 0x7b, 6.534},
+	{0x2300, 0x7c, 6.588},
+	{0x2300, 0x7d, 6.641},
+	{0x2300, 0x7e, 6.694},
+	{0x2300, 0x7f, 6.747},
+
+	{0x2700, 0x40, 6.800},
+	{0x2700, 0x41, 6.906},
+	{0x2700, 0x42, 7.013},
+	{0x2700, 0x43, 7.119},
+	{0x2700, 0x44, 7.225},
+	{0x2700, 0x45, 7.331},
+	{0x2700, 0x46, 7.438},
+	{0x2700, 0x47, 7.544},
+	{0x2700, 0x48, 7.650},
+	{0x2700, 0x49, 7.756},
+	{0x2700, 0x4a, 7.863},
+	{0x2700, 0x4b, 7.969},
+	{0x2700, 0x4c, 8.075},
+	{0x2700, 0x4d, 8.181},
+	{0x2700, 0x4e, 8.288},
+	{0x2700, 0x4f, 8.394},
+	{0x2700, 0x50, 8.500},
+	{0x2700, 0x51, 8.606},
+	{0x2700, 0x52, 8.713},
+	{0x2700, 0x53, 8.819},
+	{0x2700, 0x54, 8.925},
+	{0x2700, 0x55, 9.031},
+	{0x2700, 0x56, 9.138},
+	{0x2700, 0x57, 9.244},
+	{0x2700, 0x58, 9.350},
+	{0x2700, 0x59, 9.456},
+	{0x2700, 0x5a, 9.563},
+	{0x2700, 0x5b, 9.669},
+	{0x2700, 0x5c, 9.775},
+	{0x2700, 0x5d, 9.881},
+	{0x2700, 0x5e, 9.988},
+	{0x2700, 0x5f, 10.094},
+	{0x2700, 0x60, 10.200},
+	{0x2700, 0x61, 10.306},
+	{0x2700, 0x62, 10.413},
+	{0x2700, 0x63, 10.519},
+	{0x2700, 0x64, 10.625},
+	{0x2700, 0x65, 10.731},
+	{0x2700, 0x66, 10.838},
+	{0x2700, 0x67, 10.944},
+	{0x2700, 0x68, 11.050},
+	{0x2700, 0x69, 11.156},
+	{0x2700, 0x6a, 11.263},
+	{0x2700, 0x6b, 11.369},
+	{0x2700, 0x6c, 11.475},
+	{0x2700, 0x6d, 11.581},
+	{0x2700, 0x6e, 11.688},
+	{0x2700, 0x6f, 11.794},
+	{0x2700, 0x70, 11.900},
+	{0x2700, 0x71, 12.006},
+	{0x2700, 0x72, 12.113},
+	{0x2700, 0x73, 12.219},
+	{0x2700, 0x74, 12.325},
+	{0x2700, 0x75, 12.431},
+	{0x2700, 0x76, 12.538},
+	{0x2700, 0x77, 12.644},
+	{0x2700, 0x78, 12.750},
+	{0x2700, 0x79, 12.856},
+	{0x2700, 0x7a, 12.963},
+	{0x2700, 0x7b, 13.069},
+	{0x2700, 0x7c, 13.175},
+	{0x2700, 0x7d, 13.281},
+	{0x2700, 0x7e, 13.388},
+	{0x2700, 0x7f, 13.494},
+
+	{0x2f00, 0x40, 13.600},
+	{0x2f00, 0x41, 13.813},
+	{0x2f00, 0x42, 14.025},
+	{0x2f00, 0x43, 14.238},
+	{0x2f00, 0x44, 14.450},
+	{0x2f00, 0x45, 14.663},
+	{0x2f00, 0x46, 14.875},
+	{0x2f00, 0x47, 15.088},
+	{0x2f00, 0x48, 15.300},
+	{0x2f00, 0x49, 15.513},
+	{0x2f00, 0x4a, 15.725},
+	{0x2f00, 0x4b, 15.938},
+
+	{0x2f00, 0x4c, 16.150},
+	{0x2f00, 0x4d, 16.363},
+	{0x2f00, 0x4e, 16.575},
+	{0x2f00, 0x4f, 16.788},
+	{0x2f00, 0x50, 17.000},
+	{0x2f00, 0x51, 17.213},
+	{0x2f00, 0x52, 17.425},
+	{0x2f00, 0x53, 17.638},
+	{0x2f00, 0x54, 17.850},
+	{0x2f00, 0x55, 18.063},
+	{0x2f00, 0x56, 18.275},
+	{0x2f00, 0x57, 18.488},
+	{0x2f00, 0x58, 18.700},
+	{0x2f00, 0x59, 18.913},
+	{0x2f00, 0x5a, 19.125},
+	{0x2f00, 0x5b, 19.338},
+	{0x2f00, 0x5c, 19.550},
+	{0x2f00, 0x5d, 19.763},
+	{0x2f00, 0x5e, 19.975},
+	{0x2f00, 0x5f, 20.188},
+	{0x2f00, 0x60, 20.400},
+	{0x2f00, 0x61, 20.613},
+	{0x2f00, 0x62, 20.825},
+	{0x2f00, 0x63, 21.038},
+	{0x2f00, 0x64, 21.250},
+	{0x2f00, 0x65, 21.463},
+	{0x2f00, 0x66, 21.675},
+	{0x2f00, 0x67, 21.888},
+	{0x2f00, 0x68, 22.100},
+	{0x2f00, 0x69, 22.313},
+	{0x2f00, 0x6a, 22.525},
+	{0x2f00, 0x6b, 22.738},
+	{0x2f00, 0x6c, 22.950},
+	{0x2f00, 0x6d, 23.163},
+	{0x2f00, 0x6e, 23.375},
+	{0x2f00, 0x6f, 23.588},
+	{0x2f00, 0x70, 23.800},
+	{0x2f00, 0x71, 24.013},
+	{0x2f00, 0x72, 24.225},
+	{0x2f00, 0x73, 24.438},
+	{0x2f00, 0x74, 24.650},
+	{0x2f00, 0x75, 25.863},
+	{0x2f00, 0x76, 25.075},
+	{0x2f00, 0x77, 25.288},
+	{0x2f00, 0x78, 25.500},
+	{0x2f00, 0x79, 25.713},
+	{0x2f00, 0x7a, 25.925},
+	{0x2f00, 0x7b, 26.138},
+	{0x2f00, 0x7c, 26.350},
+	{0x2f00, 0x7d, 26.563},
+	{0x2f00, 0x7e, 26.775},
+	{0x2f00, 0x7f, 26.988},
+
+	{0x3f00, 0x40, 27.200},
+	{0x3f00, 0x41, 27.625},
+	{0x3f00, 0x42, 28.050},
+	{0x3f00, 0x43, 28.475},
+	{0x3f00, 0x44, 28.900},
+	{0x3f00, 0x45, 29.325},
+	{0x3f00, 0x46, 29.750},
+	{0x3f00, 0x47, 30.175},
+	{0x3f00, 0x48, 30.600},
+	{0x3f00, 0x49, 31.025},
+	{0x3f00, 0x4A, 31.450},
+	{0x3f00, 0x4B, 31.875},
+};
+
+static int sc200ai_get_info(uint32_t isp_id, struct rts_isp_sensor_info *info)
+{
+	int i;
+	struct rts_isp_snr_pwr *up = &info->power_up;
+	struct rts_isp_snr_pwr *down = &info->power_down;
+
+	if (isp_id >= SUPPORTED_ISP_NUM || !info)
+		return -RTS_ISP_EINVAL;
+
+	info->modes.mode[0].hdr = RTS_ISP_HDR_NONE;
+	info->modes.mode[0].size.w = 1920;
+	info->modes.mode[0].size.h = 1080;
+	info->modes.mode[0].fps = g_sc200ai_fps_info[0].fps;
+	info->modes.num = 1;
+
+	info->i2c.i2c_id = 0x30;
+	info->i2c.addr_len = 2;
+	info->i2c.data_len = 1;
+
+	i = 0;
+	set_power_item(&up->items[i++], SNR_PWDN_GPIO, GPIO_LOW, 0);
+	set_power_item(&up->items[i++], SNR_RST_GPIO, GPIO_LOW, 0);
+	set_power_item(&up->items[i++], SNR_IO_POWER, PWR_1V8, 1000);
+	set_power_item(&up->items[i++], SNR_CORE_POWER, PWR_1V2, 1000);
+	set_power_item(&up->items[i++], SNR_ANALOG_POWER, PWR_2V8, 3000);
+	set_power_item(&up->items[i++], SNR_RST_GPIO, GPIO_HIGH, 3000);
+	set_power_item(&up->items[i++], SNR_PWDN_GPIO, GPIO_HIGH, 5000);
+	set_power_item(&up->items[i++], SNR_HCLK, CLK_24M, 5000);
+	up->num = i;
+	i = 0;
+	set_power_item(&down->items[i++], SNR_RST_GPIO, 0, 0);
+	set_power_item(&down->items[i++], SNR_HCLK, 0, 0);
+	set_power_item(&down->items[i++], SNR_IO_POWER, 0, 0);
+	set_power_item(&down->items[i++], SNR_CORE_POWER, 0, 0);
+	set_power_item(&down->items[i++], SNR_ANALOG_POWER, 0, 0);
+	down->num = i;
+
+	return RTS_ISP_OK;
+}
+
+static const struct fps_info *sc200ai_get_fps_info(uint16_t fps)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(g_sc200ai_fps_info); i++)
+		if (fps == g_sc200ai_fps_info[i].fps)
+			break;
+	if (i == ARRAY_SIZE(g_sc200ai_fps_info))
+		return NULL;
+
+	return &g_sc200ai_fps_info[i];
+}
+
+static int sc200ai_get_init_info(uint32_t isp_id,
+				 const struct rts_isp_sensor_mode *mode,
+			       struct rts_isp_sensor_init_info *info)
+{
+	const struct fps_info *fps_info;
+	struct sc200ai_status *status;
+	uint16_t half_hts;
+
+	if (isp_id >= SUPPORTED_ISP_NUM || !info)
+		return -RTS_ISP_EINVAL;
+
+	debug("sc200ai get fps %.1f init info\n", mode->fps);
+
+	status = &g_status[isp_id];
+	fps_info = sc200ai_get_fps_info(mode->fps);
+	if (!fps_info)
+		return -RTS_ISP_EINVAL;
+
+	debug("fps: %u, pclk: %u, clk_div: %u, hts: %u\n",
+	      fps_info->fps, fps_info->clk, fps_info->clk_div, fps_info->hts);
+
+	half_hts = (fps_info->hts) / 2;
+	set_init_i2c(&status->regs1[0], 0x320d, half_hts & 0xff);
+	set_init_i2c(&status->regs1[1], 0x320c, half_hts >> 8);
+
+	set_init_i2c_regs(info->sensor_regs[0],
+		g_sc200ai_30fps_i2c_init_regs, 0);
+
+	set_init_i2c_regs(info->sensor_regs[1], status->regs1, 0);
+
+	info->interface.interface = SNR_INTERFACE_MIPI;
+	info->interface.mipi.lanes = MIPI_LANE0 | MIPI_LANE1;
+	info->interface.mipi.hs_term = 0x3;
+	info->interface.type = RAW_SENSOR;
+	info->interface.bit_depth = SNR_10BIT;
+
+	info->size.w = 1928;
+	info->size.h = 1088;
+	info->start.x = 0;
+	info->start.y = 0;
+
+	info->hts = fps_info->hts;
+	info->pclk = fps_info->clk;
+	info->min_vts = status->min_vts = 1125;
+	info->max_vts = 65535;
+
+	status->exp_step = 1e6 * info->hts / info->pclk; /* us */
+	status->cur_fps = mode->fps;
+
+	return RTS_ISP_OK;
+}
+
+static int sc200ai_start(uint32_t isp_id)
+{
+	struct sc200ai_status *status;
+
+	if (isp_id >= SUPPORTED_ISP_NUM)
+		return -RTS_ISP_EINVAL;
+
+	status = &g_status[isp_id];
+
+	status->last_exposure = 0;
+
+	return RTS_ISP_OK;
+}
+
+static uint16_t get_sensor_gain_reg(float fgain)
+{
+	uint16_t reg_value = 0;
+	int i;
+
+	if (fgain >= 15.938) {
+		reg_value = 0x2f4b;
+	} else {
+		for (i = 0; i < ((ARRAY_SIZE(gain_mapping)) - 1); i++) {
+			if ((gain_mapping[i].total_gain <= fgain) &&
+			    (fgain < gain_mapping[i + 1].total_gain)) {
+				reg_value = gain_mapping[i].ana_gain |
+					    gain_mapping[i].fine_gain;
+				break;
+			}
+		}
+	}
+	return reg_value;
+}
+
+static float get_sensor_real_gain(uint16_t reg_value)
+{
+	float gain = 0.0;
+	int i;
+
+	if (reg_value >= 0x2f4b)
+		gain = 15.938;
+	else {
+		for (i = 0; i < ((ARRAY_SIZE(gain_mapping)) - 1); i++) {
+			if (reg_value == (gain_mapping[i].ana_gain |
+			    gain_mapping[i].fine_gain)) {
+				gain = gain_mapping[i].total_gain;
+				break;
+			}
+		}
+	}
+
+	return gain;
+}
+
+static uint32_t clip_d_word(uint32_t current, uint32_t minimum,
+			    uint32_t maximum)
+{
+	if (current > maximum)
+		return maximum;
+	if (current < minimum)
+		return minimum;
+	return current;
+}
+
+static int sc200ai_get_tuned_again(uint32_t isp_id,
+				   float again[RTS_ISP_HDR_CHAN_MAX])
+{
+	int gain_reg;
+
+	if (isp_id >= SUPPORTED_ISP_NUM || !again)
+		return -RTS_ISP_EINVAL;
+
+	gain_reg = get_sensor_gain_reg(again[0]);
+	again[0] = get_sensor_real_gain(gain_reg);
+
+	return RTS_ISP_OK;
+}
+
+static int sc200ai_get_tuned_dgain(uint32_t isp_id,
+				   float dgain[RTS_ISP_HDR_CHAN_MAX])
+{
+	if (isp_id >= SUPPORTED_ISP_NUM || !dgain)
+		return -RTS_ISP_EINVAL;
+
+	dgain[0] = 1.0f;
+
+	return RTS_ISP_OK;
+}
+
+static int sc200ai_get_exposure_gain_info(uint32_t isp_id,
+					const struct rts_isp_sensor_exp_gain *exp_gain,
+					struct rts_isp_sync_regs *regs)
+{
+	int i;
+	int exp_set;
+	uint16_t total_line;
+	uint16_t gain_reg;
+	float exp_reg_value_float;
+	uint32_t exp_reg_value;
+	float gain;
+	struct sc200ai_status *status;
+	struct rts_isp_sync_reg *reg;
+
+	if (isp_id >= SUPPORTED_ISP_NUM || !exp_gain || !regs)
+		return -RTS_ISP_EINVAL;
+
+	status = &g_status[isp_id];
+	gain = exp_gain->analog_gain[0] * exp_gain->digital_gain[0];
+	gain_reg = get_sensor_gain_reg(gain);
+
+	total_line = exp_gain->vts;
+
+	exp_reg_value_float =
+		2.0 * exp_gain->exposure[0] / status->exp_step + 0.5f;
+	exp_reg_value =
+		clip_d_word(exp_reg_value_float, 1, (2 * total_line - 8));
+	exp_reg_value = exp_reg_value << 4;
+
+	total_line = (total_line + 1) / 2 * 2;
+	reg = regs->reg;
+
+	i = 0;
+	set_sync_i2c(&reg[i++], 0x320e, (total_line >> 8));
+	set_sync_i2c(&reg[i++], 0x320f, (total_line & 0xff));
+	exp_set = abs(status->last_exposure - exp_gain->exposure[0]) > 0.001f;
+	if (exp_set) {
+		set_sync_i2c(&reg[i++], 0x3e00, exp_reg_value >> 16);
+		set_sync_i2c(&reg[i++], 0x3e01, (exp_reg_value & 0xff00) >> 8);
+		set_sync_i2c(&reg[i++], 0x3e02, exp_reg_value & 0xff);
+		status->last_exposure = exp_gain->exposure[0];
+	}
+	set_sync_i2c(&reg[i++], 0x3e08, (gain_reg >> 8));
+	set_sync_i2c(&reg[i++], 0x3e09, (gain_reg & 0xff));
+	set_sync_i2c(&reg[i++], 0x3812, 0x00);
+	if (gain >= 30.0f)
+		set_sync_i2c(&reg[i++], 0x5799, 0x07);
+	else if (gain <= 20.0f)
+		set_sync_i2c(&reg[i++], 0x5799, 0x00);
+	set_sync_i2c(&reg[i++], 0x3812, 0x30);
+	regs->num = i;
+
+	return RTS_ISP_OK;
+}
+
+static int sc200ai_check(uint32_t isp_id)
+{
+	int ret;
+	int id;
+	struct rts_isp_i2c_reg reg = {};
+
+	reg.addr = 0x3107;
+	ret = rts_isp_read_sensor_reg(isp_id, &reg);
+	if (ret)
+		return ret;
+	id = reg.data << 8;
+
+	reg.addr = 0x3108;
+	ret = rts_isp_read_sensor_reg(isp_id, &reg);
+	if (ret)
+		return ret;
+	id |= reg.data;
+
+	if (id == 0xcb1c)
+		return RTS_ISP_OK;
+	else
+		return -RTS_ISP_EINVAL;
+}
+
+static const struct rts_isp_sensor_ops sc200ai_ops = {
+	.api_version = SENSOR_API_VERSION,
+	.name = "sc200ai",
+	.get_info = sc200ai_get_info,
+	.get_init_info = sc200ai_get_init_info,
+	.start = sc200ai_start,
+	.get_tuned_again = sc200ai_get_tuned_again,
+	.get_tuned_dgain = sc200ai_get_tuned_dgain,
+	.get_exposure_gain_info = sc200ai_get_exposure_gain_info,
+	.check = sc200ai_check,
+};
+
+RTS_ISP_DEFINE_SENSOR_PLUGIN(sc200ai_ops)

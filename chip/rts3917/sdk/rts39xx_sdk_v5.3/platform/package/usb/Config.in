@@ -1,0 +1,9 @@
+
+menu "Usb packages"
+
+source "$BR2_EXTERNAL_platform_PATH/package/usb/pfigure/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/usb/usb_multi/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/usb/uvca/Config.in"
+
+endmenu
+

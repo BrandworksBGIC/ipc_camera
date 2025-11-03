@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"path": "../../.."
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"apps": "code-text-binary",
+			"rts_udc_pri.h": "c",
+			"rts_udc.h": "c",
+			"gadget.h": "c",
+			"rts_usb_regs.h": "c",
+			"bug.h": "c"
+		}
+	}
+}

@@ -1,0 +1,43 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Copyright (C) 2005, Intec Automation Inc.
+ * Copyright (C) 2014, Freescale Semiconductor, Inc.
+ */
+
+#include <linux/mtd/spi-nor.h>
+
+#include "core.h"
+
+static const struct flash_info puya_nor_parts[] = {
+	/*PUYA*/
+	{ "P25Q64H", INFO(0x856017, 0, 64 * 1024, 128)
+		FLAGS(SPI_NOR_HAS_LOCK | SPI_NOR_QUAD_PP
+			| SPI_NOR_4BIT_BP | SPI_NOR_BP3_SR_BIT6)
+		NO_SFDP_FLAGS(SPI_NOR_DUAL_READ | SPI_NOR_QUAD_READ) },
+	{ "PY25Q64HA", INFO(0x852017, 0, 64 * 1024, 128)
+		FLAGS(SPI_NOR_HAS_LOCK | SPI_NOR_QUAD_PP
+			| SPI_NOR_4BIT_BP | SPI_NOR_BP3_SR_BIT6)
+		NO_SFDP_FLAGS(SPI_NOR_DUAL_READ | SPI_NOR_QUAD_READ) },
+	{ "P25Q128H", INFO(0x856018, 0, 64 * 1024, 256)
+		FLAGS(SPI_NOR_HAS_LOCK | SPI_NOR_QUAD_PP
+			| SPI_NOR_4BIT_BP | SPI_NOR_BP3_SR_BIT6)
+		NO_SFDP_FLAGS(SPI_NOR_DUAL_READ | SPI_NOR_QUAD_READ) },
+	{ "PY25Q128HA", INFO(0x852018, 0, 64 * 1024, 256)
+		FLAGS(SPI_NOR_HAS_LOCK | SPI_NOR_QUAD_PP
+			| SPI_NOR_4BIT_BP | SPI_NOR_BP3_SR_BIT6)
+		NO_SFDP_FLAGS(SPI_NOR_DUAL_READ | SPI_NOR_QUAD_READ) },
+	{ "PY25Q256HB", INFO(0x852019, 0, 64 * 1024, 512)
+		FLAGS(SPI_NOR_HAS_LOCK | SPI_NOR_QUAD_PP
+			| SPI_NOR_4BIT_BP | SPI_NOR_BP3_SR_BIT6)
+		NO_SFDP_FLAGS(SPI_NOR_DUAL_READ | SPI_NOR_QUAD_READ) },
+	{ "PY25Q512HB", INFO(0x85201a, 0, 64 * 1024, 512)
+		FLAGS(SPI_NOR_HAS_LOCK | SPI_NOR_HAS_TB
+			| SPI_NOR_QUAD_PP | SPI_NOR_4BIT_BP)
+		NO_SFDP_FLAGS(SPI_NOR_DUAL_READ | SPI_NOR_QUAD_READ) },
+};
+
+const struct spi_nor_manufacturer spi_nor_puya = {
+	.name = "puya",
+	.parts = puya_nor_parts,
+	.nparts = ARRAY_SIZE(puya_nor_parts),
+};

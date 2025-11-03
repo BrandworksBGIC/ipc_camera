@@ -1,0 +1,8 @@
+config BR2_PACKAGE_KMOD_RTL8761BT
+	bool "Realtek RTL8761aw USB Bluetooth"
+	depends on BR2_LINUX_KERNEL
+	help
+	  realtek rtl8761aw usb bluetooth card driver
+
+comment "kmod_rtl8761aw needs a Linux kernel to be built"
+	depends on !BR2_LINUX_KERNEL

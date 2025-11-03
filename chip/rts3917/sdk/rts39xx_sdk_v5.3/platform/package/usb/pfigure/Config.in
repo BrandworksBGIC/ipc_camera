@@ -1,0 +1,26 @@
+menu "PFigure"
+
+config BR2_PACKAGE_PFIGURE
+	bool "pfigure application"
+	select BR2_PACKAGE_RTSTREAM
+	select BR2_PACKAGE_RTSTREAM_MJPEG
+	select BR2_PACKAGE_JPEG
+	select BR2_PACKAGE_LIBJPEG
+	select BR2_PACKAGE_REALNET
+	default n
+	help
+	  Realtek figure parse
+
+if BR2_PACKAGE_PFIGURE
+
+config BR2_PACKAGE_PFIGURE_PLUGIN_OD
+    bool "plugin od"
+    select BR2_PACKAGE_REALNET
+    select BR2_PACKAGE_REALNET_OD
+    default n
+    help
+        Realtek object detection pfigure plugin
+
+endif
+
+endmenu

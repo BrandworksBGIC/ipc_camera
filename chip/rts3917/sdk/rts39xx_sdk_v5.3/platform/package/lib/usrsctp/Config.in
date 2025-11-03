@@ -1,0 +1,6 @@
+config BR2_PACKAGE_USRSCTP
+	bool "usrsctp"
+	help
+	  This is a userland SCTP stack supporting FreeBSD, OpenBSD, Linux, Mac OS X and Windows.
+
+	  https://github.com/sctplab/usrsctp

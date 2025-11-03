@@ -1,0 +1,10 @@
+menu "Libraries"
+
+source "$BR2_EXTERNAL_platform_PATH/package/lib/libsysconf/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/lib/luaunit/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/lib/libwebsockets3/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/lib/libkcapi1/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/lib/libfsmgr/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/lib/usrsctp/Config.in"
+
+endmenu

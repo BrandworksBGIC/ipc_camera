@@ -1,0 +1,126 @@
+From 726db2e6e373437ee890b6e1179f5373046dd54e Mon Sep 17 00:00:00 2001
+From: caiyi_zhong <caiyi_zhong@realsil.com.cn>
+Date: Wed, 13 Dec 2023 19:27:18 +0800
+Subject: [PATCH] add get unique id command for nor flash
+
+Signed-off-by: caiyi_zhong <caiyi_zhong@realsil.com.cn>
+---
+ include/mtd/mtd-abi.h      |  8 ++++++
+ misc-utils/Makemodule.am   |  4 ++-
+ misc-utils/flash_get_uid.c | 55 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 66 insertions(+), 1 deletion(-)
+ create mode 100644 misc-utils/flash_get_uid.c
+
+diff --git a/include/mtd/mtd-abi.h b/include/mtd/mtd-abi.h
+index a54c386..13d7d3d 100644
+--- a/include/mtd/mtd-abi.h
++++ b/include/mtd/mtd-abi.h
+@@ -146,6 +146,11 @@ struct otp_info {
+ 	__u32 locked;
+ };
+ 
++struct uid_info {
++	__u32 length;
++	__u8 uid[16];
++};
++
+ /*
+  * Note, the following ioctl existed in the past and was removed:
+  * #define MEMSETOOBSEL           _IOW('M', 9, struct nand_oobinfo)
+@@ -204,6 +209,9 @@ struct otp_info {
+ /* Erase a given range of user data (must be in mode %MTD_FILE_MODE_OTP_USER) */
+ #define OTPERASE		_IOW('M', 25, struct otp_info)
+ 
++/* Get flash unique ID */
++#define FLASHUID		_IOR('M', 25, struct uid_info)
++
+ /*
+  * Obsolete legacy interface. Keep it in order not to break userspace
+  * interfaces
+diff --git a/misc-utils/Makemodule.am b/misc-utils/Makemodule.am
+index bc69b1c..724a67c 100644
+--- a/misc-utils/Makemodule.am
++++ b/misc-utils/Makemodule.am
+@@ -36,6 +36,8 @@ flash_otp_erase_SOURCES = misc-utils/flash_otp_erase.c
+ 
+ flash_otp_write_SOURCES = misc-utils/flash_otp_write.c
+ 
++flash_get_uid_SOURCES = misc-utils/flash_get_uid.c
++
+ flashcp_SOURCES = misc-utils/flashcp.c
+ flashcp_LDADD = libmtd.a
+
+ flash_erase_SOURCES = misc-utils/flash_erase.c
+@@ -45,7 +47,7 @@ sbin_PROGRAMS += \
+ 	ftl_format doc_loadbios ftl_check mtd_debug docfdisk \
+ 	serve_image recv_image fectest flash_erase flash_lock \
+ 	flash_unlock flash_otp_info flash_otp_dump flash_otp_lock \
+-	flash_otp_erase flash_otp_write flashcp mtdpart
++	flash_otp_erase flash_otp_write flash_get_uid flashcp mtdpart
+ 
+ MISC_SH = \
+ 	misc-utils/flash_eraseall
+diff --git a/misc-utils/flash_get_uid.c b/misc-utils/flash_get_uid.c
+new file mode 100644
+index 0000000..22a562f
+--- /dev/null
++++ b/misc-utils/flash_get_uid.c
+@@ -0,0 +1,55 @@
++/*
++ * flash_get_uid.c -- erase area of One-Time-Program data
++ */
++
++#define PROGRAM_NAME "flash_get_uid"
++
++#include <stdio.h>
++#include <unistd.h>
++#include <fcntl.h>
++#include <string.h>
++#include <stdlib.h>
++#include <errno.h>
++#include <sys/ioctl.h>
++
++#include <mtd/mtd-user.h>
++#include "common.h"
++
++int main(int argc, char *argv[])
++{
++	int fd, ret, i;
++	struct uid_info uinfo = {0};
++
++	if (argc < 2) {
++		fprintf(stderr, "Usage: %s <device> [length]\n", PROGRAM_NAME);
++		return EINVAL;
++	}
++
++	if (argc >= 3) {
++		uinfo.length = (__u32)strtoul(argv[2], NULL, 0);
++		if (uinfo.length > 16)
++			return EINVAL;
++	} else {
++		uinfo.length = 8;
++	}
++
++	fd = open(argv[1], O_WRONLY);
++	if (fd < 0) {
++		perror(argv[1]);
++		return errno;
++	}
++
++	ret = ioctl(fd, FLASHUID, &uinfo);
++	if (ret < 0) {
++		perror("get flash uid");
++		return errno;
++	}
++
++	printf("UID: ");
++	for (i = 0;i < uinfo.length;i++)
++		printf("%02x", uinfo.uid[i]);
++
++	printf("\n");
++
++	return 0;
++}
+-- 
+2.17.1
+

@@ -1,0 +1,325 @@
+syntax = "proto3";
+
+package isp_algo_param.v2;
+
+enum isp_algo_param_header_value_t {
+  option allow_alias = true;
+  ISP_ALGO_PARAM_HEADER_ZERO = 0;
+  ISP_ALGO_PARAM_HEADER_MAGIC = 0x414C474F;
+  ISP_ALGO_PARAM_HEADER_V1_0 = 0x00010000;
+  ISP_ALGO_PARAM_HEADER_V1_1 = 0x00010001;
+  ISP_ALGO_PARAM_HEADER_V1_2 = 0x00010002;
+  ISP_ALGO_PARAM_HEADER_V1_3 = 0x00010003;
+  ISP_ALGO_PARAM_HEADER_V1_4 = 0x00010004;
+  ISP_ALGO_PARAM_HEADER_V1_5 = 0x00010005;
+  ISP_ALGO_PARAM_HEADER_V1_6 = 0x00010006;
+  ISP_ALGO_PARAM_HEADER_V1_7 = 0x00010007;
+  ISP_ALGO_PARAM_HEADER_V1_8 = 0x00010008;
+  ISP_ALGO_PARAM_HEADER_V1_9 = 0x00010009;
+  ISP_ALGO_PARAM_HEADER_V1_A = 0x0001000a;
+  ISP_ALGO_PARAM_HEADER_VERSION = 0x0001000a;
+}
+
+message isp_algo_param_header_t {
+  isp_algo_param_header_value_t magic = 1;
+  isp_algo_param_header_value_t version = 2;
+}
+
+message isp_algo_param_index_t {
+  repeated uint32 indexes = 1;
+  repeated uint32 indexes0 = 2;
+  repeated uint32 indexes1 = 3;
+}
+
+message isp_algo_param_common_t {
+  string name = 1;
+  isp_algo_param_index_t index = 2;
+}
+
+message isp_algo_param_point_t {
+  uint32 x = 1;
+  uint32 y = 2;
+}
+
+message isp_algo_param_blc_v1_t {
+  isp_algo_param_common_t common = 1;
+}
+
+message isp_algo_param_blc_t {
+  oneof entry {
+    isp_algo_param_blc_v1_t v1 = 1;
+  }
+}
+
+message isp_algo_param_nlsc_v1_t {
+  isp_algo_param_common_t common = 1;
+}
+
+message isp_algo_param_nlsc_t {
+  oneof entry {
+    isp_algo_param_nlsc_v1_t v1 = 1;
+  }
+}
+
+message isp_algo_param_mlsc_v1_t {
+  isp_algo_param_common_t common = 1;
+}
+
+message isp_algo_param_mlsc_t {
+  oneof entry {
+    isp_algo_param_mlsc_v1_t v1 = 1;
+  }
+}
+
+message isp_algo_param_ccm_v1_t {
+  isp_algo_param_common_t common = 1;
+}
+
+message isp_algo_param_ccm_t {
+  oneof entry {
+    isp_algo_param_ccm_v1_t v1 = 1;
+  }
+}
+
+message isp_algo_param_gamma_v1_t {
+  isp_algo_param_common_t common = 1;
+}
+
+message isp_algo_param_gamma_t {
+  oneof entry {
+    isp_algo_param_gamma_v1_t v1 = 1;
+  }
+}
+
+message isp_algo_param_ygc_v1_t {
+  isp_algo_param_common_t common = 1;
+}
+
+message isp_algo_param_ygc_t {
+  oneof entry {
+    isp_algo_param_ygc_v1_t v1 = 1;
+  }
+}
+
+message isp_algo_param_uvtune_v1_t {
+  isp_algo_param_common_t common = 1;
+}
+
+message isp_algo_param_uvtune_t {
+  oneof entry {
+    isp_algo_param_uvtune_v1_t v1 = 1;
+  }
+}
+
+message isp_algo_param_spe_v1_t {
+  isp_algo_param_common_t common = 1;
+}
+
+message isp_algo_param_spe_t {
+  oneof entry {
+    isp_algo_param_spe_v1_t v1 = 1;
+  }
+}
+
+message isp_algo_param_ygamma_v1_t {
+  isp_algo_param_common_t common = 1;
+}
+
+message isp_algo_param_ygamma_t {
+  oneof entry {
+    isp_algo_param_ygamma_v1_t v1 = 1;
+  }
+}
+
+message isp_algo_param_eeh_v1_t {
+  isp_algo_param_common_t common = 1;
+}
+
+message isp_algo_param_eeh_t {
+  oneof entry {
+    isp_algo_param_eeh_v1_t v1 = 1;
+  }
+}
+
+message isp_algo_param_texture_v1_t {
+  isp_algo_param_common_t common = 1;
+  repeated isp_algo_param_common_t nests = 2;
+}
+
+message isp_algo_param_texture_t {
+  oneof entry {
+    isp_algo_param_texture_v1_t v1 = 1;
+  }
+}
+
+enum isp_algo_param_ae_v1_high_light_mode {
+  ISP_PARAM_AE_V1_NON_HIGH_LIGHT = 0;
+  ISP_PARAM_AE_V1_ENTER_HIGH_LIGHT = 1;
+  ISP_PARAM_AE_V1_EXIT_HIGH_LIGHT = 2;
+}
+
+message isp_algo_param_ae_v1_t {
+  isp_algo_param_common_t common = 1;
+  uint32 y_mean = 2;
+  repeated float gain = 3;
+  repeated float exposure = 4;
+  repeated float etgain_ratio = 10;
+  float saturated_ratio = 5;
+  oneof ae_ctrl_force_writable {
+    bool ae_ctrl_force = 6;
+  }
+  uint32 dark_sort_index = 7;
+  uint32 bright_sort_index = 8;
+  uint32 max_et_index = 9;
+  repeated uint32 hdr_mean = 11;
+  repeated float hdr_over_ratio = 12;
+  repeated uint32 hdr_stable_info = 13;
+  repeated float analog_gain = 14;
+  repeated float digital_gain = 15;
+  repeated float isp_hdr_gain = 16;
+  float isp_gain = 17;
+  uint32 ratio_range_index = 18;
+  uint32 roi_y_mean = 19;
+  uint32 non_roi_y_mean = 20;
+  uint32 frame_y_mean = 21;
+  uint32 same_block_num = 22;
+  int32 target_delta = 23;
+  isp_algo_param_ae_v1_high_light_mode high_light_mode = 24;
+  uint32 exp_node_index = 25;
+  uint32 contrast_value = 26;
+  float apex_bv = 27;
+  uint32 apex_y_mean = 28;
+  float f_number = 29;
+  uint32 iso = 30;
+}
+
+message isp_algo_param_ae_t {
+  oneof entry {
+    isp_algo_param_ae_v1_t v1 = 1;
+  }
+}
+
+enum isp_algo_param_awb_v1_mixct_mode {
+  ISP_PARAM_AWB_V1_MIXCT_NONE = 0;
+  ISP_PARAM_AWB_V1_MIXCT_H_CT_MODE = 1;
+  ISP_PARAM_AWB_V1_MIXCT_L_CT_MODE = 2;
+}
+
+message isp_algo_param_awb_v1_t {
+  isp_algo_param_common_t common = 1;
+  isp_algo_param_point_t gray_gain = 2;
+  isp_algo_param_point_t green_gain = 3;
+  isp_algo_param_point_t rough_gain = 4;
+  isp_algo_param_point_t result_gain = 5;
+  uint32 color_temperature = 6;
+  oneof awb_ctrl_force_writable {
+    bool awb_ctrl_force = 7;
+  }
+  isp_algo_param_point_t final_gain = 8;
+  isp_algo_param_point_t gain_adj = 9;
+  uint32 gray_num = 10;
+  uint32 green_num = 11;
+  isp_algo_param_awb_v1_mixct_mode mixct_mode = 12;
+}
+
+message isp_algo_param_awb_t {
+  oneof entry {
+    isp_algo_param_awb_v1_t v1 = 1;
+  }
+}
+
+message isp_algo_param_af_v1_t {
+  isp_algo_param_common_t common = 1;
+  oneof af_ctrl_force_writable {
+    bool af_ctrl_force = 2;
+  }
+  oneof af_traverse_mode_writable {
+    bool af_traverse_mode = 3;
+  }
+  uint32 focus_value = 4;
+  uint32 position = 5;
+  uint32 position_index = 6;
+}
+
+message isp_algo_param_af_t {
+  oneof entry {
+    isp_algo_param_af_v1_t v1 = 1;
+  }
+}
+
+message isp_algo_param_flick_v1_t {
+  isp_algo_param_common_t common = 1;
+  uint32 insert_dummy_line = 2;
+  uint32 cur_freq = 3;
+  oneof flick_ctrl_force_writable {
+    bool flick_ctrl_force = 4;
+  }
+}
+
+message isp_algo_param_flick_t {
+  oneof entry {
+    isp_algo_param_flick_v1_t v1 = 1;
+  }
+}
+
+message isp_algo_param_wdr_v1_t {
+  isp_algo_param_common_t common = 1;
+  uint32 day_night = 2;
+  uint32 low_bound = 3;
+  uint32 wdr_level = 4;
+  oneof wdr_ctrl_force_writable {
+    bool wdr_ctrl_force = 5;
+  }
+  uint32 hist_contrast_origin = 6;
+  uint32 hist_contrast = 7;
+}
+
+message isp_algo_param_wdr_t {
+ oneof entry {
+  isp_algo_param_wdr_v1_t v1 = 1;
+ }
+}
+
+message isp_algo_param_daynight_v1_t {
+  isp_algo_param_common_t common = 1;
+}
+
+message isp_algo_param_daynight_t {
+  oneof entry {
+    isp_algo_param_daynight_v1_t v1 = 1;
+  }
+}
+
+message isp_algo_param_high_temp_v1_t {
+  isp_algo_param_common_t common = 1;
+  bool high_temp_en = 2;
+  uint32 sensor_temperature = 3;
+}
+
+message isp_algo_param_high_temp_t {
+  oneof entry {
+    isp_algo_param_high_temp_v1_t v1 = 1;
+  }
+}
+
+message isp_algo_param_t {
+  isp_algo_param_header_t header = 1;
+  isp_algo_param_blc_t blc = 2;
+  isp_algo_param_nlsc_t nlsc = 3;
+  isp_algo_param_mlsc_t mlsc = 4;
+  isp_algo_param_ccm_t ccm = 5;
+  isp_algo_param_gamma_t gamma = 6;
+  isp_algo_param_ygc_t ygc = 7;
+  isp_algo_param_uvtune_t uvtune = 8;
+  isp_algo_param_spe_t spe = 9;
+  isp_algo_param_ygamma_t ygamma = 10;
+  isp_algo_param_texture_t texture = 11;
+  isp_algo_param_eeh_t eeh = 12;
+  isp_algo_param_ae_t ae = 32;
+  isp_algo_param_awb_t awb = 33;
+  isp_algo_param_af_t af = 34;
+  isp_algo_param_flick_t flick = 35;
+  isp_algo_param_wdr_t wdr = 36;
+  isp_algo_param_daynight_t daynight = 37;
+  isp_algo_param_high_temp_t high_temp = 38;
+}

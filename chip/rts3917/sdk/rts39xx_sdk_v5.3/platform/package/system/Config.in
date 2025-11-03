@@ -1,0 +1,12 @@
+
+menu "System packages"
+
+source "$BR2_EXTERNAL_platform_PATH/package/system/gaia/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/system/rainbow/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/system/otp_mfg/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/system/neuralyzer/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/system/rtskey/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/system/ota_upfw/Config.in"
+
+endmenu
+

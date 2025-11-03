@@ -1,0 +1,8 @@
+config BR2_PACKAGE_HOST_PYTHON3_PYDEVICETREE
+	bool "host python3-pydevicetree"
+	select BR2_PACKAGE_HOST_PYTHON3_PYPARSING
+	help
+	  This is a Python 3 library for parsing, querying, and
+	  modifying Devicetree Source v1 files as described in
+	  the Devicetree Sepecification V0.2.
+

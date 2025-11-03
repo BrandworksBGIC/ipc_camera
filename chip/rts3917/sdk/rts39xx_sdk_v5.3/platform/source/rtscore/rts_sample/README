@@ -1,0 +1,23 @@
+Usage Descriptions of the RealTek RTS3901 Sample Programs
+
+1. Compilation of SDK:
+	1). Compile sdk referring to "IPCAM SDK User Manual", opencore-amr and alsa-lib are essential for audio, so it should be selected;
+		a. Run make config command, select alsa-lib in 'Config Users applications'->'Libraries'->'alsa-lib'
+		b. Select 'Config users applications'->'Libraries'->'opencore-amr' and 'opus' and 'sbc'
+		c. Select 'Config Building Settings'->'Keep unused shared library'
+		d. Run make command
+	2). Copy librt into system if it is not in SDK_ROOT/romfs/lib.
+		cp --no-dereference SDK_ROOT/toolchain/rsdk/lib/librt*.so* SDK_ROOT/romfs/lib/;
+		cp --no-dereference SDK_ROOT/toolchain/rsdk/lib/libubacktrace*.so* SDK_ROOT/romfs/lib/;
+		cp SDK_ROOT/toolchain/rsdk/lib/libuClibc-0.9.33.so SDK_ROOT/romfs/lib/;
+	3). Copy font libary to SDK_ROOT/romfs/etc/
+		cp -f font/*.bin SDK_ROOT/romfs/etc
+	4). Change directory to sdk root directory, run make image command;
+	5). Download compiled image.
+
+2. Compilation of sample
+	1). Export the path of toolchain to system environment variable PATH, replace SDK_ROOT/toolchain/rsdk/bin with the toolchain path on your computer;
+	export PATH=$PATH:SDK_ROOT/toolchain/rsdk/bin
+	2). The sample directory should be put in the same directory as rts_core/include and rts_core/lib;
+	3). replace TMPFS_INCLUDE_PATH and TMPFS_INCLUDE_PATH in Makefile.params with SDK_ROOT/tmpfs/include and SDK_ROOT/tmpfs/lib path on your own computer;
+	4). Run the make command in the sample directory to compile all module samples, run the make command in each module directory to compile the module. run the make clean command to delete the executable files.

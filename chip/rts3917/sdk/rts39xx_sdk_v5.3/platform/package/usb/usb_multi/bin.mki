@@ -1,0 +1,12 @@
+
+USB_MULTI_SITE = $(USB_MULTI_BIN_TARGET)
+
+define USB_MULTI_INSTALL_STAGING_CMDS
+	cp -afrv $(@D)/* $(STAGING_DIR)/
+endef
+
+define USB_MULTI_INSTALL_TARGET_CMDS
+	cp -afrv $(@D)/* $(TARGET_DIR)/
+endef
+
+$(eval $(generic-package))

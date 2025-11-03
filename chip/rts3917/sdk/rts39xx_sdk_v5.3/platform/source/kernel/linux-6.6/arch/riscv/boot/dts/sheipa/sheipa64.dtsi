@@ -1,0 +1,127 @@
+/*
+ * Realtek Semiconductor Corp.
+ *
+ * Device Tree Structure
+ *
+ * Tony Wu (tonywu@realtek.com)
+ */
+
+#include <dt-bindings/interrupt-controller/irq.h>
+
+/ {
+	/* skip 256KB memory occupied by sbi firmware */
+	memory@80040000 {
+		device_type = "memory";
+		reg = <0x0 0x80040000 0x0 0xffc0000>;
+	};
+
+	clocks {
+		soc_clk25mhz: oscillator {
+			compatible = "fixed-clock";
+			clock-output-names = "clk25mhz";
+			clock-frequency = <25000000>;
+			#clock-cells = <0>;
+		};
+	};
+
+	ocp {
+		compatible = "sheipa-bus", "simple-bus";
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+
+		plic0: interrupt-controller@01001000 {
+			compatible = "realtek,plic-1.0.0";
+			reg = <0x0 0x01001000 0x0 0x1000>;
+			interrupt-controller;
+			#interrupt-cells = <1>;
+			riscv,ndev=<31>;
+		};
+
+		uart0: dwapb@60007000 {
+			compatible = "snps,dw-apb-uart";
+			reg = <0x0 0x60007000 0x0 0x100>;
+			reg-shift = <2>;
+			reg-io-width = <1>;
+			clock-frequency = <25000000>;
+		};
+
+		spi0: spi@60009000 {
+			compatible = "realtek,spi-rxi312";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			bus_num = <0>;
+			reg = <0x0 0x60009000 0x0 0x200>,
+				  <0x0 0x20000000 0x0 0x1000000>;
+			clocks = <&soc_clk25mhz>;
+			spi-deactivate-delay = <0>;
+			spi-max-frequency = <25000000>;
+			spi-fifo-size = <64>;
+			flash0: flash@0 {
+				compatible = "mxicy,mx25l12805d", "mxic,m25p80",
+					     "jedec,spi-nor";
+				spi-max-frequency = <25000000>;
+				reg = <0>;
+				mode = <0>;
+				spi-num-slaves = <0>;
+				spi-fifo-size = <64>;
+				spi-baudr-div = <1>;
+				spi-rx-bus-width = <4>;
+				spi-tx-bus-width = <4>;
+
+				partitions {
+					compatible = "fixed-partitions";
+					#address-cells = <1>;
+					#size-cells = <1>;
+					partition@0 {
+						label = "Device tree blob";
+						reg = <0x40000 0xC0000>; /* 256K-1M */
+						read-only;
+					};
+					partition@1 {
+						label = "Kernel image";
+						reg = <0x200000 0x600000>; /* 2-8M */
+						read-only;
+					};
+					partition@2 {
+						label = "Squashfs filesystem";
+						reg = <0x800000 0x700000>; /* 8M-15M */
+						read-only;
+					};
+					partition@3 {
+						label = "jffs2 filesystem";
+						reg = <0xF00000 0x100000>; /* 15M-16M */
+					};
+				};
+			};
+		};
+
+		eth0: rtl8168@70004000 {
+			compatible = "realtek,sheipa-r8168", "realtek,r8168";
+			reg = <0x0 0x70004000 0x0 0x100>;
+			mac-address = "44:77:39:3a:9b:15";
+			dma-noncoherent;
+			status = "disabled";
+		};
+
+		gmac: rtl8139gb@70004000 {
+			compatible = "realtek,8139gb";
+			reg = <0x0 0x70004000 0x0 0x400>;
+			mac-address = "00:81:39:00:00:01";
+			status = "disabled";
+		};
+	};
+
+	pmu {
+		compatible = "riscv,sheipa-pmu";
+		device_type = "pmu";
+	};
+
+/* Create a initramfs region at 0x83000000, and the size is 16MB. */
+	chosen {
+		bootargs = "console=ttyS0,57600 init=/init earlycon=sbi";
+		linux,initrd-start = <0x83000000>;
+		linux,initrd-end   = <0x84000000>;
+		stdout-path = &uart0;
+	};
+};

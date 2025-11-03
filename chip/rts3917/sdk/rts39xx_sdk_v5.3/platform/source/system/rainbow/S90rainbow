@@ -1,0 +1,63 @@
+#!/bin/sh
+
+start_prog(){
+	if [ -f /bin/capture ] && [ -x /bin/rtsrtspd ]; then
+		count=50
+		while  [ $count -gt 0 ]
+		do
+			if [ -c /dev/video51 ]; then
+				let count=-1
+				capture &
+				rtsrtspd &
+			else
+				let count=count-1
+				sleep 0.1s
+			fi
+		done
+		if [ $count == 0 ]; then
+			echo "There is no video devices!"
+		fi
+	fi
+}
+
+stop_prog(){
+	killall capture
+	killall rtsrtspd
+}
+
+restart_prog(){
+	stop_prog
+	sleep 3
+	start_prog
+}
+
+print_usage(){
+	echo "usage: $PN [start | stop | restart]"
+}
+
+PN="$0"
+
+if [ $# -eq 0 ]; then
+	start_prog
+elif [ $# -eq 1 ]; then
+	case $1 in
+		"start"):
+			#echo start
+			start_prog
+			;;
+		"stop"):
+			#echo stop
+			stop_prog
+			;;
+		"restart"):
+			#echo restart
+			restart_prog
+			;;
+		*):
+			print_usage
+			;;
+	esac
+else
+	print_usage
+fi
+unset PN

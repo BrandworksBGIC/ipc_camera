@@ -1,0 +1,10 @@
+Release Date¡G2022/03/16
+
+Release Files¡G
+								1. libAecNs_IPcam.a
+								2. ReleaseNote.txt
+
+Note¡G
+			1. Toolchain = asdk-10.3.1-a7-EL-5.4-g2.35-a32nh-220218
+			2. Compiler option = -O3 or -O2
+			3. Dmem is not used.

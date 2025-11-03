@@ -1,0 +1,8 @@
+config BR2_PACKAGE_KMOD_RTL8188FU
+	bool "Realtek RTL8188F USB WiFi"
+	depends on BR2_LINUX_KERNEL
+	help
+	  realtek rtl8188f usb wifi card driver
+
+comment "kmod_rtl8188fu needs a Linux kernel to be built"
+	depends on !BR2_LINUX_KERNEL

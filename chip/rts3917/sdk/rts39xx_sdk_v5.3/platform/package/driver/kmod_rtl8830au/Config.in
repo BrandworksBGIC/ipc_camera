@@ -1,0 +1,9 @@
+config BR2_PACKAGE_KMOD_RTL8830AU
+	bool "Realtek RTL8830AU USB WiFi"
+	depends on BR2_LINUX_KERNEL
+	help
+	  realtek rtl8830au usb wifi card driver
+
+comment "kmod_rtl8830au needs a Linux kernel to be built"
+	depends on !BR2_LINUX_KERNEL
+

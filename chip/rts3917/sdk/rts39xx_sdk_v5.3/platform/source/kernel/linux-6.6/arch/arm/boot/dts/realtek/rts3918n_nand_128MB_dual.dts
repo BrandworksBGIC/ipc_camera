@@ -1,0 +1,142 @@
+#include "rts3918n.dtsi"
+
+/ {
+	model = "RTS3918N EVB";
+	compatible = "realtek,rts3918n_evb", "realtek,rts3917";
+
+	#address-cells = <1>;
+	#size-cells = <1>;
+	interrupt-parent = <&gic>;
+
+	memory@80000000 {
+		device_type = "memory";
+		reg = <0x80000000 0x8000000>;
+	};
+
+	chosen {
+		bootargs = "console=ttyS1,57600 init=/sbin/init earlyprintk psci=enable ubi.mtd=3 root=ubi0_0 rootfstype=ubifs user_debug=31";
+		stdout-path = &uart1;
+	};
+};
+
+&audio_reserved {
+	alloc-ranges = <0x80d40000 0x72C0000>;
+	size = <0x40000>;
+	no-map;
+};
+
+&video_reserved {
+	compatible = "shared-dma-pool";
+	reusable;
+	size = <0x4800000>;
+	alloc-ranges = <0x80d40000 0x72C0000>;
+	alignment = <0x10000>;
+};
+
+&rtsmem {
+	reserve-size = <0x4000000>;
+};
+
+&spi0 {
+	status = "okay";
+	compatible = "realtek,rts3917-quadspi-nfc";
+	reg = <0x18038000 0x10000>;
+	interrupts =	\
+		<GIC_SPI BSP_IRQ_SPI_NAND IRQ_TYPE_LEVEL_HIGH>;
+	resets = <&sysmem SYS_MEM_SD_NAND_SPIC>;
+	reset-names = "spi-nand-sysmem-up";
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		global@0 {
+			label = "global";
+			reg = <0x000000 0x8000000>;	// nandflash size, 128M
+			type = "nand";
+			sector_size = <0x20000>;
+		};
+
+		partition@0 {
+			label = "boot";
+			reg = <0x000000 0x100000>; // 4*128K for uboot, 2*256K for env
+		};
+
+		partition@100000 {
+			label = "kernel";
+			reg = <0x100000 0x400000>; // 32*128K
+		};
+
+		partition@500000 {
+			label = "rootfs";
+			reg = <0x500000 0x2D00000>; // 360*128K
+
+			fstab {
+				group = "root";
+				dev = "/dev/ubi0_0";
+				mnt_point = "/newroot";
+				fstype = "ubifs";
+				mnt_flags = "ro";
+				fsmgr_flags = "wait,encrypt,verify";
+			};
+		};
+
+		partition@3200000 {
+			label = "kernel_b";
+			reg = <0x3200000 0x400000>; // 32*128K
+		};
+
+		partition@3600000 {
+			label = "rootfs_b";
+			reg = <0x3600000 0x2D00000>; // 360*128K
+		};
+
+		partition@6300000 {
+			label = "logobmp";
+			reg = <0x6300000 0x400000>; // 32*128K
+		};
+
+		partition@6700000 {
+			label = "userdata";
+			reg = <0x6700000 0x1900000>; // 200*128K
+
+			fstab {
+				group = "user";
+				dev = "mtd=7,/dev/ubi1_0";
+				mnt_point = "/usr/conf";
+				fstype = "ubifs";
+				mnt_flags = "rw,sync";
+				fsmgr_flags = "wait,encrypt,verify";
+			};
+		};
+	};
+};
+
+&rts_zoom {
+	status = "okay";
+
+	streams {
+		stream0: stream@0 {
+			fmt = <0x73>;
+			width = <2560>;
+			height = <1440>;
+		};
+		stream1: stream@1 {
+			fmt = <0x03>;
+			width = <640>;
+			height = <360>;
+		};
+		stream2: stream@2 {
+			fmt = <0x0c>;
+			width = <320>;
+			height = <192>;
+		};
+	};
+};
+
+&gpio_ircut {
+	status = "okay";
+};
+
+&gpio_irled {
+	status = "okay";
+};

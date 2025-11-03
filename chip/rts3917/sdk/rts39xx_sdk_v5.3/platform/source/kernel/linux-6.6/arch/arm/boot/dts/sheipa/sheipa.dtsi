@@ -1,0 +1,180 @@
+/*
+ * Realtek Semiconductor Corp.
+ *
+ * Device Tree Structure
+ *
+ * Tony Wu (tonywu@realtek.com)
+ */
+
+#include <dt-bindings/interrupt-controller/irq.h>
+
+/ {
+	model = "Sheipa Platform";
+	compatible = "rtk,sheipa";
+
+	memory@81000000 {
+		device_type = "memory";
+		reg = <0x81000000 0xf000000>;
+	};
+
+	clocks {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		soc_clk25mhz: oscillator1 {
+			compatible = "fixed-clock";
+			clock-output-names = "clk25mhz";
+			clock-frequency = <25000000>;
+			#clock-cells = <0>;
+		};
+		soc_clk40mhz: oscillator2 {
+			compatible = "fixed-clock";
+			clock-output-names = "clk40mhz";
+			clock-frequency = <40000000>;
+			#clock-cells = <0>;
+		};
+	};
+
+	ocp {
+		compatible = "sheipa-bus", "simple-bus";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		spi0: spi@60009000 {
+			compatible = "realtek,spi-rxi312";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			bus_num = <0>;
+			reg = <0x60009000 0x200>,
+				<0x20000000 0x1000000>;
+			interrupts = <GIC_SPI 21 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&soc_clk25mhz>;
+			spi-deactivate-delay = <0>;
+			spi-max-frequency = <25000000>;
+			spi-fifo-size = <64>;
+			flash0: flash@0 {
+				#address-cells = <1>;
+				#size-cells = <1>;
+				compatible = "mxicy,mx25l12805d", "mxic,m25p80",
+					     "jedec,spi-nor";
+				spi-max-frequency = <25000000>;
+				reg = <0>;
+				mode = <0>;
+				spi-num-slaves = <0>;
+				spi-fifo-size = <64>;
+				spi-baudr-div = <1>;
+				spi-rx-bus-width = <4>;
+				spi-tx-bus-width = <4>;
+
+				partitions {
+					compatible = "fixed-partitions";
+					#address-cells = <1>;
+					#size-cells = <1>;
+					partition@0 {
+						label = "Device tree blob";
+						reg = <0x40000 0xC0000>; /* 256K-1M */
+						read-only;
+					};
+					partition@1 {
+						label = "Kernel image";
+						reg = <0x200000 0x600000>; /* 2-8M */
+						read-only;
+					};
+					partition@2 {
+						label = "Squashfs filesystem";
+						reg = <0x800000 0x700000>; /* 8M-15M */
+						read-only;
+					};
+					partition@3 {
+						label = "jffs2 filesystem";
+						reg = <0xF00000 0x100000>; /* 15M-16M */
+					};
+				};
+			};
+		};
+
+		rtc: rtc@6000c000 {
+			compatible = "arm,rtc-pl031", "arm,primecell";
+			reg = <0x6000c000 0x1000>;
+			interrupts = <GIC_SPI 22 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&soc_clk25mhz>;
+			clock-names = "apb_pclk";
+			status = "disabled";
+		};
+
+		uart0: dwapb@60007000 {
+			compatible = "snps,dw-apb-uart";
+			reg = <0x60007000 0x100>;
+			interrupts = <GIC_SPI 23 IRQ_TYPE_LEVEL_HIGH>;
+			reg-shift = <2>;
+			reg-io-width = <1>;
+			clock-frequency = <25000000>;
+		};
+
+		eth0: rtl8168@70004000 {
+			compatible = "realtek,sheipa-r8168", "realtek,r8168";
+			reg = <0x70004000 0x100>;
+			interrupts = <GIC_SPI 46 IRQ_TYPE_LEVEL_HIGH>;
+			mac-address = "44:77:39:3a:9b:15";
+			status = "okay";
+		};
+
+		apbtimer0: dwapb@60006000 {
+			compatible = "snps,dw-apb-timer-sp";
+			reg = <0x60006000 0x14>;
+			interrupts = <GIC_SPI 17 IRQ_TYPE_LEVEL_HIGH>;
+			clock-frequency = <25000000>;
+		};
+
+		apbtimer1: dwapb@60006014 {
+			compatible = "snps,dw-apb-timer-osc";
+			reg = <0x60006014 0x14>;
+			interrupts = <GIC_SPI 18 IRQ_TYPE_LEVEL_HIGH>;
+			clock-frequency = <25000000>;
+		};
+
+		dwc3: dwc3@70100000 {
+			compatible = "snps,dwc3";
+			reg = <0x70100000 0x100000>;
+			interrupts = <GIC_SPI 52 IRQ_TYPE_LEVEL_HIGH>;
+			status = "disabled";
+		};
+
+		gpu: malig310@68200000 {
+			compatible = "arm,mali-midgard";
+			reg = <0x68200000 0x500000>;
+			interrupts = <GIC_SPI 39 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 38 IRQ_TYPE_LEVEL_HIGH>,
+				<GIC_SPI 40 IRQ_TYPE_LEVEL_HIGH>;
+			interrupt-names = "JOB", "MMU", "GPU";
+			clocks = <&soc_clk40mhz>;
+			clock-names = "clk_mali";
+			system-coherency = <31>;  // No coherency
+			status = "disabled";
+		};
+
+		hdmi0: hdmi@69000000 {
+			compatible = "realtek,sheipa-hdmi";
+			reg = <0x69000000 0x60>, <0x69001000 0x300>;
+			interrupts = <GIC_SPI 35 IRQ_TYPE_LEVEL_HIGH>;
+			sheipa,hdmi-res-x = <720>;
+			sheipa,hdmi-res-y = <480>;
+			sheipa,hdmi-bpp = <32>;
+			sheipa,hdmi-mode = <1>;
+			status = "disabled";
+		};
+	};
+
+	firmware {
+		optee {
+			compatible = "linaro,optee-tz";
+			method = "smc";
+		};
+	};
+
+	chosen {
+		bootargs = "console=ttyS0,57600 init=/init earlyprintk psci=enable root=/dev/mtdblock2 rootfstype=squashfs";
+		stdout-path = &uart0;
+	};
+};

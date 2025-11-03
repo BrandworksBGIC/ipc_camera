@@ -1,0 +1,11 @@
+#!/bin/sh
+while [ true ]
+do
+	ntpd -qnx
+	if [ "$?" == "0" ]; then
+		echo "ntpd ok"
+		break
+	fi
+	sleep 2
+done
+/usr/sbin/ntpd -g

@@ -1,0 +1,1 @@
+add_sensor(ov9282)

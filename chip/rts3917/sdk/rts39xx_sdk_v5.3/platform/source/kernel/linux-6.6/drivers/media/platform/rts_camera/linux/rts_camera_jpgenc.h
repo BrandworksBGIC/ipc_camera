@@ -1,0 +1,90 @@
+/* SPDX-License-Identifier: GPL-2.0-only */
+/*
+ * Copyright (c) 2025 Realtek Semiconductor Corp. All rights reserved.
+ *
+ * THIS SOFTWARE IS CONFIDENTIAL AND PROPRIETARY TO REALTEK SEMICONDUCTOR
+ * CORP. DISCLOSURE, REPRODUCTION, REDISTRIBUTION, IN WHOLE OR IN PART, OF
+ * THIS WORK AND ITS DERIVATIVES WITHOUT EXPRESS PERMISSION IS PROHIBITED.
+ *
+ * REALTEK SEMICONDUCTOR CORP. RESERVES THE RIGHT TO UPDATE, MODIFY, OR
+ * DISCONTINUE THIS SOFTWARE AT ANY TIME WITHOUT NOTICE. THIS SOFTWARE IS
+ * PROVIDED BY THE REGENTS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE REGENTS AND CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+#ifndef _U_RTS_CAMERA_JPGENC_H
+#define _U_RTS_CAMERA_JPGENC_H
+
+#include <linux/types.h>
+#include <linux/ioctl.h>
+
+#define RTS_JPG_MAX_NUM		4
+
+enum rtscam_jpg_mode {
+	RTSCAM_JPG_MODE_NORMAL = 0,
+	RTSCAM_JPG_MODE_TRIG,
+	RTSCAM_JPG_MODE_STREAM,
+};
+
+struct rtscam_jpg_cfg {
+	__u8 re; /* 0 disable restart, 1 enable restart */
+	__u8 enc_mode; /* 0 ddr, 1 trig, 2 stream */
+	__u8 yuv_mode; /* 0 yuv420, 1 yuv422 */
+	__u8 vin_chn; /* 0 chn0, 1 chn1 */
+	__u8 rotation; /* 0~7 */
+	__u32 width;
+	__u32 height;
+	__u32 nmcu;
+	__u8 quality;
+	__u8 l2f; /* 0~1, limit to full */
+	__u32 y;
+	__u32 uv;
+	__u8 buf_num;
+};
+
+enum rtscam_jpg_status {
+	RTSCAM_JPG_STATUS_ENC_DONE = 0x1,
+	RTSCAM_JPG_STATUS_BUF_NUM_OVERFLOW = (0x1 << 1),
+	RTSCAM_JPG_STATUS_BUF_LEN_OVERFLOW = (0x1 << 2),
+	RTSCAM_JPG_STATUS_LINE_BUF_OVERFLOW = (0x1 << 3),
+	RTSCAM_JPG_STATUS_VIN_ERROR = (0x1 << 4),
+	RTSCAM_JPG_STATUS_NO_DATA = (0x1 << 5),
+};
+
+struct rtscam_jpg_buf {
+	__u8 ddr_idx; /* ddr index */
+	__u32 ddr_phy; /* ddr addr */
+	__u32 ddr_size; /* ddr size */
+	__u32 ddr_used; /* ddr bytes used */
+	__u32 status; /* status */
+	__u64 time_stamp; /* time stamp */
+};
+
+struct rtscam_jpg_info {
+	__s32 timeout;
+	struct rtscam_jpg_cfg cfg;
+	struct rtscam_jpg_buf buf[RTS_JPG_MAX_NUM];
+};
+
+#define RTSJPGENC_IOC_MAGIC	'j'
+
+#define RTSJPGENC_IOC_SETIME		_IO(RTSJPGENC_IOC_MAGIC, 1)
+#define RTSJPGENC_IOC_GETIMEBUF		_IO(RTSJPGENC_IOC_MAGIC, 2)
+#define RTSJPGENC_IOC_ENC_FRAME		_IOWR(RTSJPGENC_IOC_MAGIC, 3, struct rtscam_jpg_info)
+#define RTSJPGENC_IOC_ENC_STREAM	_IOWR(RTSJPGENC_IOC_MAGIC, 4, struct rtscam_jpg_info)
+#define RTSJPGENC_IOC_ENC_STOP		_IO(RTSJPGENC_IOC_MAGIC, 5)
+#define RTSJPGENC_IOC_QBUF		_IOWR(RTSJPGENC_IOC_MAGIC, 6, struct rtscam_jpg_buf)
+#define RTSJPGENC_IOC_DQBUF		_IOWR(RTSJPGENC_IOC_MAGIC, 7, struct rtscam_jpg_buf)
+
+#define RTSJPGENC_IOC_MAXNR		7
+
+#endif

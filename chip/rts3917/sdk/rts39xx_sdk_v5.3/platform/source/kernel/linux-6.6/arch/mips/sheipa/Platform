@@ -1,0 +1,8 @@
+#
+# RLX Linux Sheipa Platform BSP
+#
+# CONFIG_SHEIPA is set for both SHEIPA_TAROKO and SHEIPA_MIPS
+#
+core-$(CONFIG_SHEIPA)	+= arch/mips/sheipa/
+cflags-$(CONFIG_SHEIPA)	+= -I$(srctree)/arch/mips/sheipa
+load-$(CONFIG_SHEIPA)	= 0xffffffff80010000

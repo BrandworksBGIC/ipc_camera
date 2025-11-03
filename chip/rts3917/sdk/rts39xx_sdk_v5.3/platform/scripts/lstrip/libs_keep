@@ -1,0 +1,4 @@
+TARGET_DIR/lib/rtsisp/algos/librts_algo_ae.so
+TARGET_DIR/lib/rtsisp/algos/librts_algo_af.so
+TARGET_DIR/lib/rtsisp/algos/librts_algo_awb.so
+TARGET_DIR/lib/rtsisp/algos/librts_algo_other.so

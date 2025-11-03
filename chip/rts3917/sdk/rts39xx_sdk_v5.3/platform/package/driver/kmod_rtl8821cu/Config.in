@@ -1,0 +1,8 @@
+config BR2_PACKAGE_KMOD_RTL8821CU
+	bool "Realtek RTL8821C&RTL8811C USB WiFi"
+	depends on BR2_LINUX_KERNEL
+	help
+	  realtek rtl8821c&rtl8811cu usb wifi card driver
+
+comment "kmod_rtl8821c needs a Linux kernel to be built"
+	depends on !BR2_LINUX_KERNEL

@@ -1,0 +1,35 @@
+menu "RTS Core Libraries"
+
+source "$BR2_EXTERNAL_platform_PATH/package/rtscore/isp_algo/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/rtscore/cmos_sensor/Config.in"
+
+source "$BR2_EXTERNAL_platform_PATH/package/rtscore/rtstream/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/rtscore/librtsio/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/rtscore/librtscrypt/Config.in"
+
+config BR2_PACKAGE_3RDPARTY
+	tristate "3rdparty"
+	default n
+	help
+	  Binary libraries from 3td party
+
+if BR2_PACKAGE_3RDPARTY
+endif
+
+source "$BR2_EXTERNAL_platform_PATH/package/rtscore/rts_sample/Config.in"
+
+
+config BR2_PACKAGE_NNSOLU
+	tristate "NN Solution"
+	default n
+	help
+	  NN Solution packages
+
+if BR2_PACKAGE_NNSOLU
+endif
+
+source "$BR2_EXTERNAL_platform_PATH/package/rtscore/cv_app/Config.in"
+
+
+endmenu
+

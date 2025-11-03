@@ -1,0 +1,1 @@
+add_sensor(sc2331_mipi)

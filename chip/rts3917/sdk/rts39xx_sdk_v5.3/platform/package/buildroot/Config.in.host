@@ -1,0 +1,4 @@
+source "$BR2_EXTERNAL_platform_PATH/package/buildroot/python3-pycryptodomex/Config.in.host"
+source "$BR2_EXTERNAL_platform_PATH/package/buildroot/python3-pyparsing/Config.in.host"
+source "$BR2_EXTERNAL_platform_PATH/package/buildroot/python3-pydevicetree/Config.in.host"
+source "$BR2_EXTERNAL_platform_PATH/package/buildroot/cpio/Config.in.host"

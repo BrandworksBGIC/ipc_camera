@@ -1,0 +1,5 @@
+config BR2_PACKAGE_LIBFSMGR
+	bool "libfsmgr"
+	default n
+	select BR2_PACKAGE_LIBKCAPI1
+	select BR2_PACKAGE_MTD

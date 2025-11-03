@@ -1,0 +1,24 @@
+diff -Naur flashbench-2e30b1968a66147412f21002ea844122a0d5e2f0/dev.c flashbench-2e30b1968a66147412f21002ea844122a0d5e2f0-m/dev.c
+--- flashbench-2e30b1968a66147412f21002ea844122a0d5e2f0/dev.c	2012-06-06 11:50:07.000000000 +0800
++++ flashbench-2e30b1968a66147412f21002ea844122a0d5e2f0-m/dev.c	2023-08-22 15:29:58.100757585 +0800
+@@ -22,7 +22,7 @@
+ 
+ #include "dev.h"
+ 
+-#define MAX_BUFSIZE (64 * 1024 * 1024)
++#define MAX_BUFSIZE (16 * 1024 * 1024)
+ 
+ static inline long long time_to_ns(struct timespec *ts)
+ {
+diff -Naur flashbench-2e30b1968a66147412f21002ea844122a0d5e2f0/flashbench.c flashbench-2e30b1968a66147412f21002ea844122a0d5e2f0-m/flashbench.c
+--- flashbench-2e30b1968a66147412f21002ea844122a0d5e2f0/flashbench.c	2012-06-06 11:50:07.000000000 +0800
++++ flashbench-2e30b1968a66147412f21002ea844122a0d5e2f0-m/flashbench.c	2023-08-22 15:31:45.878233942 +0800
+@@ -76,7 +76,7 @@
+ 	if (ns < 1000)
+ 		snprintf(out, 8, "%lldns", ns);
+ 	else if (ns < 1000 * 1000)
+-		snprintf(out, 8, "%.3gµs", ns / 1000.0);
++		snprintf(out, 8, "%.3gus", ns / 1000.0);
+ 	else if (ns < 1000 * 1000 * 1000)
+ 		snprintf(out, 8, "%.3gms", ns / 1000000.0);
+ 	else {

@@ -1,0 +1,1 @@
+add_sensor(gc4023_mipi)

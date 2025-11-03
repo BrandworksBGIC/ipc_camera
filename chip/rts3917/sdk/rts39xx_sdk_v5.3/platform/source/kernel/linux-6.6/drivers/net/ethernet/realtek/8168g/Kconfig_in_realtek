@@ -1,0 +1,10 @@
+config 8168G
+	tristate "Sheipa Platform RTL8168G Gigabit Ethernet driver"
+	select MII
+	select CRC32
+	depends on NETDEVICES
+	help
+	  This is a driver for the Fast Ethernet network cards based on
+          the RTL8168G chips in Sheipa platform.
+
+

@@ -1,0 +1,1182 @@
+syntax = "proto3";
+
+package isp_iq_table.v2;
+
+enum isp_iq_header_value_t {
+  option allow_alias = true;
+  ISP_IQ_HEADER_ZERO = 0;
+  ISP_IQ_HEADER_MAGIC = 0x49515442;
+  ISP_IQ_HEADER_V1_0 = 0x00010000;
+  ISP_IQ_HEADER_V1_1 = 0x00010001;
+  ISP_IQ_HEADER_V1_2 = 0x00010002;
+  ISP_IQ_HEADER_V1_3 = 0x00010003;
+  ISP_IQ_HEADER_V1_4 = 0x00010004;
+  ISP_IQ_HEADER_V1_5 = 0x00010005;
+  ISP_IQ_HEADER_V1_6 = 0x00010006;
+  ISP_IQ_HEADER_V1_7 = 0x00010007;
+  ISP_IQ_HEADER_V1_8 = 0x00010008;
+  ISP_IQ_HEADER_V1_9 = 0x00010009;
+  ISP_IQ_HEADER_V1_A = 0x0001000a;
+  ISP_IQ_HEADER_V1_B = 0x0001000b;
+  ISP_IQ_HEADER_V1_C = 0x0001000c;
+  ISP_IQ_HEADER_V1_D = 0x0001000d;
+  ISP_IQ_HEADER_V1_E = 0x0001000e;
+  ISP_IQ_HEADER_V1_F = 0x0001000f;
+  ISP_IQ_HEADER_VERSION = 0x0001000f;
+}
+
+message isp_iq_header_t {
+  isp_iq_header_value_t magic = 1;
+  isp_iq_header_value_t version = 2;
+}
+
+enum isp_iq_mode_t {
+  ISP_IQ_MODE_LINEAR = 0;
+  ISP_IQ_MODE_HDR_LINE_2TO1 = 0x10;
+}
+
+enum isp_iq_scene_t {
+	ISP_IQ_SCENE_NORMAL = 0;
+	ISP_IQ_SCENE_HIGH_TEMP = 1;
+	ISP_IQ_SCENE_OUTDOOR = 2;
+	ISP_IQ_SCENE_BACKLIGHTING = 3;
+	ISP_IQ_SCENE_HUMAN = 4;
+	ISP_IQ_SCENE_FOGGY = 5;
+	ISP_IQ_SCENE_SNOWING = 6;
+	ISP_IQ_SCENE_SKY = 7;
+	ISP_IQ_SCENE_GRASS = 8;
+	ISP_IQ_SCENE_DAWN = 9;
+	ISP_IQ_SCENE_DUSK = 10;
+	ISP_IQ_SCENE_NIGHT = 11;
+	ISP_IQ_SCENE_CUSTOM0 = 256;
+	ISP_IQ_SCENE_CUSTOM1 = 257;
+	ISP_IQ_SCENE_CUSTOM2 = 258;
+	ISP_IQ_SCENE_CUSTOM3 = 259;
+	ISP_IQ_SCENE_CUSTOM4 = 260;
+	ISP_IQ_SCENE_CUSTOM5 = 261;
+	ISP_IQ_SCENE_CUSTOM6 = 262;
+	ISP_IQ_SCENE_CUSTOM7 = 263;
+}
+
+message isp_iq_desc_t {
+  string name = 1;
+  isp_iq_mode_t mode = 2;
+  isp_iq_scene_t scene = 3;
+}
+
+enum isp_iq_bound_type_t {
+  ISP_IQ_BOUND_EXP0_INTP = 0x00;
+  ISP_IQ_BOUND_EXP1_INTP = 0x01;
+  ISP_IQ_BOUND_EXP2_INTP = 0x02;
+  ISP_IQ_BOUND_EXP3_INTP = 0x03;
+
+  ISP_IQ_BOUND_EXP0_GRP = 0x10;
+  ISP_IQ_BOUND_EXP1_GRP = 0x11;
+  ISP_IQ_BOUND_EXP2_GRP = 0x12;
+  ISP_IQ_BOUND_EXP3_GRP = 0x13;
+
+  ISP_IQ_BOUND_GAIN0_INTP = 0x20;
+  ISP_IQ_BOUND_GAIN1_INTP = 0x21;
+  ISP_IQ_BOUND_GAIN2_INTP = 0x22;
+  ISP_IQ_BOUND_GAIN3_INTP = 0x23;
+
+  ISP_IQ_BOUND_GAIN0_GRP = 0x30;
+  ISP_IQ_BOUND_GAIN1_GRP = 0x31;
+  ISP_IQ_BOUND_GAIN2_GRP = 0x32;
+  ISP_IQ_BOUND_GAIN3_GRP = 0x33;
+
+  ISP_IQ_BOUND_EXP_GAIN0_INTP = 0x40;
+  ISP_IQ_BOUND_EXP_GAIN1_INTP = 0x41;
+  ISP_IQ_BOUND_EXP_GAIN2_INTP = 0x42;
+  ISP_IQ_BOUND_EXP_GAIN3_INTP = 0x43;
+
+  ISP_IQ_BOUND_EXP_GAIN0_GRP = 0x50;
+  ISP_IQ_BOUND_EXP_GAIN1_GRP = 0x51;
+  ISP_IQ_BOUND_EXP_GAIN2_GRP = 0x52;
+  ISP_IQ_BOUND_EXP_GAIN3_GRP = 0x53;
+
+  ISP_IQ_BOUND_RATIO_INTP = 0x60;
+  ISP_IQ_BOUND_RATIO0_INTP = 0x61;
+  ISP_IQ_BOUND_RATIO1_INTP = 0x62;
+  ISP_IQ_BOUND_RATIO2_INTP = 0x63;
+
+  ISP_IQ_BOUND_RATIO_GRP = 0x70;
+  ISP_IQ_BOUND_RATIO0_GRP = 0x71;
+  ISP_IQ_BOUND_RATIO1_GRP = 0x72;
+  ISP_IQ_BOUND_RATIO2_GRP = 0x73;
+
+  ISP_IQ_BOUND_SNR_GAIN0_INTP = 0x80;
+  ISP_IQ_BOUND_SNR_GAIN1_INTP = 0x81;
+  ISP_IQ_BOUND_SNR_GAIN2_INTP = 0x82;
+  ISP_IQ_BOUND_SNR_GAIN3_INTP = 0x83;
+
+  ISP_IQ_BOUND_SNR_GAIN0_GRP = 0x90;
+  ISP_IQ_BOUND_SNR_GAIN1_GRP = 0x91;
+  ISP_IQ_BOUND_SNR_GAIN2_GRP = 0x92;
+  ISP_IQ_BOUND_SNR_GAIN3_GRP = 0x93;
+
+  ISP_IQ_BOUND_COLOR_TEMP_INTP = 0xA0;
+  ISP_IQ_BOUND_COLOR_TEMP_GRP = 0xB0;
+
+  ISP_IQ_BOUND_HIGH_TEMP_INTP = 0xC0;
+  ISP_IQ_BOUND_HIGH_TEMP_GRP = 0xD0;
+
+  ISP_IQ_BOUND_CONTRAST_INTP = 0xE0;
+  ISP_IQ_BOUND_CONTRAST_GRP = 0xF0;
+
+  ISP_IQ_BOUND_APEX_BV_INTP = 0x100;
+  ISP_IQ_BOUND_APEX_BV_GRP = 0x110;
+}
+
+message isp_iq_bound_t {
+  sint32 th0 = 1; /* normal bound th or hysteresis bound higher th */
+  sint32 th1 = 2; /* hysteresis bound lower th */
+}
+
+message isp_iq_bounds_t {
+  bool enable = 1;
+  uint32 def_index = 2;
+  isp_iq_bound_type_t type = 3;
+  repeated isp_iq_bound_t bounds = 4;
+}
+
+message isp_iq_intp_bounds_t {
+  uint32 def_index = 1;
+  repeated sint32 bounds = 2;
+}
+
+message isp_iq_group_bound_t {
+  sint32 enter_th = 1;
+  sint32 exit_th = 2;
+}
+
+message isp_iq_group_bounds_t {
+  uint32 def_index = 1;
+  repeated isp_iq_group_bound_t bounds = 2;
+}
+
+message isp_iq_point_t {
+  sint32 x = 1;
+  sint32 y = 2;
+}
+
+message isp_iq_range_t {
+  sint32 min = 1;
+  sint32 max = 2;
+}
+
+message isp_iq_blc_v1_dyn_item_t {
+  repeated uint32 r = 1;
+  repeated uint32 gr = 2;
+  repeated uint32 gb = 3;
+  repeated uint32 b = 4;
+}
+
+message isp_iq_blc_v1_dyn_t {
+  isp_iq_bounds_t bounds = 1;
+  repeated isp_iq_blc_v1_dyn_item_t items = 2;
+}
+
+message isp_iq_blc_v1_dyn_nest_t {
+  isp_iq_bounds_t bounds = 1;
+  repeated isp_iq_blc_v1_dyn_t dyns = 2;
+}
+
+message isp_iq_blc_v1_dynamic_t {
+  isp_iq_blc_v1_dyn_nest_t nest = 1;
+}
+
+message isp_iq_blc_v1_t {
+  isp_iq_blc_v1_dynamic_t dynamic = 2;
+};
+
+message isp_iq_blc_t {
+  isp_iq_desc_t desc = 1;
+  oneof entry {
+    isp_iq_blc_v1_t v1 = 2;
+  }
+}
+
+message isp_iq_blc_entries_t {
+  repeated isp_iq_blc_t entries = 1;
+}
+
+message isp_iq_nlsc_v1_common_item_t {
+  repeated uint32 r_curve = 1;
+  repeated uint32 g_curve = 2;
+  repeated uint32 b_curve = 3;
+  isp_iq_point_t r_center = 4;
+  isp_iq_point_t g_center = 5;
+  isp_iq_point_t b_center = 6;
+  uint32 step = 7;
+}
+
+message isp_iq_nlsc_v1_common_t {
+  isp_iq_nlsc_v1_common_item_t item = 1;
+}
+
+message isp_iq_nlsc_v1_dyn_item_t {
+  uint32 r = 1;
+  uint32 g = 2;
+  uint32 b = 3;
+}
+
+message isp_iq_nlsc_v1_dyn_t {
+  isp_iq_bounds_t bounds = 1;
+  repeated isp_iq_nlsc_v1_dyn_item_t items = 2;
+}
+
+message isp_iq_nlsc_v1_dyn_config_t {
+  isp_iq_bound_t en_thd = 1; /* 0 to 1000 */
+}
+
+message isp_iq_nlsc_v1_dyn_nest_t {
+  isp_iq_bounds_t bounds = 1;
+  repeated isp_iq_nlsc_v1_dyn_t dyns = 2;
+}
+
+message isp_iq_nlsc_v1_dynamic_t {
+  isp_iq_nlsc_v1_dyn_nest_t nest = 1;
+  isp_iq_nlsc_v1_dyn_config_t config = 2;
+}
+
+message isp_iq_nlsc_v1_t {
+  isp_iq_nlsc_v1_common_t common = 1;
+  isp_iq_nlsc_v1_dynamic_t dynamic = 2;
+};
+
+message isp_iq_nlsc_t {
+  isp_iq_desc_t desc = 1;
+  oneof entry {
+    isp_iq_nlsc_v1_t v1 = 2;
+  }
+}
+
+message isp_iq_nlsc_entries_t {
+  repeated isp_iq_nlsc_t entries = 1;
+}
+
+message isp_iq_mlsc_v1_common_item_t {
+  uint32 mode = 1;
+  repeated uint32 matrix_r = 2;
+  repeated uint32 matrix_g = 3;
+  repeated uint32 matrix_b = 4;
+}
+
+message isp_iq_mlsc_v1_common_t {
+  isp_iq_mlsc_v1_common_item_t item = 1;
+}
+
+message isp_iq_mlsc_v1_t {
+  isp_iq_mlsc_v1_common_t common = 1;
+};
+
+message isp_iq_mlsc_t {
+  isp_iq_desc_t desc = 1;
+  oneof entry {
+    isp_iq_mlsc_v1_t v1 = 2;
+  }
+}
+
+message isp_iq_mlsc_entries_t {
+  repeated isp_iq_mlsc_t entries = 1;
+}
+
+message isp_iq_ccm_v1_dyn_item_t {
+  repeated sint32 ccm = 1;
+}
+
+message isp_iq_ccm_v1_dyn_t {
+  isp_iq_bounds_t bounds = 1;
+  repeated isp_iq_ccm_v1_dyn_item_t items = 2;
+}
+
+message isp_iq_ccm_v1_dyn_nest_t {
+  isp_iq_bounds_t bounds = 1;
+  repeated isp_iq_ccm_v1_dyn_t dyns = 2;
+}
+
+message isp_iq_ccm_v1_dynamic_t {
+  isp_iq_ccm_v1_dyn_nest_t nest = 1;
+}
+
+message isp_iq_ccm_v1_t {
+  isp_iq_ccm_v1_dynamic_t dynamic = 2;
+};
+
+message isp_iq_ccm_t {
+  isp_iq_desc_t desc = 1;
+  oneof entry {
+    isp_iq_ccm_v1_t v1 = 2;
+  }
+}
+
+message isp_iq_ccm_entries_t {
+  repeated isp_iq_ccm_t entries = 1;
+}
+
+message isp_iq_gamma_v1_dyn_item_t {
+  repeated uint32 curve = 1;
+  repeated uint32 offsets = 2; /* [low_offset, high_offset] */
+}
+
+message isp_iq_gamma_v1_dyn_t {
+  isp_iq_bounds_t bounds = 1;
+  repeated isp_iq_gamma_v1_dyn_item_t items = 2;
+}
+
+message isp_iq_gamma_v1_dyn_nest_t {
+  isp_iq_bounds_t bounds = 1;
+  repeated isp_iq_gamma_v1_dyn_t dyns = 2;
+}
+
+message isp_iq_gamma_v1_dynamic_t {
+  isp_iq_gamma_v1_dyn_nest_t nest = 1;
+}
+
+message isp_iq_gamma_v1_t {
+  isp_iq_gamma_v1_dynamic_t dynamic = 2;
+};
+
+message isp_iq_gamma_t {
+  isp_iq_desc_t desc = 1;
+  oneof entry {
+    isp_iq_gamma_v1_t v1 = 2;
+  }
+}
+
+message isp_iq_gamma_entries_t {
+  repeated isp_iq_gamma_t entries = 1;
+}
+
+message isp_iq_ygc_v1_dyn_item_t {
+  repeated uint32 curve = 1;
+  repeated uint32 offsets = 2; /* [low_offset, high_offset] */
+}
+
+message isp_iq_ygc_v1_dyn_t {
+  isp_iq_bounds_t bounds = 1;
+  repeated isp_iq_ygc_v1_dyn_item_t items = 2;
+}
+
+message isp_iq_ygc_v1_dyn_nest_t {
+  isp_iq_bounds_t bounds = 1;
+  repeated isp_iq_ygc_v1_dyn_t dyns = 2;
+}
+
+message isp_iq_ygc_v1_dynamic_t {
+  isp_iq_ygc_v1_dyn_nest_t nest = 1;
+}
+
+message isp_iq_ygc_v1_t {
+  isp_iq_ygc_v1_dynamic_t dynamic = 2;
+};
+
+message isp_iq_ygc_t {
+  isp_iq_desc_t desc = 1;
+  oneof entry {
+    isp_iq_ygc_v1_t v1 = 2;
+  }
+}
+
+message isp_iq_ygc_entries_t {
+  repeated isp_iq_ygc_t entries = 1;
+}
+
+message isp_iq_uvtune_v1_index_t {
+  uint32 y_index = 1;
+  uint32 uv_index = 2;
+}
+
+message isp_iq_uvtune_v1_value_t {
+  repeated sint32 mats = 1;
+  repeated uint32 thds = 2;
+}
+
+message isp_iq_uvtune_v1_dyn_item_t {
+  repeated isp_iq_uvtune_v1_value_t values = 1;
+  repeated uint32 suppress = 2;
+}
+
+message isp_iq_uvtune_v1_dyn_t {
+  isp_iq_bounds_t bounds = 1;
+  repeated isp_iq_uvtune_v1_dyn_item_t items = 2;
+}
+
+message isp_iq_uvtune_v1_dyn_nest_t {
+  isp_iq_bounds_t bounds = 1;
+  repeated isp_iq_uvtune_v1_index_t indexes = 3;
+  repeated isp_iq_uvtune_v1_dyn_t dyns = 2;
+}
+
+message isp_iq_uvtune_v1_dynamic_t {
+  isp_iq_uvtune_v1_dyn_nest_t nest = 1;
+}
+
+message isp_iq_uvtune_v1_t {
+  isp_iq_uvtune_v1_dynamic_t dynamic = 2;
+};
+
+message isp_iq_uvtune_t {
+  isp_iq_desc_t desc = 1;
+  oneof entry {
+    isp_iq_uvtune_v1_t v1 = 2;
+  }
+}
+
+message isp_iq_uvtune_entries_t {
+  repeated isp_iq_uvtune_t entries = 1;
+}
+
+message isp_iq_spe_v1_dyn_item_t {
+  sint32 u = 1;
+  sint32 v = 2;
+}
+
+message isp_iq_spe_v1_dyn_t {
+  isp_iq_bounds_t bounds = 1;
+  repeated isp_iq_spe_v1_dyn_item_t items = 2;
+}
+
+message isp_iq_spe_v1_dyn_nest_t {
+  isp_iq_bounds_t bounds = 1;
+  repeated isp_iq_spe_v1_dyn_t dyns = 2;
+}
+
+message isp_iq_spe_v1_dynamic_t {
+  isp_iq_spe_v1_dyn_nest_t nest = 1;
+}
+
+message isp_iq_spe_v1_t {
+  isp_iq_spe_v1_dynamic_t dynamic = 2;
+};
+
+message isp_iq_spe_t {
+  isp_iq_desc_t desc = 1;
+  oneof entry {
+    isp_iq_spe_v1_t v1 = 2;
+  }
+}
+
+message isp_iq_spe_entries_t {
+  repeated isp_iq_spe_t entries = 1;
+}
+
+message isp_iq_ygamma_v1_dyn_item_t {
+  repeated uint32 curve = 1;
+}
+
+message isp_iq_ygamma_v1_dyn_t {
+  isp_iq_bounds_t bounds = 1;
+  repeated isp_iq_ygamma_v1_dyn_item_t items = 2;
+}
+
+message isp_iq_ygamma_v1_dyn_nest_t {
+  isp_iq_bounds_t bounds = 1;
+  repeated isp_iq_ygamma_v1_dyn_t dyns = 2;
+}
+
+message isp_iq_ygamma_v1_dynamic_t {
+  isp_iq_ygamma_v1_dyn_nest_t nest = 1;
+}
+
+message isp_iq_ygamma_v1_t {
+  isp_iq_ygamma_v1_dynamic_t dynamic = 2;
+};
+
+message isp_iq_ygamma_t {
+  isp_iq_desc_t desc = 1;
+  oneof entry {
+    isp_iq_ygamma_v1_t v1 = 2;
+  }
+}
+
+message isp_iq_ygamma_entries_t {
+  repeated isp_iq_ygamma_t entries = 1;
+}
+
+message isp_iq_eeh_v1_point_t {
+  uint32 ratio = 1;
+  uint32 thd0 = 2;
+  uint32 thd1 = 3;
+}
+
+message isp_iq_eeh_v1_dyn_item_t {
+  repeated isp_iq_eeh_v1_point_t pts = 1;
+}
+
+message isp_iq_eeh_v1_dyn_t {
+  isp_iq_bounds_t bounds = 1;
+  repeated isp_iq_eeh_v1_dyn_item_t items = 2;
+}
+
+message isp_iq_eeh_v1_dyn_nest_t {
+  isp_iq_bounds_t bounds = 1;
+  repeated isp_iq_eeh_v1_dyn_t dyns = 2;
+}
+
+message isp_iq_eeh_v1_dynamic_t {
+  isp_iq_eeh_v1_dyn_nest_t nest = 1;
+}
+
+message isp_iq_eeh_v1_t {
+  isp_iq_eeh_v1_dynamic_t dynamic = 2;
+};
+
+message isp_iq_eeh_t {
+  isp_iq_desc_t desc = 1;
+  oneof entry {
+    isp_iq_eeh_v1_t v1 = 2;
+  }
+}
+
+message isp_iq_eeh_entries_t {
+  repeated isp_iq_eeh_t entries = 1;
+}
+
+/* offset contains: [31:27]: bit_offset, [26:22]: bits, [21:0]: reg_offset */
+enum isp_iq_reg_values_t {
+  option allow_alias = true;
+  ISP_IQ_REG_ZERO = 0;
+  ISP_IQ_REG_ADDR_OFFSET = 0;
+  ISP_IQ_REG_DESC_OFFSET = 22;
+  ISP_IQ_REG_BITNUM_OFFSET = 22;
+  ISP_IQ_REG_BITOFF_OFFSET = 27;
+  ISP_IQ_REG_ADDR_MASK = 0x3FFFFF;
+  ISP_IQ_REG_DESC_MASK = -0x400000; /* 0xFFC00000 */
+  ISP_IQ_REG_BITNUM_MASK = 0x7C00000;
+  ISP_IQ_REG_BITOFF_MASK = -0x8000000; /* 0xF8000000 */
+}
+
+enum isp_iq_texture_v1_item_type_t {
+  ISP_IQ_TEXTURE_V1_ITEM_NORMAL = 0;
+  ISP_IQ_TEXTURE_V1_ITEM_SNR_LEVEL = 1;
+  ISP_IQ_TEXTURE_V1_ITEM_TNR_LEVEL = 2;
+}
+
+message isp_iq_texture_v1_common_item_t {
+  string name = 1;
+  isp_iq_texture_v1_item_type_t item_type = 5;
+  repeated uint32 offsets = 2;
+  repeated float factors = 6;
+  repeated isp_iq_range_t ranges = 7;
+  repeated sint32 values = 3;
+}
+
+message isp_iq_texture_v1_common_t {
+  repeated isp_iq_texture_v1_common_item_t items = 1;
+}
+
+message isp_iq_texture_v1_dyn_item_t {
+  repeated sint32 values = 1;
+}
+
+message isp_iq_texture_v1_dyn_t {
+  isp_iq_bounds_t bounds = 1;
+  repeated isp_iq_texture_v1_dyn_item_t items = 2;
+}
+
+message isp_iq_texture_v1_dyn_nest_t {
+  string name = 3;
+  isp_iq_texture_v1_item_type_t item_type = 5;
+  isp_iq_bounds_t bounds = 1;
+  repeated uint32 offsets = 4;
+  repeated float factors = 6;
+  repeated isp_iq_range_t ranges = 7;
+  repeated isp_iq_texture_v1_dyn_t dyns = 2;
+}
+
+message isp_iq_texture_v1_dynamic_t {
+  repeated isp_iq_texture_v1_dyn_nest_t nests = 1;
+}
+
+message isp_iq_texture_v1_t {
+  isp_iq_texture_v1_common_t common = 1;
+  isp_iq_texture_v1_dynamic_t dynamic = 2;
+}
+
+message isp_iq_texture_t {
+  isp_iq_desc_t desc = 1;
+  oneof entry {
+    isp_iq_texture_v1_t v1 = 2;
+  }
+}
+
+message isp_iq_texture_entries_t {
+  repeated isp_iq_texture_t entries = 1;
+}
+
+message isp_iq_ae_v1_dyn_sort_table_t {
+  isp_iq_bounds_t bounds = 1;
+  repeated uint32 tables = 2;
+}
+
+message isp_iq_ae_v1_dyn_target_t {
+  bool enable = 1;
+  uint32 src_th0 = 2;
+  uint32 src_th1 = 3;
+  uint32 src_th2 = 4;
+  uint32 src_th3 = 5;
+  sint32 extent1 = 6;
+  sint32 extent2 = 7;
+  sint32 extent3 = 8;
+}
+
+message isp_iq_ae_v1_hdr_t {
+  uint32 over_bin = 1;
+  uint32 y_mean_hdr_adjust_offset = 2;
+  sint32 hist_mean_target_offset = 3;
+  uint32 hist_mean_th1 = 4;
+  uint32 hist_mean_th2 = 5;
+  uint32 hist_mean_th3 = 6;
+  float inc_adj_step = 7;
+  float dec_adj_step = 8;
+  float ratio_adj_step = 9;
+  float over_ratio_th1 = 10;
+  float over_ratio_th2 = 11;
+  float over_ratio_th3 = 12;
+  uint32 hdr_ymean_target = 13;
+}
+
+message isp_iq_ae_v1_dyn_max_et_t {
+  isp_iq_bounds_t bounds = 1;
+  repeated uint32 max_et = 2;
+}
+
+message isp_iq_ae_v1_roi_t {
+  float inner_ratio = 1;
+  float debounce_extend = 2;
+  uint32 ymean_target_l = 3;
+  uint32 ymean_target = 4;
+  uint32 ymean_target_h = 5;
+  uint32 hold_delay_th = 6;
+  uint32 disappear_delay_th = 7;
+}
+
+message isp_iq_ae_v1_ratio_range_t {
+  isp_iq_range_t total = 1;
+  repeated isp_iq_range_t chn_div = 2;
+}
+
+message isp_iq_ae_v1_dyn_ratio_range_t {
+  isp_iq_bounds_t bounds = 1;
+  repeated isp_iq_ae_v1_ratio_range_t ranges = 2;
+}
+
+enum isp_iq_ae_v1_dyn_fps_mode_t {
+  ISP_IQ_AE_V1_DYN_FPS_BASED_ON_GAIN = 0;
+  ISP_IQ_AE_V1_DYN_FPS_BASED_ON_EXP_GAIN = 1;
+}
+
+enum isp_iq_ae_v1_exp_route_mode_t {
+  ISP_IQ_AE_V1_EXP_ROUTE_NONE = 0;
+  ISP_IQ_AE_V1_EXP_ROUTE_NODES = 1;
+  ISP_IQ_AE_V1_EXP_ROUTE_TABLE = 2;
+}
+
+message isp_iq_ae_v1_exp_node_t {
+  float etgain_total = 1;
+  float et = 2;
+  float gain = 3;
+  float av_gain = 4;
+  int32 f_num = 5;
+}
+
+message isp_iq_ae_v1_exp_route_t {
+  isp_iq_ae_v1_exp_route_mode_t mode = 1;
+  repeated isp_iq_ae_v1_exp_node_t nodes = 2;
+}
+
+message isp_iq_ae_v1_contrast_value_t {
+  bool enable = 1;
+  uint32 low_percent = 2;
+  uint32 high_percent = 3;
+}
+
+message isp_iq_ae_v1_roi_adj_step_t {
+  bool enable = 1;
+  float roi_step_less_th_l = 2;
+  float roi_step_less_th_h = 3;
+  float roi_step_greater_th_l = 4;
+  float roi_step_greater_th_h = 5;
+}
+
+enum isp_iq_ae_v1_f_number_t {
+  /* f_number_name = AV * 12 */
+  /* full stop */
+  ISP_IQ_AE_V1_F_1_0 = 0;
+  ISP_IQ_AE_V1_F_1_4 = 12;
+  ISP_IQ_AE_V1_F_2_0 = 24;
+  ISP_IQ_AE_V1_F_2_8 = 36;
+  ISP_IQ_AE_V1_F_4_0 = 48;
+  ISP_IQ_AE_V1_F_5_6 = 60;
+  ISP_IQ_AE_V1_F_8_0 = 72;
+  ISP_IQ_AE_V1_F_11 = 84;
+  ISP_IQ_AE_V1_F_16 = 96;
+  ISP_IQ_AE_V1_F_22 = 108;
+  ISP_IQ_AE_V1_F_32 = 120;
+  ISP_IQ_AE_V1_F_45 = 132;
+  ISP_IQ_AE_V1_F_64 = 144;
+  ISP_IQ_AE_V1_F_90 = 156;
+  ISP_IQ_AE_V1_F_128 = 168;
+  ISP_IQ_AE_V1_F_180 = 180;
+  ISP_IQ_AE_V1_F_256 = 192;
+  /* one half stop */
+  ISP_IQ_AE_V1_F_1_189 = 6;
+  ISP_IQ_AE_V1_F_1_682 = 18;
+  ISP_IQ_AE_V1_F_2_378 = 30;
+  ISP_IQ_AE_V1_F_3_364 = 42;
+  ISP_IQ_AE_V1_F_4_757 = 54;
+  ISP_IQ_AE_V1_F_6_727 = 66;
+  ISP_IQ_AE_V1_F_9_514 = 78;
+  ISP_IQ_AE_V1_F_13_454 = 90;
+  ISP_IQ_AE_V1_F_19_027 = 102;
+  ISP_IQ_AE_V1_F_26_909 = 114;
+  ISP_IQ_AE_V1_F_38_055 = 126;
+  ISP_IQ_AE_V1_F_53_817 = 138;
+  ISP_IQ_AE_V1_F_76_109 = 150;
+  ISP_IQ_AE_V1_F_107_635 = 162;
+  /* one third stop */
+  ISP_IQ_AE_V1_F_1_122 = 4;
+  ISP_IQ_AE_V1_F_1_260 = 8;
+  ISP_IQ_AE_V1_F_1_587 = 16;
+  ISP_IQ_AE_V1_F_1_782 = 20;
+  ISP_IQ_AE_V1_F_2_245 = 28;
+  ISP_IQ_AE_V1_F_2_520 = 32;
+  ISP_IQ_AE_V1_F_3_175 = 40;
+  ISP_IQ_AE_V1_F_3_564 = 44;
+  ISP_IQ_AE_V1_F_4_490 = 52;
+  ISP_IQ_AE_V1_F_5_040 = 56;
+  ISP_IQ_AE_V1_F_6_350 = 64;
+  ISP_IQ_AE_V1_F_7_127 = 68;
+  ISP_IQ_AE_V1_F_8_980 = 76;
+  ISP_IQ_AE_V1_F_10_079 = 80;
+  ISP_IQ_AE_V1_F_12_699 = 88;
+  ISP_IQ_AE_V1_F_14_254 = 92;
+  ISP_IQ_AE_V1_F_17_959 = 100;
+  ISP_IQ_AE_V1_F_20_159 = 104;
+  ISP_IQ_AE_V1_F_25_398 = 112;
+  ISP_IQ_AE_V1_F_28_509 = 116;
+  ISP_IQ_AE_V1_F_35_919 = 124;
+  ISP_IQ_AE_V1_F_40_317 = 128;
+  ISP_IQ_AE_V1_F_50_797 = 136;
+  ISP_IQ_AE_V1_F_57_018 = 140;
+  ISP_IQ_AE_V1_F_71_838 = 148;
+  ISP_IQ_AE_V1_F_80_635 = 152;
+}
+
+message isp_iq_ae_v1_apex_t {
+  bool enable = 1;
+  uint32 base_iso = 2; /* ISO at 1x gain */
+  isp_iq_ae_v1_f_number_t f_number = 3; /* for fixed iris */
+  uint32 base_y_mean = 4;
+  /* do not add any fields here, this will cause ABI break */
+}
+
+message isp_iq_ae_v1_roi_de_over_exp_t {
+  uint32 level = 1;
+  uint32 over_exp_ymean_th = 2;
+}
+
+message isp_iq_ae_v1_t {
+  bool enable = 1;
+  float def_exposure = 2;
+  float def_gain = 3;
+  repeated uint32 win_weight = 4;
+  uint32 y_mean_target = 5;
+  uint32 same_block_en = 6;
+  uint32 y_mean_same_block_diff_th = 7;
+  uint32 same_block_num_stable_th = 8;
+  uint32 same_block_num_delay_th = 9;
+  uint32 y_mean_enter_high_light_th = 10;
+  uint32 y_mean_exit_high_light_th = 11;
+  uint32 ae_stable_delay = 12; /* ms */
+  uint32 total_gain_max = 13; /* 1/16 */
+  uint32 y_mean_delay_th_l = 14;
+  uint32 y_mean_delay_th_h = 15;
+  uint32 y_mean_same_block_th_l = 16;
+  uint32 y_mean_same_block_th_h = 17;
+  float ae_enter_stable_th = 18;
+  float ae_exit_stable_th = 19;
+  float ae_enter_slow_mode_th = 20;
+  float ae_slow_mode_step_th_l = 21;
+  float ae_slow_mode_step_th_h = 22;
+  float ae_fast_step_greater_th_pow = 23;
+  float ae_fast_step_greater_th_h = 24;
+  float ae_fast_step_greater_th_m = 25;
+  float ae_fast_step_greater_th_l = 26;
+  float ae_fast_step_less_th_l = 27;
+  float ae_fast_step_less_th_h = 28;
+  float ae_fast_step_less_th_pow = 29;
+  uint32 dyn_fps_min = 30;
+  repeated uint32 dyn_gain_th = 31;
+  repeated uint32 dyn_fps = 32;
+  uint32 sort_mode = 33;
+  uint32 saturated_range_th1 = 34;
+  uint32 saturated_range_th2 = 35;
+  uint32 saturated_range_th3 = 36;
+  uint32 sort_weight_ratio = 37;
+  uint32 manual_level = 38;
+  isp_iq_ae_v1_dyn_sort_table_t dark_table = 39;
+  isp_iq_ae_v1_dyn_sort_table_t bright_table = 40;
+  repeated uint32 sort_win_weight_low = 41;
+  repeated uint32 sort_win_weight_high = 42;
+  isp_iq_ae_v1_dyn_target_t dyn_target_etgain = 43; /* src is et_gain */
+  isp_iq_ae_v1_dyn_target_t dyn_target_saturate = 44; /* src is saturated_ratio */
+  uint32 y_mean_target_l = 45;
+  uint32 y_mean_target_h = 46;
+  float hist_contrast_power = 47;
+  uint32 hist_pos_th_l = 48;
+  uint32 hist_pos_th_h = 49;
+  uint32 hist_percentage_th_l = 50;
+  uint32 hist_percentage_th_h = 51;
+  isp_iq_ae_v1_hdr_t hdr = 52;
+  isp_iq_ae_v1_dyn_max_et_t dyn_max_et = 53;
+  isp_iq_ae_v1_roi_t ae_roi = 54;
+  uint32 frame_interval = 55;
+  isp_iq_ae_v1_dyn_ratio_range_t dyn_ratio_range = 56;
+  isp_iq_ae_v1_dyn_fps_mode_t dyn_fps_mode = 57;
+  isp_iq_ae_v1_exp_route_t route = 58;
+  isp_iq_ae_v1_contrast_value_t contrast_value = 59;
+  isp_iq_ae_v1_roi_adj_step_t roi_step = 60;
+  isp_iq_ae_v1_apex_t apex = 61;
+  isp_iq_ae_v1_roi_de_over_exp_t roi_de_overexp = 62;
+  uint32 total_etgain_max = 63;
+  bool consistent_adj_enable = 64;
+}
+
+message isp_iq_ae_t {
+  isp_iq_desc_t desc = 1;
+  oneof entry {
+    isp_iq_ae_v1_t v1 = 2;
+  }
+}
+
+message isp_iq_ae_entries_t {
+  repeated isp_iq_ae_t entries = 1;
+}
+
+message isp_iq_awb_v1_weight_table_t {
+  repeated uint32 w_table = 1;
+  repeated uint32 g_table = 2;
+}
+
+message isp_iq_awb_v1_green_t {
+  bool enable = 1;
+  uint32 gray_thd = 2;
+  uint32 enter_green_thd = 3;
+  uint32 exit_green_thd = 4;
+  isp_iq_point_t d50 = 5;
+  isp_iq_point_t d65 = 6;
+  uint32 x_min = 7;
+  uint32 y_min = 8;
+  uint32 x_max = 9;
+  uint32 y_max = 10;
+  uint32 b_delta = 11;
+  float k_green_est = 12;
+  float k_gray_est = 13;
+  float d_min = 14;
+  float d_def = 15;
+  float d_max = 16;
+  float b_max = 17;
+  float b_def = 18;
+  float b_min = 19;
+}
+
+message isp_iq_awb_v1_mixct_t {
+  bool enable = 1;
+  uint32 h_ct_index = 2;
+  uint32 l_ct_index = 3;
+  uint32 enter_num_th = 4;
+  float enter_th_l = 5;
+  float enter_th_h = 6;
+  float exit_th_l = 7;
+  float exit_th_h = 8;
+  float enter_h_ct_th = 9;
+  float exit_h_ct_th = 10;
+  float exit_l_ct_th = 11;
+  isp_iq_awb_v1_weight_table_t h_ct_weight = 12;
+  isp_iq_awb_v1_weight_table_t l_ct_weight = 13;
+}
+
+message isp_iq_awb_v1_rough_limit_t {
+  uint32 y_min = 2;
+  uint32 y_max = 3;
+  uint32 r_min = 4;
+  uint32 r_max = 5;
+  uint32 g_min = 6;
+  uint32 g_max = 7;
+  uint32 b_min = 8;
+  uint32 b_max = 9;
+  uint32 rg_min = 10;
+  uint32 rg_max = 11;
+  uint32 bg_min = 12;
+  uint32 bg_max = 13;
+  uint32 bgrg_k1 = 14;
+  uint32 bgrg_b1 = 15;
+  uint32 bgrg_k2 = 16;
+  uint32 bgrg_b2 = 17;
+}
+
+message isp_iq_awb_v1_fine_limit_t {
+  uint32 y_min = 2;
+  uint32 y_max = 3;
+  uint32 rg_min = 4;
+  uint32 rg_max = 5;
+  uint32 bg_min = 6;
+  uint32 bg_max = 7;
+}
+
+message isp_iq_awb_v1_illums_t {
+  repeated uint32 r_gain = 2;
+  repeated uint32 b_gain = 3;
+  uint32 rg_min = 4;
+  uint32 rg_max = 5;
+  uint32 bg_min = 6;
+  uint32 bg_max = 7;
+  uint32 y_min = 8;
+  uint32 y_max = 9;
+}
+
+message isp_iq_awb_v1_stat_config_t {
+  isp_iq_awb_v1_rough_limit_t rough = 1;
+  isp_iq_awb_v1_fine_limit_t fine = 2;
+  isp_iq_awb_v1_illums_t illums = 3;
+}
+
+message isp_iq_awb_v1_gain_adj_t {
+  uint32 r_gain = 1;
+  uint32 b_gain = 2;
+}
+
+message isp_iq_awb_v1_dyn_item_t {
+  isp_iq_awb_v1_gain_adj_t adj = 2;
+  isp_iq_awb_v1_weight_table_t normal_weight = 3;
+}
+
+message isp_iq_awb_v1_dyn_t {
+  isp_iq_bounds_t bounds = 1;
+  repeated isp_iq_awb_v1_dyn_item_t items = 2;
+}
+
+message isp_iq_awb_v1_dyn_nest_t {
+  isp_iq_bounds_t bounds = 1;
+  repeated isp_iq_awb_v1_dyn_t dyns = 2;
+}
+
+message isp_iq_awb_v1_dynamic_t {
+  isp_iq_awb_v1_dyn_nest_t nest = 1;
+}
+
+message isp_iq_awb_v1_t {
+  bool enable = 1;
+  uint32 def_r_gain = 2;
+  uint32 def_g_gain = 3;
+  uint32 def_b_gain = 4;
+  uint32 ct_num = 5;
+  uint32 ct_block_num = 6;
+  repeated isp_iq_point_t ct = 7;
+  repeated uint32 illum_ct = 8;
+  float a = 9;
+  float b = 10;
+  float c = 11;
+  repeated isp_iq_point_t white_area_up = 12;
+  repeated isp_iq_point_t white_area_down = 13;
+  repeated isp_iq_point_t gray_area_up = 14;
+  repeated isp_iq_point_t gray_area_down = 15;
+  uint32 fine_gain_th = 17;
+  uint32 final_gain_diff_th = 18;
+  uint32 white_pixels_ratio = 19;
+  uint32 awb_stable_delay = 20;
+  uint32 rg_bg_num_th = 21;
+  uint32 min_bright_th = 22;
+  isp_iq_awb_v1_green_t green = 23;
+  isp_iq_awb_v1_mixct_t mixct = 24;
+  isp_iq_awb_v1_stat_config_t config = 25;
+  isp_iq_awb_v1_dynamic_t dynamic = 27;
+  uint32 frame_interval = 28;
+  bool gray_area_proj_enable = 29;
+}
+
+message isp_iq_awb_t {
+  isp_iq_desc_t desc = 1;
+  oneof entry {
+    isp_iq_awb_v1_t v1 = 2;
+  }
+}
+
+message isp_iq_awb_entries_t {
+  repeated isp_iq_awb_t entries = 1;
+}
+
+message isp_iq_af_v1_t {
+  bool enable = 1;
+  uint32 def_position = 2;
+  uint32 fine_step = 3;
+  float fine_high_peak_ratio = 4;
+  float fine_low_peak_ratio = 5;
+  float fine_sharpness_ratio = 6;
+  uint32 fine_decrease_cnt = 7;
+  uint32 rough_step = 8;
+  float rough_high_peak_ratio = 9;
+  float rough_low_peak_ratio = 10;
+  float rough_sharpness_ratio = 11;
+  uint32 rough_decrease_cnt = 12;
+  uint32 sharpness_peak_th = 13;
+  float sharpness_diff_ratio = 14;
+  uint32 diff_cnt = 15;
+  uint32 search_mode_th = 16;
+  repeated uint32 pos = 17;
+  uint32 ymean_diff_th = 18;
+  uint32 ymean_diff_cnt_th = 19;
+  uint32 ae_stable_delay_cnt = 20;
+  uint32 frame_interval = 21;
+}
+
+message isp_iq_af_t {
+  isp_iq_desc_t desc = 1;
+  oneof entry {
+    isp_iq_af_v1_t v1 = 2;
+  }
+}
+
+message isp_iq_af_entries_t {
+  repeated isp_iq_af_t entries = 1;
+}
+
+message isp_iq_flick_v1_t {
+  uint32 ymean_diff_ratio_th = 1;
+  uint32 win_stable_th = 2;
+  uint32 statis_ratio_min_th = 3;
+  uint32 statis_ratio_sec_th = 4;
+  uint32 statis_ratio_trd_th = 5;
+  uint32 statis_ratio_max_th = 6;
+  uint32 frame_interval = 7;
+}
+
+message isp_iq_flick_t {
+  isp_iq_desc_t desc = 1;
+  oneof entry {
+    isp_iq_flick_v1_t v1 = 2;
+  }
+}
+
+message isp_iq_flick_entries_t {
+  repeated isp_iq_flick_t entries = 1;
+}
+
+message isp_iq_wdr_v1_t {
+  uint32 mode = 1;
+  uint32 low_percent = 2;
+  uint32 high_percent = 3;
+  uint32 high_bins_avg_rgb_th = 4;
+  uint32 hist_contrast_intp = 5;
+  uint32 hist_contrast_intp_compress = 6;
+  uint32 expand_num = 7;
+  repeated float hist_contrast_expand = 8;
+  uint32 power_gain = 9;
+  uint32 map_num = 10;
+  repeated uint32 hist_contrast_thd = 11;
+  repeated uint32 wdr_target_map = 12;
+  uint32 wdr_target_limit = 13;
+  uint32 step = 14;
+  uint32 frame_interval = 15;
+}
+
+message isp_iq_wdr_t {
+  isp_iq_desc_t desc = 1;
+  oneof entry {
+    isp_iq_wdr_v1_t v1 = 2;
+  }
+}
+
+message isp_iq_wdr_entries_t {
+  repeated isp_iq_wdr_t entries = 1;
+}
+
+message isp_iq_daynight_v1_dyn_item_t {
+  float exit_ir_block_th = 1;
+  uint32 exit_rgb_etgain_th = 2;
+  uint32 exit_ir_etgain_th = 3;
+  uint32 exit_ir_gain_th = 4;
+  uint32 ir2rgb_time = 5;
+  uint32 rgb2ir_time = 6;
+  isp_iq_bound_t exit_rgb_etgain_bound = 7;
+  isp_iq_bound_t exit_ir_etgain_bound = 8;
+}
+
+message isp_iq_daynight_v1_dyn_t {
+  isp_iq_bounds_t bounds = 1;
+  repeated isp_iq_daynight_v1_dyn_item_t items = 2;
+}
+
+message isp_iq_daynight_v1_dyn_nest_t {
+  isp_iq_bounds_t bounds = 1;
+  repeated isp_iq_daynight_v1_dyn_t dyns = 2;
+}
+
+message isp_iq_daynight_v1_dynamic_t {
+  isp_iq_daynight_v1_dyn_nest_t nest = 1;
+}
+
+message isp_iq_daynight_v1_t {
+  repeated uint32 exit_ir_detect_table = 1;
+  isp_iq_daynight_v1_dynamic_t dynamic = 3;
+  uint32 frame_interval = 4;
+}
+
+message isp_iq_daynight_t {
+  isp_iq_desc_t desc = 1;
+  oneof entry {
+    isp_iq_daynight_v1_t v1 = 2;
+  }
+}
+
+message isp_iq_daynight_entries_t {
+  repeated isp_iq_daynight_t entries = 1;
+}
+
+message isp_iq_high_temp_v1_t {
+  bool enable = 1;
+  uint32 interval = 2; /* ms */
+  isp_iq_bound_t gain = 3;
+  isp_iq_bound_t temp = 4;
+}
+
+message isp_iq_high_temp_t {
+  isp_iq_desc_t desc = 1;
+  oneof entry {
+    isp_iq_high_temp_v1_t v1 = 2;
+  }
+}
+
+message isp_iq_high_temp_entries_t {
+  repeated isp_iq_high_temp_t entries = 1;
+}
+
+message isp_iq_extended_info_t {
+  bytes content = 1;
+}
+
+message isp_iq_table_t {
+  isp_iq_header_t header = 1;
+  isp_iq_blc_entries_t blc = 2;
+  isp_iq_nlsc_entries_t nlsc = 3;
+  isp_iq_mlsc_entries_t mlsc = 4;
+  isp_iq_ccm_entries_t ccm = 5;
+  isp_iq_gamma_entries_t gamma = 6;
+  isp_iq_ygc_entries_t ygc = 7;
+  isp_iq_uvtune_entries_t uvtune = 8;
+  isp_iq_spe_entries_t spe = 9;
+  isp_iq_ygamma_entries_t ygamma = 10;
+  isp_iq_texture_entries_t texture = 11;
+  isp_iq_eeh_entries_t eeh = 12;
+  isp_iq_ae_entries_t ae = 32;
+  isp_iq_awb_entries_t awb = 33;
+  isp_iq_af_entries_t af = 34;
+  isp_iq_flick_entries_t flick = 35;
+  isp_iq_wdr_entries_t wdr = 36;
+  isp_iq_daynight_entries_t daynight = 37;
+  isp_iq_high_temp_entries_t high_temp = 38;
+  isp_iq_extended_info_t extended_info = 64;
+}

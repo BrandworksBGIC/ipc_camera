@@ -1,0 +1,73 @@
+From b76adbfbcb2c6b1b8bf9e45b4036d42afd7a2161 Mon Sep 17 00:00:00 2001
+From: "Arnout Vandecappelle (Essensium/Mind)" <arnout@mind.be>
+Date: Thu, 27 Nov 2014 19:10:39 +0100
+Subject: [PATCH 2/2] fsck.fat: add -C option (do not salvage files)
+
+This allows to override the automatic -f when -a is selected.
+
+https://github.com/dosfstools/dosfstools/pull/2
+
+IPCSDK-21720
+
+Signed-off-by: todd_jin <todd_jin@realsil.com.cn>
+---
+ src/fsck.fat.c | 12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/src/fsck.fat.c b/src/fsck.fat.c
+index 1591c5d..ec4e967 100644
+--- a/src/fsck.fat.c
++++ b/src/fsck.fat.c
+@@ -75,6 +75,7 @@ static void usage(char *name, int exitval)
+ 	    DEFAULT_DOS_CODEPAGE);
+     fprintf(stderr, "  -d PATH         drop file with name PATH (can be given multiple times)\n");
+     fprintf(stderr, "  -f              salvage unused chains to files\n");
++	fprintf(stderr, "  -C			   do not salvage unused chains to files\n");
+     fprintf(stderr, "  -F NUM          specify FAT table NUM used for filesystem access\n");
+     fprintf(stderr, "  -l              list path names\n");
+ 	fprintf(stderr, "  -m			   use mmap to read FAT (requires -w and -r or -a)\n");
+@@ -98,7 +99,7 @@ static void usage(char *name, int exitval)
+ int main(int argc, char **argv)
+ {
+     DOS_FS fs;
+-    int salvage_files, verify, c;
++    int salvage_files, no_salvage_files, verify, c;
+     uint32_t free_clusters = 0;
+     struct termios tio;
+     char *tmp;
+@@ -119,11 +120,11 @@ int main(int argc, char **argv)
+     }
+ 
+     memset(&fs, 0, sizeof(fs));
+-    salvage_files = verify = 0;
++    salvage_files = no_salvage_files = verify = 0;
+     rw = interactive = 1;
+     check_atari();
+ 
+-    while ((c = getopt_long(argc, argv, "Aac:d:bfF:lmnprStu:UvVwy",
++    while ((c = getopt_long(argc, argv, "Aac:d:bfF:ClmnprStu:UvVwy",
+ 				    long_options, NULL)) != -1)
+ 	switch (c) {
+ 	case 'A':		/* toggle Atari format */
+@@ -165,6 +166,9 @@ int main(int argc, char **argv)
+ 		usage(argv[0], 2);
+ 	    }
+ 	    break;
++	case 'C':
++		no_salvage_files = 1;
++		break;
+ 	case 'l':
+ 	    list = 1;
+ 	    break;
+@@ -231,6 +235,8 @@ int main(int argc, char **argv)
+ 		fprintf(stderr, "-m requires explicit -w and -a or -r\n");
+ 		exit(2);
+     }
++	if (no_salvage_files)
++		salvage_files = 0;
+     if (optind != argc - 1)
+ 	usage(argv[0], 2);
+ 
+-- 
+2.25.1
+

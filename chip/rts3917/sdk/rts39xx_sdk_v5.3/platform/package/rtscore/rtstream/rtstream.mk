@@ -1,0 +1,31 @@
+################################################################################
+#
+# rtstream
+#
+################################################################################
+
+RTSTREAM_SITE_METHOD = local
+RTSTREAM_INSTALL_STAGING = YES
+RTSTREAM_DEPENDENCIES = linux
+
+RTSTREAM_DEPENDENCIES += $(if $(BR2_PACKAGE_RTSTREAM_AUDIO),alsa-lib)
+RTSTREAM_DEPENDENCIES += $(if $(BR2_PACKAGE_LIBRTSAEC),)
+RTSTREAM_DEPENDENCIES += $(if $(BR2_PACKAGE_LIBRTSMP3), librtsmp3)
+RTSTREAM_DEPENDENCIES += $(if $(BR2_PACKAGE_OPENCORE_AMR), opencore-amr)
+RTSTREAM_DEPENDENCIES += $(if $(BR2_PACKAGE_LIBRTSAAC), librtsaac)
+RTSTREAM_DEPENDENCIES += $(if $(BR2_PACKAGE_SBC), sbc)
+RTSTREAM_DEPENDENCIES += $(if $(BR2_PACKAGE_OPUS), opus)
+RTSTREAM_DEPENDENCIES += $(if $(BR2_PACKAGE_LIBSOXR), libsoxr)
+RTSTREAM_DEPENDENCIES += $(if $(BR2_PACKAGE_RTSTREAM_OSD2_PPU), npu)
+RTSTREAM_DEPENDENCIES += $(if $(BR2_PACKAGE_LIBRTSISP), host-python-protobuf)
+RTSTREAM_DEPENDENCIES += $(if $(BR2_PACKAGE_LIBRTSISP_UNIT_TEST), check)
+
+RTSTREAM_BIN_TARGET = $(RTSCORE_BIN_TARGET)/rtstream
+
+ifeq ($(BR2_CONFIG_HW_VER_RTS3917), y)
+    LIBRTSISP_CHIP_ID := RTS3917
+else
+    LIBRTSISP_CHIP_ID := UNKNOWN
+endif
+
+export LIBRTSISP_CHIP_ID

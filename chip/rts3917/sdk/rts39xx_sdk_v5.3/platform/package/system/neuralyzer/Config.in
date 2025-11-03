@@ -1,0 +1,6 @@
+config BR2_PACKAGE_NEURALYZER
+	bool "neuralyzer"
+	default n
+	select BR2_PACKAGE_MTD
+	help
+	  Image update tool

@@ -1,0 +1,159 @@
+menu "RTS Sound Driver"
+
+################ Config of internal codec ##############
+
+config SND_SOC_RTS_DMA
+	tristate
+
+config SND_SOC_RTS_I2S
+	tristate
+
+menuconfig SND_SOC_RTS_INTERN_CODEC
+	tristate "Internal Codec Supported"
+	select SND_SOC_RTS_DMA
+	select SND_SOC_RTS_I2S
+	default y
+	help
+	  Support intern codec.
+
+if SND_SOC_RTS_INTERN_CODEC
+
+choice
+	prompt "Selected Analog Input SRC"
+
+config SND_SOC_RTS_INTERN_CODEC_AMIC
+	bool "Amic"
+	help
+	  Analog Input SRC -- Amic.
+
+config SND_SOC_RTS_INTERN_CODEC_DMIC
+	bool "Dmic"
+	help
+	  select "Y", amic is unavailable.
+
+config SND_SOC_RTS_INTERN_CODEC_LINEIN
+	bool "Line-in"
+	help
+	  Analog Input SRC -- Line-in.
+
+endchoice
+
+if SND_SOC_RTS_INTERN_CODEC_AMIC
+
+choice
+	prompt "Selected AMIC POWER"
+
+config SND_SOC_RTS_AMIC_IN_LDO
+	bool "Intern LDO"
+	help
+	  AMIC INTERN POWER.
+
+config SND_SOC_RTS_AMIC_PMU_RTP
+	bool "PMU RTP"
+	help
+	  PMU LDO POWER.
+
+endchoice
+
+if SND_SOC_RTS_AMIC_PMU_RTP
+
+choice
+	prompt "Selected PMU REGULATOR"
+
+config SND_SOC_RTS_AMIC_PMU_RTP_LDO1
+	bool "LDO1"
+	help
+	  RTP LDO1.
+
+endchoice
+
+endif #if SND_SOC_RTS_AMIC_PMU_RTP
+
+endif #if SND_SOC_RTS_INTERN_CODEC_AMIC
+
+endif #if SND_SOC_RTS_INTERN_CODEC
+
+################ Config of external codec ##############
+
+config SND_SOC_RTS_EXTERN_CODEC
+	tristate
+	select SND_SOC_RTS_DMA
+	select SND_SOC_RTS_I2S
+	default n
+	help
+	  Support extern codec.
+
+choice
+	tristate "External Codec Supported"
+	optional
+	default SND_SOC_RTS_QC
+
+config SND_SOC_RTS_QC
+	tristate "rts qc"
+	select SND_SOC_RTS_EXTERN_CODEC
+	help
+	  For test
+
+config SND_SOC_RTS_RT5514
+	tristate "RT5514"
+	select SND_SOC_RTS_EXTERN_CODEC
+	help
+	  Support extern codec -- rt5514.
+
+config SND_SOC_RTS_RT5616
+	tristate "RT5616"
+	select SND_SOC_RTS_EXTERN_CODEC
+	help
+	  Support extern codec -- rt5616.
+
+config SND_SOC_RTS_RT5651
+	tristate "RT5651"
+	select SND_SOC_RTS_EXTERN_CODEC
+	help
+	  Support extern codec -- rt5651.
+
+config SND_SOC_RTS_RT5659
+	tristate "RT5659"
+	select SND_SOC_RTS_EXTERN_CODEC
+	help
+	  Support extern codec -- rt5659.
+
+config SND_SOC_RTS_RT5677
+	tristate "RT5677"
+	select SND_SOC_RTS_EXTERN_CODEC
+	help
+	  Support extern codec -- rt5677.
+	  The ALC5677 is a highly-integrated Audio DSP plus CODEC system whose
+	  high-performance and low-power consumption make it ideal for a wide
+	  range of mobile systems, such as Tablet, Smartphone and Ultra-book.
+
+config SND_SOC_RTS_RT5679
+	tristate "RT5679"
+	select SND_SOC_RTS_EXTERN_CODEC
+	help
+	  Support extern codec -- rt5679.
+	  The ALC5679 is a highly-integrated Audio DSP and CODEC Hub system.
+	  ALC5679 integrates two DSP cores, one can support complicated signal
+	  processing applications with 300MIPS speed while another support
+	  light and ultra-low power applications.
+
+endchoice
+
+################ Config of SPDIF ##############
+
+config SND_SOC_RTS_SPDIF
+	tristate "SPDIF Supported"
+	select SND_SOC_RTS_DMA
+	select SND_SOC_RTS_I2S
+	default n
+	help
+	  Support SPDIF.
+
+################ Config of debug ##############
+
+config SND_SOC_RTS_DEBUG
+	bool "RTS Sound Debug"
+	help
+	  Show rts sound debug message.
+
+endmenu

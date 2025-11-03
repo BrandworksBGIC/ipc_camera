@@ -1,0 +1,87 @@
+#!/bin/sh
+
+#parse cmdline find rauc.slot
+#set env slot left
+
+reg_addr=$(/bin/fw_printenv dual_image_reg_addr)
+reg_addr="${reg_addr##*=}"
+LEFT=`devmem  $reg_addr`
+let A_LEFT=$LEFT%16
+let B_LEFT=$LEFT/16
+
+start_prog(){
+	for x in $(cat /proc/cmdline); do
+		if [ "$x" = "rauc.slot=A" ]; then
+			if [ $A_LEFT ]; then
+				let A_LEFT=$A_LEFT+1
+			else
+				echo "invalid reg addr:${reg_addr} reg A:${A_LEFT}"
+			fi
+			break
+		elif  [ "$x" = "rauc.slot=B" ]; then
+			if [ $B_LEFT ]; then
+				let B_LEFT=$B_LEFT+1
+			else
+				echo "invalid reg addr:${reg_addr} reg B:${B_LEFT}"
+			fi
+			break
+		fi
+	done
+	let VALUE=$A_LEFT+$B_LEFT*16
+	`devmem $reg_addr 32 $VALUE`
+}
+
+stop_prog(){
+	return
+}
+
+rauc_done(){
+	slot_part=''
+	value=0
+
+        for x in $(/bin/cat /proc/cmdline); do
+                if [ "$x" = "rauc.slot=A" ]; then
+                        echo $x
+                        slot_part=$x
+                        break
+                elif  [ "$x" = "rauc.slot=B" ]; then
+                        echo $x
+                        slot_part=$x
+                        break
+                fi
+        done
+
+        if [ "$slot_part" = "rauc.slot=A" ]; then
+		let value=64+$A_LEFT
+        else
+		let value=4+$B_LEFT*16
+        fi
+	/sbin/devmem $reg_addr 32 $value
+}
+
+print_usage(){
+	echo "usage: $PN [start | stop | rauc_done]"
+}
+
+PN="$0"
+
+if [ $# -eq 0 ]; then
+	start_prog
+elif [ $# -eq 1 ]; then
+	case $1 in
+		"start"):
+			#echo "start"
+			start_prog
+			;;
+		"rauc_done"):
+                        rauc_done
+                        ;;
+		*):
+			print_usage
+			;;
+	esac
+else
+	print_usage
+fi
+unset PN
+

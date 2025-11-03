@@ -1,0 +1,1 @@
+add_sensor(sc450ai_mipi)

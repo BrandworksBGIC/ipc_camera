@@ -1,0 +1,1 @@
+add_sensor(hi1634)

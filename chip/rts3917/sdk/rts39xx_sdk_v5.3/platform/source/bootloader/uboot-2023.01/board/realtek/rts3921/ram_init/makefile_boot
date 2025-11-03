@@ -1,0 +1,84 @@
+INC := ../include -I../arch/arm/include
+LDS := boot.lds
+OBJS := boot.o
+
+include ../.config
+
+ifdef ATF_BOOT
+ifdef CONFIG_RTS_NAND_BOOT
+ifdef UBOOT_AS_BL33
+FLASHBASE ?= 0x02000128
+else
+FLASHBASE ?= 0x02000088
+endif
+else
+ifdef CONFIG_RTS_NOR_BOOT
+ifdef UBOOT_AS_BL33
+FLASHBASE ?= 0x04000128
+else
+FLASHBASE ?= 0x04000088
+endif
+endif
+FLASHBASE ?= 0x00000000
+endif
+else
+FLASHBASE ?= 0x00000000
+endif
+
+ifdef UBOOT_AS_BL33
+LOADBASE ?= 0x80040000
+else
+LOADBASE ?= 0x19000000
+endif
+
+PTR_COUNT_SHIFT ?=2
+
+CROSS_COMPILE ?= asdk-linux-
+
+CC := $(CROSS_COMPILE)gcc
+LD := $(CROSS_COMPILE)ld
+OBJCPY := $(CROSS_COMPILE)objcopy
+
+
+GCCINC := $(shell $(CC) -print-file-name=include)
+GCCLIB := $(shell dirname `$(CC) -print-libgcc-file-name`)
+GENLDSFLAGS := -I$(INC) -DCONFIG_LOAD_BASE=$(LOADBASE) -DPTR_COUNT_SHIFT=$(PTR_COUNT_SHIFT) -ansi -E -P -
+
+CFLAGS := -Os -ffunction-sections -fdata-sections -D__KERNEL__ \
+	-DCONFIG_RAMINIT_OFFSET=$(BOOT_SIZE) \
+	-DCONFIG_RAMINIT_SIZE=$(RAMINIT_SIZE) \
+	-DCONFIG_LOAD_BASE=$(LOADBASE) -I$(INC) -fno-builtin \
+	-std=gnu11 -fshort-wchar -fno-strict-aliasing -fno-PIE \
+	-fno-stack-protector -fno-delete-null-pointer-checks \
+	-fmacro-prefix-map=./= -g -fstack-usage -Wno-format-nonliteral \
+	-Wno-address-of-packed-member -Werror=date-time -D__ARM__ \
+	-marm -mno-thumb-interwork -mabi=aapcs-linux -mword-relocations \
+	-fno-pic -mno-unaligned-access -ffunction-sections -fdata-sections \
+	-fno-common -ffixed-r9 -msoft-float -pipe -march=armv7-a \
+	-D__LINUX_ARM_ARCH__=7 -mtune=generic-armv7-a -g -DDEBUG
+ASFLAGS := $(CFLAGS) -D__ASSEMBLY__
+
+LDFLAGS := -T $(LDS) --gc-sections -pie -Bstatic --no-dynamic-linker \
+	 -Ttext $(FLASHBASE)
+
+OBJFLAGS := --remove-section=.dynsym --gap-fill=0xff -O binary
+
+.PHONY : all
+all : $(LDS) sysboot.bin
+#$(LDS) : include/$(LDS)
+#	$(CC) $(GENLDSFLAGS) < include/$(LDS) > $(LDS)
+#.depend :
+#	$(CC) $(CFLAGS) -MM $(SRC) > .depend
+#-include .depend
+
+boot.o : boot.S
+	$(CC) $(ASFLAGS) -c boot.S -o boot.o
+boot : $(OBJS) $(LDS)
+	$(LD) $(LDFLAGS) $(OBJS) -Map boot.map -o boot
+sysboot.bin : boot
+	$(OBJCPY) $(OBJFLAGS) boot sysboot.bin
+
+.PHONY : clean
+clean :
+	rm -f *.o *.su .depend boot.map boot *.bin
+	rm -f $(OBJS)

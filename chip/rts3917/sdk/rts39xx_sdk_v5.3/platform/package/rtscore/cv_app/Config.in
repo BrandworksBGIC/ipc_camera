@@ -1,0 +1,44 @@
+config BR2_PACKAGE_CV_APP
+	bool "cv_app"
+	default n
+	help
+	  Realtek cv algorithm
+
+if BR2_PACKAGE_CV_APP
+
+config BR2_PACKAGE_CV_PANORAMA
+	bool "library panorama"
+	default n
+	help
+	  Realtek algorithm of panorama
+
+config BR2_PACKAGE_CV_MOTION_TRACKING
+	bool "library motion_tracking"
+	default n
+	help
+	  Realtek algorithm of motion tracking
+
+config BR2_PACKAGE_CV_RTSMD
+	select BR2_PACKAGE_RTSTREAM
+	select BR2_PACKAGE_RTSTREAM_VIDEO
+	bool "library rtsmd"
+	default n
+	help
+	  Realtek algorithm of motion detection
+
+config BR2_PACKAGE_CV_RTSAVD
+	select BR2_PACKAGE_RTSTREAM
+	select BR2_PACKAGE_RTSTREAM_VIDEO
+	bool "library rtsavd"
+	default n
+	help
+	  Realtek algorithm  for abnormal video diagnosis
+
+config BR2_CV_APP_CIPHER_EN
+	bool "cv app cipher enable"
+	default n
+	help
+	  Enable cipher protection for algorithm
+
+
+endif

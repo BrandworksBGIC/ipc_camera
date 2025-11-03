@@ -1,0 +1,7 @@
+#!/bin/sh
+
+LOADFW=`find /sys/devices/platform/ -name loadfw`
+if [ -f "$LOADFW" ]; then
+	echo 1 > $LOADFW
+fi
+

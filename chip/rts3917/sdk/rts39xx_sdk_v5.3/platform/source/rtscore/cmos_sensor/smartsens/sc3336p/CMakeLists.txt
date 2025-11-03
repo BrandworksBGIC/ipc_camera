@@ -1,0 +1,1 @@
+add_sensor(sc3336p_mipi)

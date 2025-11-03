@@ -1,0 +1,31 @@
+config BR2_PACKAGE_KMOD_PTZ
+	bool "ptz"
+	depends on BR2_LINUX_KERNEL
+	help
+	  ptz
+
+comment "kmod_ptz needs a Linux kernel to be built"
+	depends on !BR2_LINUX_KERNEL
+
+if BR2_PACKAGE_KMOD_PTZ
+	choice
+		prompt "device type"
+		default BR2_PACKAGE_KMOD_PTZ_GPIO
+
+		config BR2_PACKAGE_KMOD_PTZ_GPIO
+		bool "ptz drived by gpio"
+		help
+		  ptz drived by gpio
+
+		config BR2_PACKAGE_KMOD_PTZ_595
+		bool "ptz drived by 74hc595"
+		help
+		  ptz drived by 74hc595
+
+        config BR2_PACKAGE_KMOD_PTZ_TUYA
+		bool "ptz drived by tuya"
+		help
+		  ptz drived by tuya
+
+	endchoice
+endif

@@ -1,0 +1,66 @@
+/*
+ * Realtek Semiconductor Corp.
+ *
+ * Sheipa example dts for cortex-a32 adapted from cortex-a53.dts
+ *
+ * Roger Tseng (rogerable@realtek.com)
+ * Apr. 20, 2022
+ */
+
+/dts-v1/;
+
+#include <dt-bindings/interrupt-controller/arm-gic.h>
+#include "sheipa.dtsi"
+
+/ {
+	interrupt-parent = <&gic>;
+	#address-cells = <1>;
+	#size-cells = <1>;
+
+	gic: gic@2041000 {
+		#address-cells = <1>;
+		reg = <0x02041000 0x1000>,
+		      <0x02042000 0x1000>;
+		interrupt-controller;
+		#interrupt-cells = <3>;
+		compatible = "arm,cortex-a15-gic";
+	};
+
+	psci {
+		migrate = <0x84000005>;
+		cpu_on = <0x84000003>;
+		cpu_off = <0x84000002>;
+		cpu_suspend = <0x84000001>;
+		method = "smc";
+		compatible = "arm,psci-0.2", "arm,psci";
+	};
+
+	cpus {
+		#size-cells = <0>;
+		#address-cells = <1>;
+
+		cpu@0 {
+			reg = <0x0>;
+			compatible = "arm,cortex-a32";
+			device_type = "cpu";
+			enable-method = "psci";
+			clock-frequency = <25000000>;
+		};
+		cpu@1 {
+			reg = <0x1>;
+			compatible = "arm,cortex-a32";
+			device_type = "cpu";
+			enable-method = "psci";
+			clock-frequency = <25000000>;
+		};
+	};
+
+	timer {
+		clock-frequency = <25000000>;
+		interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
+			     <GIC_PPI 14 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
+			     <GIC_PPI 11 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
+			     <GIC_PPI 10 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>;
+		compatible = "arm,armv8-timer", "arm,armv7-timer";
+	};
+};

@@ -1,0 +1,1 @@
+obj-y               += clk-rts3917.o

@@ -1,0 +1,1 @@
+add_sensor(jxf28p_mipi_2lane)

@@ -1,0 +1,21 @@
+config BR2_PACKAGE_ISP_ALGO
+	bool "isp algorithm"
+	depends on BR2_PACKAGE_LIBRTSISP
+	depends on BR2_CONFIG_HW_VER_RTS3915 || BR2_CONFIG_HW_VER_RTS3917
+	default n
+	help
+	  Realtek algorithm for isp
+
+if BR2_PACKAGE_ISP_ALGO
+config BR2_PACKAGE_ISP_ALGO_AE
+	bool "rts isp ae algorithm support"
+    default y
+
+config BR2_PACKAGE_ISP_ALGO_AWB
+	bool "rts isp awb algorithm support"
+    default y
+
+config BR2_PACKAGE_ISP_ALGO_AF
+	bool "rts isp af algorithm support"
+    default y
+endif

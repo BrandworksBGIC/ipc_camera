@@ -1,0 +1,5 @@
+config BR2_PACKAGE_LIBRTSIO
+	bool "librtsio"
+	default n
+	help
+	  librtsio library

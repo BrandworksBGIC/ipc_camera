@@ -1,0 +1,25 @@
+From 1fb74ba7b361e81ec3d96447c028656aacd695d1 Mon Sep 17 00:00:00 2001
+From: shawn_chen <shawn_chen@realsil.com.cn>
+Date: Wed, 15 Jan 2020 10:11:18 +0800
+Subject: [PATCH] port to rts board
+
+---
+ main.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/main.c b/main.c
+index 6205555..f126729 100644
+--- a/main.c
++++ b/main.c
+@@ -40,7 +40,7 @@
+ #include "asm-opt.h"
+ #include "version.h"
+ 
+-#define SIZE             (32 * 1024 * 1024)
++#define SIZE             (16 * 1024 * 1024)
+ #define BLOCKSIZE        2048
+ #ifndef MAXREPEATS
+ # define MAXREPEATS      10
+-- 
+1.9.1
+

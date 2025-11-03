@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest>
+<remote fetch="ssh://ctcsoc.rtkbf.com:29418/" name="origin" />
+<default remote="origin" revision="master" />
+<project name="kernel" upstream="kernel" revision="66b8b72710901642bdaed036d92ac53bdaef3b64" />
+<project name="uclibc" upstream="uclibc" revision="1d884b2d3f658919933df469e267098151de325a" />
+<project name="gnulib" upstream="gnulib" revision="f8825260385ac299539c5ca5ff7d8b2bb5b6edc2" />
+<project name="libtirpc" upstream="libtirpc" revision="0fb94eef5062d2657d75eee686fa47238fafa312" />
+<project name="rpcsvc_proto" upstream="rpcsvc_proto" revision="754fb056074d46afe1dc1ee3724eae14084af6f2" />
+<project name="wrapper" upstream="wrapper" revision="619ea78376b837a3a1bb026bb1691c0c5381787e" />
+<project name="monitor/linux" upstream="monitor/linux" revision="b998751692ceca4db1a4e740d08debb0de2be727" />
+<project name="monitor/windows" upstream="monitor/windows" revision="50423f435060aab6be838b1eb062ad11a0ae38f0" />
+<project name="monitor/darwin/x86_64" upstream="monitor/darwin/x86_64" revision="df8a15262d012e85167722d35ad98adb3b9d237f" />
+<project name="monitor/darwin/arm64" upstream="monitor/darwin/arm64" revision="2cbc408d7e4830706b9b29291acaf2b09e7ccdf6" />
+</manifest>

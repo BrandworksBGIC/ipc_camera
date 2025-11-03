@@ -1,0 +1,2 @@
+source "$BR2_EXTERNAL_platform_PATH/package/buildroot/linux/Config.in"
+source "$BR2_EXTERNAL_platform_PATH/package/buildroot/fs/Config.in"

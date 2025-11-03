@@ -1,0 +1,13 @@
+#
+# rts_ipcam misc driver configuration
+#
+
+menu "Realtek IPCam misc drivers"
+
+config CAPE_REALTEK
+        tristate "Realtek cape support"
+        depends on OF_OVERLAY
+        help
+          Say Y here to include support for realtek capes
+
+endmenu

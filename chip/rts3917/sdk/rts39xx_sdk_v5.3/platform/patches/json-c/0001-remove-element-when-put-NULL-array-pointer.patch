@@ -1,0 +1,46 @@
+--- json-c-0.15/arraylist.c	2020-07-26 22:53:35.000000000 +0800
++++ json-c-0.15-new/arraylist.c	2022-03-15 11:44:53.552047763 +0800
+@@ -130,20 +130,30 @@
+ 		return -1;
+ 	if (idx < arr->length && arr->array[idx])
+ 		arr->free_fn(arr->array[idx]);
+-	arr->array[idx] = data;
+-	if (idx > arr->length)
+-	{
+-		/* Zero out the arraylist slots in between the old length
+-		   and the newly added entry so we know those entries are
+-		   empty.
+-		   e.g. when setting array[7] in an array that used to be 
+-		   only 5 elements longs, array[5] and array[6] need to be
+-		   set to 0.
+-		 */
+-		memset(arr->array + arr->length, 0, (idx - arr->length) * sizeof(void *));
++	if (data) {
++		arr->array[idx] = data;
++		if (idx > arr->length)
++		{
++			/* Zero out the arraylist slots in between the old length
++			   and the newly added entry so we know those entries are
++			   empty.
++			   e.g. when setting array[7] in an array that used to be
++			   only 5 elements longs, array[5] and array[6] need to be
++			   set to 0.
++			 */
++			memset(arr->array + arr->length, 0, (idx - arr->length) * sizeof(void *));
++		}
++		if(arr->length <= idx)
++			arr->length = idx + 1;
++	} else {
++		for (size_t i = idx; i < arr->length - 1; i++)
++			arr->array[i] = arr->array[i+1];
++
++		if (idx < arr->length) {
++			arr->array[arr->length-1] = NULL;
++			arr->length--;
++		}
+ 	}
+-	if (arr->length <= idx)
+-		arr->length = idx + 1;
+ 	return 0;
+ }
+ 

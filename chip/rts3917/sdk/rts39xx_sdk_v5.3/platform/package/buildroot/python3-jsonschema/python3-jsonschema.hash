@@ -1,0 +1,6 @@
+# md5 from https://pypi.python.org/pypi/jsonschema/json
+md5	0fa6d31342d4a23952ae255abb4ae3d8  jsonschema-4.4.0.tar.gz
+# Locally computed
+sha256	636694eb41b3535ed608fe04129f26542b59ed99808b4f688aa32dcf55317a83  jsonschema-4.4.0.tar.gz
+sha256  4f92a015a13c4d1a040bef018aa13430b4f1bc73b41b16bb846c346766de7439  COPYING
+sha256  837402bd25fad9b704265801ca3f92566a98157c1f9a7acd6f446299ba1c305a  json/LICENSE

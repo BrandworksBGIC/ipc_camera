@@ -1,0 +1,325 @@
+From 5f243df82c0c405a7c931bd1ea19509f51601fa7 Mon Sep 17 00:00:00 2001
+From: "Arnout Vandecappelle (Essensium/Mind)" <arnout@mind.be>
+Date: Thu, 27 Nov 2014 17:56:57 +0100
+Subject: [PATCH 1/2] fsck.fat: add the -m (mmap) option
+
+By using mmap, we avoid allocating the entire FAT table, and we make it
+possible for the OS to read in pages from the disk on demand only.
+
+This option is only available in combination with -w, because any write
+to the mmapped region may be written to disk at any time.
+
+See also https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=771091
+
+Limitations and possible improvements:
+- Don't know if mmap is available with DJGPP.
+- mmap could be used unconditionally if -w is given.
+- The conditional handling could be moved to fs_read/fs_write.
+- The same change would be useful in fatlabel and mkfs.fat.
+
+https://github.com/dosfstools/dosfstools/pull/2
+
+IPCSDK-21720
+
+Signed-off-by: todd_jin <todd_jin@realsil.com.cn>
+---
+ src/common.c   |  1 +
+ src/common.h   |  1 +
+ src/fat.c      | 62 +++++++++++++++++++++++++++++++++++---------------
+ src/fsck.fat.c | 12 +++++++---
+ src/io.c       | 31 +++++++++++++++++++++++++
+ src/io.h       |  9 ++++++++
+ 6 files changed, 95 insertions(+), 21 deletions(-)
+
+diff --git a/src/common.c b/src/common.c
+index 6a2e396..2eb5c0c 100644
+--- a/src/common.c
++++ b/src/common.c
+@@ -42,6 +42,7 @@
+ int interactive;
+ int write_immed;
+ int atari_format;
++int use_mmap = 0;
+ const char *program_name;
+ 
+ 
+diff --git a/src/common.h b/src/common.h
+index 9a68531..3781dbe 100644
+--- a/src/common.h
++++ b/src/common.h
+@@ -35,6 +35,7 @@
+ extern int interactive;
+ extern int write_immed;
+ extern int atari_format;	/* Use Atari variation of MS-DOS FS format */
++extern int use_mmap;
+ 
+ /* program_name used for printing messages; no name will be printed when it is
+  * left as NULL */
+diff --git a/src/fat.c b/src/fat.c
+index d9d5aaf..6534822 100644
+--- a/src/fat.c
++++ b/src/fat.c
+@@ -29,6 +29,7 @@
+ #include <stdlib.h>
+ #include <string.h>
+ #include <unistd.h>
++#include <sys/mman.h>
+ 
+ #include "common.h"
+ #include "fsck.fat.h"
+@@ -79,8 +80,8 @@ void get_fat(FAT_ENTRY * entry, void *fat, uint32_t cluster, DOS_FS * fs)
+ 
+ void release_fat(DOS_FS * fs)
+ {
+-    if (fs->fat)
+-	free(fs->fat);
++	if (fs->fat && !use_mmap)
++		free(fs->fat);
+     if (fs->cluster_owner)
+ 	free(fs->cluster_owner);
+     fs->fat = NULL;
+@@ -120,17 +121,20 @@ void read_fat(DOS_FS * fs, int mode)
+     FAT_ENTRY first_media, second_media;
+     uint32_t total_num_clusters;
+ 
++    total_num_clusters = fs->data_clusters + 2;
++    eff_size = (total_num_clusters * fs->fat_bits + 7) / 8ULL;
++
+     if (fat_table > fs->nfats)
+         die("Requested FAT table %ld does not exist.", fat_table);
+     if (fat_table > 2)
+         die("Reading FAT table greather than 2 is implemented yet.");
+ 
+     /* Clean up from previous pass */
++	if (fs->fat && use_mmap) {
++		fs_munmap(fs->fat, eff_size);
++	}
+     release_fat(fs);
+ 
+-    total_num_clusters = fs->data_clusters + 2;
+-    eff_size = (total_num_clusters * fs->fat_bits + 7) / 8ULL;
+-
+     if (fs->fat_bits != 12)
+ 	    alloc_size = eff_size;
+     else
+@@ -138,15 +142,23 @@ void read_fat(DOS_FS * fs, int mode)
+ 	     * casing the last entry in get_fat() */
+ 	    alloc_size = (total_num_clusters * 12 + 23) / 24 * 3;
+ 
+-    first = alloc(alloc_size);
+-    fs_read(fs->fat_start, eff_size, first);
++    if (use_mmap) {
++		first = fs_mmap(fs->fat_start, eff_size);
++    } else {
++		first = alloc(alloc_size);
++		fs_read(fs->fat_start, eff_size, first);
++	}
+     get_fat(&first_media, first, 0, fs);
+     first_ok = (first_media.value & FAT_EXTD(fs)) == FAT_EXTD(fs);
+     if (fs->nfats > 1) {
+-	second = alloc(alloc_size);
+-	fs_read(fs->fat_start + fs->fat_size, eff_size, second);
+-	get_fat(&second_media, second, 0, fs);
+-	second_ok = (second_media.value & FAT_EXTD(fs)) == FAT_EXTD(fs);
++		if (use_mmap) {
++			second = fs_mmap(fs->fat_start + fs->fat_size, eff_size);
++		} else {
++			second = alloc(alloc_size);
++			fs_read(fs->fat_start + fs->fat_size, eff_size, second);
++		}
++		get_fat(&second_media, second, 0, fs);
++		second_ok = (second_media.value & FAT_EXTD(fs)) == FAT_EXTD(fs);
+     }
+     if (mode != 0 && fat_table == 0) {
+         if (!first_ok && second && !second_ok)
+@@ -165,10 +177,14 @@ void read_fat(DOS_FS * fs, int mode)
+ 	    die("FATs differ, please run fsck.fat");
+ 	if (first_ok && !second_ok) {
+ 	    printf("FATs differ - using first FAT.\n");
+-	    fs_write(fs->fat_start + fs->fat_size, eff_size, first);
++		if (use_mmap)
++			memcpy(second, first, eff_size);
++		else
++			fs_write(fs->fat_start + fs->fat_size, eff_size, first);
+ 	} else if (!first_ok && second_ok) {
+ 	    printf("FATs differ - using second FAT.\n");
+-	    fs_write(fs->fat_start, eff_size, second);
++		if (!use_mmap)
++			fs_write(fs->fat_start, eff_size, second);
+ 	    memcpy(first, second, eff_size);
+ 	} else {
+ 	    if (first_ok && second_ok)
+@@ -183,13 +199,17 @@ void read_fat(DOS_FS * fs, int mode)
+ 		    fix_first_cluster(fs, first);
+ 		    fs_write(fs->fat_start, (fs->fat_bits + 7) / 8, first);
+ 		}
+-		fs_write(fs->fat_start + fs->fat_size, eff_size, first);
++		if (use_mmap)
++			memcpy(second, first, eff_size);
++		else
++			fs_write(fs->fat_start + fs->fat_size, eff_size, first);
+ 	    } else {
+ 		if (!second_ok) {
+ 		    fix_first_cluster(fs, second);
+ 		    fs_write(fs->fat_start + fs->fat_size, (fs->fat_bits + 7) / 8, second);
+ 		}
+-		fs_write(fs->fat_start, eff_size, second);
++		if (!use_mmap)
++			fs_write(fs->fat_start, eff_size, second);
+ 		memcpy(first, second, eff_size);
+ 	    }
+ 	}
+@@ -215,8 +235,12 @@ void read_fat(DOS_FS * fs, int mode)
+             }
+         }
+     }
+-    if (second) {
+-	free(second);
++	if (second) {
++		if (use_mmap) {
++			fs_munmap(second, eff_size);
++		} else {
++			free(second);
++		}
+     }
+     fs->fat = (unsigned char *)first;
+ 
+@@ -328,7 +352,9 @@ void set_fat(DOS_FS * fs, uint32_t cluster, int32_t new)
+     default:
+ 	die("Bad FAT entry size: %d bits.", fs->fat_bits);
+     }
+-    fs_write(offs, size, data);
++    if (!use_mmap) {
++	fs_write(offs, size, data);
++    }
+     if (fs->nfats > 1) {
+ 	fs_write(offs + fs->fat_size, size, data);
+     }
+diff --git a/src/fsck.fat.c b/src/fsck.fat.c
+index 8b02b57..1591c5d 100644
+--- a/src/fsck.fat.c
++++ b/src/fsck.fat.c
+@@ -57,13 +57,11 @@ void *mem_queue = NULL;
+ 
+ static struct termios original_termios;
+ 
+-
+ static void restore_termios(void)
+ {
+     tcsetattr(0, TCSAFLUSH, &original_termios);
+ }
+ 
+-
+ static void usage(char *name, int exitval)
+ {
+     fprintf(stderr, "Usage: %s [OPTIONS] DEVICE\n", name);
+@@ -79,6 +77,7 @@ static void usage(char *name, int exitval)
+     fprintf(stderr, "  -f              salvage unused chains to files\n");
+     fprintf(stderr, "  -F NUM          specify FAT table NUM used for filesystem access\n");
+     fprintf(stderr, "  -l              list path names\n");
++	fprintf(stderr, "  -m			   use mmap to read FAT (requires -w and -r or -a)\n");
+     fprintf(stderr, "  -n              no-op, check non-interactively without changing\n");
+     fprintf(stderr, "  -p              same as -a, for compat with other *fsck\n");
+     fprintf(stderr, "  -r              interactively repair the filesystem (default)\n");
+@@ -124,7 +123,7 @@ int main(int argc, char **argv)
+     rw = interactive = 1;
+     check_atari();
+ 
+-    while ((c = getopt_long(argc, argv, "Aac:d:bfF:lnprStu:UvVwy",
++    while ((c = getopt_long(argc, argv, "Aac:d:bfF:lmnprStu:UvVwy",
+ 				    long_options, NULL)) != -1)
+ 	switch (c) {
+ 	case 'A':		/* toggle Atari format */
+@@ -169,6 +168,9 @@ int main(int argc, char **argv)
+ 	case 'l':
+ 	    list = 1;
+ 	    break;
++	case 'm':
++	    use_mmap = 1;
++	    break;
+ 	case 'n':
+ 	    rw = 0;
+ 	    interactive = 0;
+@@ -224,6 +226,10 @@ int main(int argc, char **argv)
+     if ((test || write_immed) && !rw) {
+ 	fprintf(stderr, "-t and -w can not be used in read only mode\n");
+ 	exit(2);
++    }
++	if (use_mmap && !write_immed) {
++		fprintf(stderr, "-m requires explicit -w and -a or -r\n");
++		exit(2);
+     }
+     if (optind != argc - 1)
+ 	usage(argv[0], 2);
+diff --git a/src/io.c b/src/io.c
+index 8c0c3b2..2b78b81 100644
+--- a/src/io.c
++++ b/src/io.c
+@@ -38,6 +38,7 @@
+ #include <unistd.h>
+ #include <sys/types.h>
+ #include <sys/stat.h>
++#include <sys/mman.h>
+ #include <errno.h>
+ #include <fcntl.h>
+ 
+@@ -66,6 +67,36 @@ void fs_open(const char *path, int rw)
+     did_change = 0;
+ }
+ 
++void *fs_mmap(loff_t pos, int size)
++{
++	char *mapped; /* Convert to char* to be able to add an offset to it */
++	unsigned long pagesize = sysconf(_SC_PAGESIZE);
++	int pos_correction = pos % pagesize;
++
++	/* mmap requires page-aligned offset and size */
++	pos -= pos_correction;
++	size += pos_correction;
++	size = (size + pagesize - 1) / pagesize * pagesize;
++	mapped = mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, pos);
++	if (mapped == MAP_FAILED)
++		pdie("mmapping %d bytes at 0x%08lx", size, (unsigned long)pos);
++	return mapped + pos_correction;
++}
++
++void fs_munmap(void *mapped, int size)
++{
++	unsigned long addr = (unsigned long) mapped;
++	unsigned long pagesize = sysconf(_SC_PAGESIZE);
++	int pos_correction = addr % pagesize;
++
++	addr -= pos_correction;
++	size += pos_correction;
++	/* for munmap, size doesn't have to be a multiple of pagesize */
++	mapped = (void *)addr;
++	if (munmap(mapped, size))
++		pdie("munmapping %d bytes from %p", size, mapped);
++}
++
+ /**
+  * Read data from the partition, accounting for any pending updates that are
+  * queued for writing.
+diff --git a/src/io.h b/src/io.h
+index 053c7e3..9f11f0a 100644
+--- a/src/io.h
++++ b/src/io.h
+@@ -34,6 +34,15 @@ void fs_open(const char *path, int rw);
+ /* Opens the filesystem PATH. If RW is zero, the filesystem is opened
+    read-only, otherwise, it is opened read-write. */
+ 
++void *fs_mmap(loff_t pos, int size);
++
++/* maps SIZE bytes starting at POS into memory. Does not perform any
++   changes. */
++
++void fs_munmap(void *mapped, int size);
++
++/* unmaps SIZE bytes at mapped, which have been mapped before with fs_mmap */
++
+ void fs_read(off_t pos, int size, void *data);
+ 
+ /* Reads SIZE bytes starting at POS into DATA. Performs all applicable
+-- 
+2.25.1
+

@@ -1,0 +1,34 @@
+From 6255d44a314f8b5b6d5b134f7feb993bbd41540f Mon Sep 17 00:00:00 2001
+From: fei_li <fei_li@apowertec.com>
+Date: Mon, 14 Apr 2025 17:51:23 +0800
+Subject: [PATCH] change: disable SHA1_HWACCEL and SHA256_HWACCEL
+
+Signed-off-by: fei_li <fei_li@apowertec.com>
+---
+ libbb/Config.src | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/libbb/Config.src b/libbb/Config.src
+index b980f19..230bd4c 100644
+--- a/libbb/Config.src
++++ b/libbb/Config.src
+@@ -66,14 +66,14 @@ config SHA1_SMALL
+ 
+ config SHA1_HWACCEL
+ 	bool "SHA1: Use hardware accelerated instructions if possible"
+-	default y
++	default n
+ 	help
+ 	On x86, this adds ~590 bytes of code. Throughput
+ 	is about twice as fast as fully-unrolled generic code.
+ 
+ config SHA256_HWACCEL
+ 	bool "SHA256: Use hardware accelerated instructions if possible"
+-	default y
++	default n
+ 	help
+ 	On x86, this adds ~1k bytes of code.
+ 
+-- 
+2.25.1
+

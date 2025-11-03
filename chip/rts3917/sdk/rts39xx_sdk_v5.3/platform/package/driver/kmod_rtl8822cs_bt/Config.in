@@ -1,0 +1,8 @@
+config BR2_PACKAGE_KMOD_RTL8822CS_BT
+	bool "Realtek RTL8822C SDIO Bluetooth"
+	depends on BR2_LINUX_KERNEL
+	help
+	  realtek rtl8822c sdio bluetooth card driver
+
+comment "kmod_rtl8822cs_bt needs a Linux kernel to be built"
+	depends on !BR2_LINUX_KERNEL

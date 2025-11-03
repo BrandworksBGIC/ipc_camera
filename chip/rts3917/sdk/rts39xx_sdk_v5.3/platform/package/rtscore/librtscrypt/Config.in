@@ -1,0 +1,5 @@
+config BR2_PACKAGE_LIBRTSCRYPT
+	bool "librtscrypt"
+	default y
+	help
+	  librtscrypt library

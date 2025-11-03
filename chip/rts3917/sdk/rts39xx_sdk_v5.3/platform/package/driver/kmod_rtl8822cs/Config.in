@@ -1,0 +1,8 @@
+config BR2_PACKAGE_KMOD_RTL8822CS
+	bool "Realtek RTL8822C SDIO WiFi"
+	depends on BR2_LINUX_KERNEL &&  BR2_LINUX_KERNEL_CUSTOM_VERSION_VALUE = "4.9"
+	help
+	  realtek rtl8822c sdio wifi card driver
+
+comment "kmod_rtl8822cs needs a Linux kernel to be built"
+	depends on !BR2_LINUX_KERNEL

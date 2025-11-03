@@ -1,0 +1,5 @@
+config REALTEK_USB_DEVICE
+	tristate "Realtek USB Device support"
+	depends on USB || USB_GADGET
+	help
+	  This driver supports Realtek USB Device driver.

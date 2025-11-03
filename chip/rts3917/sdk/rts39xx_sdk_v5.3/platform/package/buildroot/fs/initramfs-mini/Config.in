@@ -1,0 +1,32 @@
+menuconfig BR2_TARGET_ROOTFS_INITRAMFS_MINI
+	bool "mini-initial RAM filesystem linked into linux kernel"
+	select BR2_TARGET_ROOTFS_INITRAMFS
+	select BR2_PACKAGE_LIBFSMGR
+	help
+		Make sense: you would end up having two identical root
+		filesystems, one embedded inside the kernel image, and
+		one separately.
+
+	config BR2_TARGET_ROOTFS_INITRAMFS_MINI_INCLUDE
+		string "mini-initramfs include"
+		default "libfsmgr"
+		depends on BR2_TARGET_ROOTFS_INITRAMFS_MINI
+		help
+			The packages listed in the string will be
+			installed into the mini-initramfs.
+
+	config BR2_CONFIG_INITRAMFS_MINI_BUSYBOX_SOURCE
+		string "mini-initramfs busybox source"
+		default "$(BR2_EXTERNAL)/scripts/busybox"
+		depends on BR2_TARGET_ROOTFS_INITRAMFS_MINI
+		help
+			Specify the busybox file in mini-initramfs. If empty,
+			use buildroot's own.
+
+	config BR2_CONFIG_INITRAMFS_MINI_INIT_SOURCE
+		string "mini-initramfs init source"
+		default "$(BR2_EXTERNAL)/scripts/init"
+		depends on BR2_TARGET_ROOTFS_INITRAMFS_MINI
+		help
+			Specify the init file in mini-initramfs. If empty,
+			use buildroot's own.

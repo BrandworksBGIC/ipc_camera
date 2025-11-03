@@ -1,0 +1,4 @@
+config RESET_REALTEK
+	tristate "Realtek Reset Driver"
+	help
+	  This enable the reset controller driver for Realtek IPCam.

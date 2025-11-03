@@ -1,0 +1,43 @@
+From 1c746d9d62ee933c66ed6c9647f198a2b224539b Mon Sep 17 00:00:00 2001
+From: shawn_chen <shawn_chen@realsil.com.cn>
+Date: Wed, 15 Jan 2020 10:10:05 +0800
+Subject: [PATCH] port to rts board
+
+---
+ Makefile | 4 ++--
+ stream.c | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index fc0398f..f2e6e60 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,10 +1,10 @@
+-CC = gcc-4.9
++CC ?= gcc-4.9
+ CFLAGS = -O2 -fopenmp
+ 
+ FC = gfortran-4.9
+ FFLAGS = -O2 -fopenmp
+ 
+-all: stream_f.exe stream_c.exe
++all: stream_c.exe
+ 
+ stream_f.exe: stream.f mysecond.o
+ 	$(CC) $(CFLAGS) -c mysecond.c
+diff --git a/stream.c b/stream.c
+index b9a2cee..2523d48 100644
+--- a/stream.c
++++ b/stream.c
+@@ -91,7 +91,7 @@
+  *          per array.
+  */
+ #ifndef STREAM_ARRAY_SIZE
+-#   define STREAM_ARRAY_SIZE	10000000
++#   define STREAM_ARRAY_SIZE	1000000
+ #endif
+ 
+ /*  2) STREAM runs each kernel "NTIMES" times and reports the *best* result
+-- 
+1.9.1
+

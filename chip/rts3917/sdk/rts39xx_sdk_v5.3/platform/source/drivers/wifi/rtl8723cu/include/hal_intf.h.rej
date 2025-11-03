@@ -1,0 +1,15 @@
+diff a/include/hal_intf.h b/include/hal_intf.h	(rejected hunks)
+@@ -223,6 +223,13 @@ typedef enum _HW_VARIABLES {
+ #ifdef CONFIG_WAKE_ON_BT
+ 	HW_VAR_WAKE_ON_BT_GPIO_SWITCH,
+ #endif
++#ifdef CONFIG_BCN_CNT
++	HW_VAR_RX_BCN_CNT,
++	HW_VAR_TX_BCN_CNT,
++#endif
++	HW_VAR_GPIO_PIN_WL_EN,
++	HW_VAR_GPIO_PIN_WL_DIS,
++
+ } HW_VARIABLES;
+ 
+ typedef enum _HAL_DEF_VARIABLE {

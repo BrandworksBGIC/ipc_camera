@@ -1,0 +1,18 @@
+config BR2_PACKAGE_LIBKCAPI1
+	bool "libkcapi-1.2.0"
+	default n
+	help
+	  Linux Kernel Crypto API User Space Interface library.
+
+	  http://www.chronox.de/libkcapi.html
+
+if BR2_PACKAGE_LIBKCAPI1
+
+config BR2_PACKAGE_LIBKCAPI1_APPS
+	bool "build test applications"
+	depends on BR2_USE_MMU # fork()
+	help
+	  Build additional test applications that can provide
+	  performance or algorithm tests.
+
+endif

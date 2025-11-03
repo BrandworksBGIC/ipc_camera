@@ -1,0 +1,8 @@
+config BR2_PACKAGE_KMOD_RTL8189ES
+	bool "Realtek RTL8189E SDIO WiFi"
+	depends on BR2_LINUX_KERNEL
+	help
+	  realtek rtl8189e sdio wifi card driver
+
+comment "kmod_rtl8189es needs a Linux kernel to be built"
+	depends on !BR2_LINUX_KERNEL

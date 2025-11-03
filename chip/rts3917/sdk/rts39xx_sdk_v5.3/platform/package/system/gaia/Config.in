@@ -1,0 +1,22 @@
+config BR2_PACKAGE_GAIA
+	bool "gaia"
+	default y
+	select BR2_PACKAGE_JSON_C if BR2_CONFIG_HW_VER_RTS3915 || BR2_CONFIG_HW_VER_RTS3917
+	select BR2_PACKAGE_RTSTREAM if BR2_CONFIG_HW_VER_RTS3915 || BR2_CONFIG_HW_VER_RTS3917
+	help
+	  gaia
+
+config BR2_PACKAGE_GAIA_FAST
+	bool "fast gaia"
+	default n
+	depends on BR2_PACKAGE_GAIA
+	help
+	  gaia will not parse json to obtain sensor information
+
+config BR2_PACKAGE_GAIA_FAST_SENSOR
+	string "Supported sensor of fast gaia"
+	default "sc3235"
+	depends on BR2_PACKAGE_GAIA_FAST
+	help
+	  Sensor which fast gaia supported
+

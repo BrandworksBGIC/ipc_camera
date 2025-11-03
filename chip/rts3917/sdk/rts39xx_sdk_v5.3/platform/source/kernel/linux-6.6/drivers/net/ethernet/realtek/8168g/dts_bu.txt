@@ -1,0 +1,16 @@
+eth0: rtl8168@18400000 {
+            compatible = "realtek,rts3915-r8168";
+            reg = <0x18400000 0x1000 0x18861000 0x1000>;
+            interrupt-parent = <&cpuintc>;
+            interrupts = <BSP_IRQ_ETHERNET>;
+            pinctrl-names = "default";
+            pinctrl-0 = <&eth_default_mode>;
+            resets = <&reset FORCE_RESET_ETHERNET>,            \
+                    <&reset FORCE_RESET_FEPHY>, \
+                    <&sysmem SYS_MEM_SD_ETH>;
+            reset-names = "eth-reset", "fephy-reset", "eth-mem-up";
+            power-domains = <&power RTS_PD_FEPHY>;
+            status = "disabled";
+                };
+            };
+        };

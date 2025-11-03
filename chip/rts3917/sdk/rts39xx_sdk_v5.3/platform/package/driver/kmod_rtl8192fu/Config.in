@@ -1,0 +1,8 @@
+config BR2_PACKAGE_KMOD_RTL8192FU
+	bool "Realtek RTL8192F USB WiFi"
+	depends on BR2_LINUX_KERNEL &&  BR2_LINUX_KERNEL_CUSTOM_VERSION_VALUE = "4.9"
+	help
+	  realtek rtl8192f usb wifi card driver
+
+comment "kmod_rtl8192f needs a Linux kernel to be built"
+	depends on !BR2_LINUX_KERNEL

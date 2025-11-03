@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: GPL-2.0-only
+
+config RTS_THERMAL
+	tristate "Realtek thermal sensor driver"
+	depends on THERMAL
+	default n
+	help
+	  Enable this option if you want to have support for thermal management
+	  controller present in IPCAM.
+
+	  Thermal reporting device will provide temperature reading,
+	  programmable trip points and other information.

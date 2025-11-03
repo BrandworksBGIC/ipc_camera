@@ -1,0 +1,31 @@
+{
+    "sensor":"auto",
+    "iq":"auto",
+    "log":"syslog",
+    "algos":{
+        "ae_algos":[
+            {
+                "path":"/lib/rtsisp/algos/librts_algo_ae.so",
+                "bind":"enable"
+            }
+        ],
+        "awb_algos":[
+            {
+                "path":"/lib/rtsisp/algos/librts_algo_awb.so",
+                "bind":"enable"
+            }
+        ],
+        "af_algos":[
+            {
+                "path":"/lib/rtsisp/algos/librts_algo_af.so",
+                "bind":"enable"
+            }
+        ],
+        "other_algos":[
+            {
+                "path":"/lib/rtsisp/algos/librts_algo_other.so",
+                "bind":"enable"
+            }
+        ]
+    }
+}

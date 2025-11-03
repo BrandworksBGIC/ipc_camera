@@ -1,0 +1,11 @@
+export CC = asdk-linux-gcc
+
+export PARAM_FILE
+
+# path_to_your_sdk_root should be replaced with the real path
+TMPFS_INCLUDE_PATH = path_to_your_sdk_root/tmpfs/include
+TMPFS_LIBRARY_PATH = path_to_your_sdk_root/tmpfs/lib
+
+export INC_DIR ?= $(shell cd $(PWD)/`dirname $(PARAM_FILE)`/../include; pwd) $(TMPFS_INCLUDE_PATH)
+export LIB_DIR ?= $(shell cd $(PWD)/`dirname $(PARAM_FILE)`/../lib; pwd) $(TMPFS_LIBRARY_PATH)
+export CFLAGS += -Wall

@@ -1,0 +1,5 @@
+config BR2_PACKAGE_OTP_MFG
+	bool "otp_mfg"
+	default n
+	help
+	  otp manufacturer tools

@@ -1,0 +1,190 @@
+/*
+ * Realtek Semiconductor Corp.
+ *
+ * Device Tree Structure
+ *
+ * Tony Wu (tonywu@realtek.com)
+ */
+
+#include <dt-bindings/interrupt-controller/irq.h>
+
+/ {
+
+	compatible = "sheipa-bus", "simple-bus";
+	#address-cells = <2>;
+	#size-cells = <2>;
+
+	/* Exclude secure memory range from 0x80000000 to 0x80400000. */
+	memory@80400000 {
+		device_type = "memory";
+		/* Lower 32-bit part */
+		reg = <0x0 0x80400000 0x0 0x7fc00000>,
+		/* 36-bit part */
+		      <0xe 0x80000000 0x0 0x80000000>;
+	};
+
+	reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+		linux,cma {
+			compatible = "shared-dma-pool";
+			reg = <0x0 0xc0000000 0x0 0x4000000>;
+			reusable;
+			linux,cma-default;
+		};
+	};
+
+	clocks {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		soc_clk25mhz: oscillator1 {
+			compatible = "fixed-clock";
+			clock-output-names = "clk25mhz";
+			clock-frequency = <25000000>;
+			#clock-cells = <0>;
+		};
+		soc_clk40mhz: oscillator2 {
+			compatible = "fixed-clock";
+			clock-output-names = "clk40mhz";
+			clock-frequency = <40000000>;
+			#clock-cells = <0>;
+		};
+	};
+
+
+	spi0: spi@60009000 {
+		compatible = "realtek,spi-rxi312";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		bus_num = <0>;
+		reg = <0x0 0x60009000 0x0 0x200>,
+			<0x0 0x20000000 0x0 0x1000000>;
+		interrupts = <GIC_SPI 21 IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&soc_clk25mhz>;
+		spi-deactivate-delay = <0>;
+		spi-max-frequency = <25000000>;
+		spi-fifo-size = <64>;
+		flash0: flash@0 {
+			#address-cells = <1>;
+			#size-cells = <1>;
+			compatible = "mxicy,mx25l12805d", "mxic,m25p80",
+				     "jedec,spi-nor";
+			spi-max-frequency = <25000000>;
+			reg = <0>;
+			mode = <0>;
+			spi-num-slaves = <0>;
+			spi-fifo-size = <64>;
+			spi-baudr-div = <1>;
+			spi-rx-bus-width = <4>;
+			spi-tx-bus-width = <4>;
+			partitions {
+				compatible = "fixed-partitions";
+				#address-cells = <1>;
+				#size-cells = <1>;
+				partition@0 {
+					label = "Device tree blob";
+					reg = <0x40000 0xC0000>; /* 256K-1M */
+					read-only;
+				};
+				partition@1 {
+					label = "Kernel image";
+					reg = <0x200000 0x600000>; /* 2-8M */
+					read-only;
+				};
+				partition@2 {
+					label = "Squashfs filesystem";
+					reg = <0x800000 0x700000>; /* 8M-15M */
+					read-only;
+				};
+				partition@3 {
+					label = "jffs2 filesystem";
+					reg = <0xF00000 0x100000>; /* 15M-16M */
+				};
+			};
+		};
+	};
+
+	rtc: rtc@6000c000 {
+		compatible = "arm,rtc-pl031", "arm,primecell";
+		reg = <0x0 0x6000c000 0x0 0x1000>;
+		interrupts = <GIC_SPI 22 IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&soc_clk25mhz>;
+		clock-names = "apb_pclk";
+		status = "disabled";
+	};
+
+	uart0: dwapb@60007000 {
+		compatible = "snps,dw-apb-uart";
+		reg = <0x0 0x60007000 0x0 0x100>;
+		interrupts = <GIC_SPI 23 IRQ_TYPE_LEVEL_HIGH>;
+		reg-shift = <2>;
+		reg-io-width = <1>;
+		clock-frequency = <25000000>;
+	};
+
+	eth0: rtl8168@70004000 {
+		compatible = "realtek,sheipa-r8168", "realtek,r8168";
+		reg = <0x0 0x70004000 0x0 0x100>;
+		interrupts = <GIC_SPI 46 IRQ_TYPE_LEVEL_HIGH>;
+		mac-address = "44:77:39:3a:9b:15";
+		status = "disabled";
+	};
+	gmac: rtl8139gb@70004000 {
+		compatible = "realtek,8139gb";
+		reg = <0x0 0x70004000 0x0 0x400>;
+		interrupts = <GIC_SPI 46 IRQ_TYPE_LEVEL_HIGH>;
+		mac-address = "00:81:39:00:00:01";
+		status = "disabled";
+	};
+
+	sd: sd@70003000 {
+		compatible = "realtek,sheipa-dw-mshc", "snps,dw-mshc";
+		reg = <0x0 0x70003000 0x0 0x800>;
+		interrupts = <GIC_SPI 54 IRQ_TYPE_LEVEL_HIGH>;
+		bus-width = <8>;
+		fifo-depth = <0x10>;
+		clock-frequency = <100000000>; // Pretend x2 clock to get lower freq 12.5 MHz (FPGA-only issue)
+		status = "disabled";
+		cap-mmc-highspeed;
+	};
+
+	gpu: malig310@68200000 {
+		compatible = "arm,mali-midgard";
+		reg = <0x0 0x68200000 0x0 0x500000>;
+		interrupts = <GIC_SPI 39 IRQ_TYPE_LEVEL_HIGH>,
+			<GIC_SPI 38 IRQ_TYPE_LEVEL_HIGH>,
+			<GIC_SPI 40 IRQ_TYPE_LEVEL_HIGH>;
+		interrupt-names = "JOB", "MMU", "GPU";
+		clocks = <&soc_clk40mhz>;
+		clock-names = "clk_mali";
+		system-coherency = <31>;  // No coherency
+		status = "disabled";
+	};
+
+	hdmi0: hdmi@69000000 {
+		compatible = "realtek,sheipa-hdmi";
+		reg = <0x0 0x69000000 0x0 0x60>,
+		      <0x0 0x69001000 0x0 0x300>;
+		interrupts = <GIC_SPI 35 IRQ_TYPE_LEVEL_HIGH>;
+		sheipa,hdmi-res-x = <720>;
+		sheipa,hdmi-res-y = <480>;
+		sheipa,hdmi-bpp = <32>;
+		sheipa,hdmi-mode = <1>;
+		status = "disabled";
+	};
+
+	firmware {
+		optee {
+			compatible = "linaro,optee-tz";
+			method = "smc";
+		};
+	};
+
+	chosen {
+		/* add 'root=/dev/mtdblock2 rootfstype=squashfs' to bootargs if boot from spi flash */
+		bootargs = "earlycon=uart8250,mmio32,0x60007000,ttyS0,57600n8 console=ttyS0,57600n8 dw_mmc.card_number=1";
+		stdout-path = &uart0;
+	};
+};

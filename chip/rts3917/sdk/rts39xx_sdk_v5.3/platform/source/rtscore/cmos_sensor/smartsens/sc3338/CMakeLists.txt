@@ -1,0 +1,1 @@
+add_sensor(sc3338_mipi)

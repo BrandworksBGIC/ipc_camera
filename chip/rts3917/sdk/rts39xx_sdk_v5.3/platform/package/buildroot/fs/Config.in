@@ -1,0 +1,1 @@
+source "$BR2_EXTERNAL_platform_PATH/package/buildroot/fs/initramfs-mini/Config.in"

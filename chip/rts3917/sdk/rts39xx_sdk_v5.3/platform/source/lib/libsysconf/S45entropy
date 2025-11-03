@@ -1,0 +1,46 @@
+#!/bin/sh
+
+start_prog(){
+	if [ -f /bin/entropy ] && [ -x /bin/entropy ]; then
+		entropy -D -v 0x1C
+	fi
+}
+
+stop_prog(){
+	killall entropy
+}
+
+restart_prog(){
+	stop_prog
+	start_prog
+}
+
+print_usage(){
+	echo "usage: $PN <start | stop | restart>"
+}
+
+PN="$0"
+
+if [ $# -eq 0 ]; then
+	start_prog
+elif [ $# -eq 1 ]; then
+	case $1 in
+		"start"):
+			#echo start
+			start_prog
+			;;
+		"stop"):
+			#echo stop
+			stop_prog
+			;;
+		"restart"):
+			#echo restart
+			restart_prog
+			;;
+		*):
+			print_usage
+			;;
+	esac
+else
+	print_usage
+fi
