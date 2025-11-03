@@ -1,0 +1,11 @@
+**/build/
+
+# JMake generated files
+.jmake/
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
+jsconfig.json
+**/.cache/
+**/build/
+# End JMake generated files
