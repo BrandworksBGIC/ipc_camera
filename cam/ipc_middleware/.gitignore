@@ -1,0 +1,15 @@
+.xmake
+
+.vscode
+
+build
+
+docs
+
+install
+
+version.h
+
+.cache
+
+include/cp_ipc_config.h
