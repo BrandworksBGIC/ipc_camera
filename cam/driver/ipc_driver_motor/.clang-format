@@ -1,0 +1,56 @@
+BasedOnStyle: WebKit
+# Whether the pointer '*' symbol should be aligned to the left or right
+PointerAlignment: Left
+# The space offset before access modifiers
+AccessModifierOffset: -4
+# The width of indentation
+IndentWidth: 4
+# The maximum number of consecutive empty lines to keep
+MaxEmptyLinesToKeep: 1
+
+# Whether short functions are allowed on a single line
+AllowShortFunctionsOnASingleLine: false
+# Whether short if statements are allowed on a single line
+AllowShortIfStatementsOnASingleLine: false
+# Whether to align code within unclosed brackets (brackets start and end on different lines)
+AlignAfterOpenBracket: true
+# Whether to align all assignment operators in consecutive assignments
+AlignConsecutiveAssignments: true
+# Indentation for switch case labels
+IndentCaseLabels: true
+# Indentation width for Objective-C blocks
+ObjCBlockIndentWidth: 4
+# Whether to add a space after Objective-C property names
+ObjCSpaceAfterProperty: true
+# Maximum character length per line
+ColumnLimit: 150
+# Whether to align trailing comments
+AlignTrailingComments: true
+# Whether to add a space after C-style casts
+SpaceAfterCStyleCast: false
+# Whether to align operands when breaking lines
+AlignOperands: true
+# Whether to add spaces inside square brackets []
+SpacesInSquareBrackets: false
+# Whether to align consecutive declarations
+AlignConsecutiveDeclarations: false
+# Whether to add spaces inside container literals (e.g., Objective-C dictionaries)
+SpacesInContainerLiterals: false
+# Whether to break constructor initializers before commas and align them with colons
+BreakConstructorInitializersBeforeComma: true
+# Whether to place all function parameters on the next line
+AllowAllParametersOfDeclarationOnNextLine: true
+# The indentation width for continuation lines
+ContinuationIndentWidth: 4
+# The width of a tab key press
+TabWidth: 4
+# Whether to add a space before assignment operators
+SpaceBeforeAssignmentOperators: true
+# The number of spaces before trailing comments
+SpacesBeforeTrailingComments: 1
+
+# Whether function arguments should be packed onto one line or each on its own line
+BinPackArguments: true
+# Whether function parameters should be packed onto one line or each on its own line
+BinPackParameters: true
+AlwaysBreakBeforeMultilineStrings: true
