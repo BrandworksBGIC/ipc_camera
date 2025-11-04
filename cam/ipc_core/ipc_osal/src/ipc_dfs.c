@@ -14,7 +14,7 @@
 s32 ipc_file_seek(ipc_file_p h_file, s32 offset, ipc_file_seek_e whence)
 {
     if (!h_file || h_file->fd < 0 || whence > IPC_SEEK_TAIL) {
-        cperror("Seek file parameter error! h_file=[%p], whence=[%d]", h_file, whence);
+        ipcerror("Seek file parameter error! h_file=[%p], whence=[%d]", h_file, whence);
         return IPC_INVALID_ARGS;
     }
 
@@ -27,7 +27,7 @@ s32 ipc_file_seek(ipc_file_p h_file, s32 offset, ipc_file_seek_e whence)
     };
 
     s32 now_offset = lseek(h_file->fd, offset, seek_map[whence]);
-    cpdebug("Seek file->fd=[%d] to offset=[%d]!", h_file->fd, now_offset);
+    ipcdebug("Seek file->fd=[%d] to offset=[%d]!", h_file->fd, now_offset);
     return now_offset;
 }
 
@@ -38,7 +38,7 @@ s32 ipc_file_open(ipc_file_p h_file, pv8 path, ipc_file_mode_e mode, ipc_log_p f
 
     // coverity[NO_EFFECT :SUPPRESS]
     if (!h_file || !path || !path[0] || mode < 0 || mode > IPC_FILE_APPEND) {
-        cperror("Open file parameter error! h_file=[%p], path=[%s], mode=[%d]", h_file, path, mode);
+        ipcerror("Open file parameter error! h_file=[%p], path=[%s], mode=[%d]", h_file, path, mode);
         return IPC_INVALID_ARGS;
     }
 
@@ -51,13 +51,13 @@ s32 ipc_file_open(ipc_file_p h_file, pv8 path, ipc_file_mode_e mode, ipc_log_p f
     
     h_file->fd = open(path, mode_map[mode], 0777);
     if (h_file->fd < 0) {
-        cpwarn("Open file:[%s] failed! errmsg=[%s]", path, strerror(errno));
+        ipcwarn("Open file:[%s] failed! errmsg=[%s]", path, strerror(errno));
         return IPC_OPEN_ERROR;
     }
 
     h_file->fa_log = fa_log;
 
-    cpdebug("Open file:[%s]->fd=[%d] success!", path, h_file->fd);
+    ipcdebug("Open file:[%s]->fd=[%d] success!", path, h_file->fd);
 
     return IPC_SUCCESS;
 }
@@ -67,7 +67,7 @@ void ipc_file_close(ipc_file_p h_file)
     if (!h_file || h_file->fd < 0) return ;
 
     ipc_log_extend(h_file->fa_log);
-    cpdebug("Close file->fd=[%d] success!", h_file->fd);
+    ipcdebug("Close file->fd=[%d] success!", h_file->fd);
 
     close(h_file->fd);
     h_file->fd = -1;
@@ -76,7 +76,7 @@ void ipc_file_close(ipc_file_p h_file)
 s32 ipc_file_read(ipc_file_p h_file, pv8 buff, s32 max)
 {
     if (!h_file || h_file->fd < 0 || !buff || max <= 0) {
-        cperror("Read file parameter error! h_file=[%p], buff=[%p], max=[%d]", h_file, buff, max);
+        ipcerror("Read file parameter error! h_file=[%p], buff=[%p], max=[%d]", h_file, buff, max);
         return IPC_INVALID_ARGS;
     }
 
@@ -89,19 +89,19 @@ s32 ipc_file_read(ipc_file_p h_file, pv8 buff, s32 max)
 		recv_len = read(h_file->fd, buff+recv_all, max-recv_all);
 		if (recv_len < 0) {
 			if (errno == EINTR) continue; /* Interrupt, retry */
-            cperror("Read file->fd=[%d] failed! Errmsg=[%s]", h_file->fd, strerror(errno));
+            ipcerror("Read file->fd=[%d] failed! Errmsg=[%s]", h_file->fd, strerror(errno));
 			return IPC_READ_ERROR;
         }
 
 		if (recv_len == 0) {
-            cpdebug("Read file->fd=[%d] finish", h_file->fd);
+            ipcdebug("Read file->fd=[%d] finish", h_file->fd);
             break; /* Read complete */
         }
         
 		recv_all += recv_len;
 	}
 
-    chtrace(buff, recv_all);
+    ipctrace(buff, recv_all);
 
     return recv_all;
 }
@@ -109,7 +109,7 @@ s32 ipc_file_read(ipc_file_p h_file, pv8 buff, s32 max)
 s32 ipc_file_write(ipc_file_p h_file, pv8 buff, s32 len)
 {
     if (!h_file || h_file->fd < 0 || !buff || len <= 0) {
-        cperror("Write file parameter error! h_file=[%p], buff=[%p], len=[%d]", h_file, buff, len);
+        ipcerror("Write file parameter error! h_file=[%p], buff=[%p], len=[%d]", h_file, buff, len);
         return IPC_INVALID_ARGS;
     }
 
@@ -123,7 +123,7 @@ s32 ipc_file_write(ipc_file_p h_file, pv8 buff, s32 len)
         // coverity[INTEGER_OVERFLOW :SUPPRESS]
         s32 remaining_len = len - write_all;
         if ((remaining_len <= 0) || (remaining_len > len - write_all)) {
-            cperror("Internal error: remaining length calculation failed");
+            ipcerror("Internal error: remaining length calculation failed");
             return IPC_WRITE_ERROR;
         }
 
@@ -131,7 +131,7 @@ s32 ipc_file_write(ipc_file_p h_file, pv8 buff, s32 len)
         if (write_len <= 0) {
             if (errno == EINTR)
                 continue;
-            cperror("Write file->fd=[%d] failed! Errmsg=[%s]", h_file->fd, strerror(errno));
+            ipcerror("Write file->fd=[%d] failed! Errmsg=[%s]", h_file->fd, strerror(errno));
             return IPC_WRITE_ERROR;
         }
         write_all += write_len;
@@ -144,13 +144,13 @@ s32 ipc_file_write(ipc_file_p h_file, pv8 buff, s32 len)
 s32 ipc_file_clear(ipc_file_p h_file)
 {
     if (!h_file || h_file->fd < 0) {
-        cperror("Clear file parameter error! h_file=[%p]", h_file);
+        ipcerror("Clear file parameter error! h_file=[%p]", h_file);
         return IPC_INVALID_ARGS;
     }
 
     s32 ret = ftruncate(h_file->fd, 0);
     if (ret != 0) {
-        cperror("Ftruncate file failed! Retcode=[%d], errmsg=[%s]", ret, strerror(errno));
+        ipcerror("Ftruncate file failed! Retcode=[%d], errmsg=[%s]", ret, strerror(errno));
         return IPC_FAILED;
     }
 

@@ -687,7 +687,7 @@ s32 ipc_json_wrconf(pv8 session, ipc_json_t h_jsons[], s32 num)
 
         ret = ipc_file_write(h_file, json, new_len); // Write new data
     } else {
-        cpdebug("Not need update json configure"); // No changes needed
+        ipcdebug("Not need update json configure"); // No changes needed
     }
 
     // Final cleanup: close file and free memory

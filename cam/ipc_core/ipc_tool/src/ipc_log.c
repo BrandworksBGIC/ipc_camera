@@ -166,7 +166,7 @@ static inline void _proxy_send(u16 port, vptr data, s32 len)
 
     ret = sendto(fd, data, len, 0, (struct sockaddr*)addr, sizeof(addr));
     if (ret < 0) {
-        cperror("sengdto error:%d\n", ret);
+        ipcerror("sengdto error:%d\n", ret);
     }
 }
 // Define a mapping relationship between log level and color/tag

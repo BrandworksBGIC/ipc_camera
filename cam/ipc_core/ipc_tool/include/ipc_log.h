@@ -114,18 +114,18 @@ __attribute__((unused)) static /* __thread */ ipc_log_t __IPC_LOG__ = { { NULL, 
     __attribute__((unused)) ipc_log_t __IPC_LOG_TMP__                                                                    \
         = { { __IPC_LOG__->h_self, father == __IPC_LOG__ ? NULL : father } };                                            \
     __attribute__((unused)) ipc_log_t __IPC_LOG__ = { { __IPC_LOG_TMP__->h_self, __IPC_LOG_TMP__->h_father } }
-#define cptrace(...) ipc_log_printf(__IPC_LOG__, IPC_LOG_TRACE, __VA_ARGS__)
-#define cpdebug(...) ipc_log_printf(__IPC_LOG__, IPC_LOG_DEBUG, __VA_ARGS__)
-#define cpinfo(...) ipc_log_printf(__IPC_LOG__, IPC_LOG_INFO, __VA_ARGS__)
-#define cpwarn(...) ipc_log_printf(__IPC_LOG__, IPC_LOG_WARN, __VA_ARGS__)
-#define cperror(...) ipc_log_printf(__IPC_LOG__, IPC_LOG_ERROR, __VA_ARGS__)
-#define cpfatal(...) ipc_log_printf(__IPC_LOG__, IPC_LOG_FATAL, __VA_ARGS__)
-#define chtrace(...) ipc_log_hexdump(__IPC_LOG__, IPC_LOG_TRACE, __VA_ARGS__)
-#define chdebug(...) ipc_log_hexdump(__IPC_LOG__, IPC_LOG_DEBUG, __VA_ARGS__)
-#define chinfo(...) ipc_log_hexdump(__IPC_LOG__, IPC_LOG_INFO, __VA_ARGS__)
-#define chwarn(...) ipc_log_hexdump(__IPC_LOG__, IPC_LOG_WARN, __VA_ARGS__)
-#define cherror(...) ipc_log_hexdump(__IPC_LOG__, IPC_LOG_ERROR, __VA_ARGS__)
-#define chfatal(...) ipc_log_hexdump(__IPC_LOG__, IPC_LOG_FATAL, __VA_ARGS__)
+#define ipctrace(...) ipc_log_printf(__IPC_LOG__, IPC_LOG_TRACE, __VA_ARGS__)
+#define ipcdebug(...) ipc_log_printf(__IPC_LOG__, IPC_LOG_DEBUG, __VA_ARGS__)
+#define ipcinfo(...) ipc_log_printf(__IPC_LOG__, IPC_LOG_INFO, __VA_ARGS__)
+#define ipcwarn(...) ipc_log_printf(__IPC_LOG__, IPC_LOG_WARN, __VA_ARGS__)
+#define ipcerror(...) ipc_log_printf(__IPC_LOG__, IPC_LOG_ERROR, __VA_ARGS__)
+#define ipcfatal(...) ipc_log_printf(__IPC_LOG__, IPC_LOG_FATAL, __VA_ARGS__)
+#define iphtrace(...) ipc_log_hexdump(__IPC_LOG__, IPC_LOG_TRACE, __VA_ARGS__)
+#define iphdebug(...) ipc_log_hexdump(__IPC_LOG__, IPC_LOG_DEBUG, __VA_ARGS__)
+#define iphinfo(...) ipc_log_hexdump(__IPC_LOG__, IPC_LOG_INFO, __VA_ARGS__)
+#define iphwarn(...) ipc_log_hexdump(__IPC_LOG__, IPC_LOG_WARN, __VA_ARGS__)
+#define ipherror(...) ipc_log_hexdump(__IPC_LOG__, IPC_LOG_ERROR, __VA_ARGS__)
+#define iphfatal(...) ipc_log_hexdump(__IPC_LOG__, IPC_LOG_FATAL, __VA_ARGS__)
 
 /* Other Tools / Hooks */
 /**
