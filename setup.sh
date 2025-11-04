@@ -24,6 +24,8 @@ fi
 export PROJECT_DIR="$PROJECT_DIR"
 export IPC_CAM_ROOT="$PROJECT_DIR"
 
+export JMAKE_CFLAGS="-I$(pwd)/cam/include/"
+
 echo "IPC Camera development environment configured"
 echo "Project root: $PROJECT_DIR"
 echo "Tools directory: $TOOLS_DIR"
