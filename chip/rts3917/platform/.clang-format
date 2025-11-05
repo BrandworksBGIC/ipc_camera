@@ -1,0 +1,61 @@
+BasedOnStyle: WebKit
+# Pointer alignment
+PointerAlignment: Left
+# Offset for access modifiers
+AccessModifierOffset: -4
+# Indent width
+IndentWidth: 4
+# Maximum number of consecutive empty lines to keep
+MaxEmptyLinesToKeep: 1
+
+# Allow short functions on a single line
+AllowShortFunctionsOnASingleLine: false
+# Allow short if statements on a single line
+AllowShortIfStatementsOnASingleLine: false
+# Align code after an opening bracket when it is not closed on the same line
+AlignAfterOpenBracket: true
+# Align consecutive assignments
+AlignConsecutiveAssignments: true
+# Indent case labels in switch statements
+IndentCaseLabels: true
+# Objective-C block indent width
+ObjCBlockIndentWidth: 4
+# Add space after Objective-C properties
+ObjCSpaceAfterProperty: true
+# Column limit
+ColumnLimit: 120
+# Align trailing comments
+AlignTrailingComments: true
+# Space after C-style casts
+SpaceAfterCStyleCast: false
+# Align operands when breaking lines
+AlignOperands: true
+# Spaces inside square brackets
+SpacesInSquareBrackets: false
+# Align consecutive declarations
+
+AlignConsecutiveDeclarations: true 
+# Spaces in container literals (e.g., Objective-C dictionaries)
+SpacesInContainerLiterals: false
+# Break constructor initializers before commas and align with colons
+BreakConstructorInitializersBeforeComma: true
+# Allow all parameters of a declaration on the next line
+
+AllowAllParametersOfDeclarationOnNextLine: false
+# Continuation indent width
+ContinuationIndentWidth: 4
+# Tab width
+TabWidth: 4
+# Space before assignment operators
+SpaceBeforeAssignmentOperators: true
+# Spaces before trailing comments
+SpacesBeforeTrailingComments: 1
+
+# Bin pack arguments (false means either all arguments are on the same line or each one is on its own line)
+
+BinPackArguments: false  
+# Bin pack parameters (false means either all parameters are on the same line or each one is on its own line)
+
+BinPackParameters: false 
+# Always break before multiline strings
+AlwaysBreakBeforeMultilineStrings: true
