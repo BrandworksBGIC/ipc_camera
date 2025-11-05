@@ -75,6 +75,7 @@ const stagingDir = `staging`;
 // Dependencies will automatically execute build.js in each directory when created
 const buildTarget = createTarget("firmware-package",
 "../../../cam/",
+"../../../third/hostap/"
 );
 
 // Set as virtual target (void/phony type)
@@ -176,16 +177,6 @@ function buildFirmwarePackage() {
     // Copy modules and sensors from staging to tempAppDir
     copyStagingModulesAndSensorsToTempAppDir();
 
-    // Handle WiFi-specific files (hostap already installed via dependencies)
-    if (buildConfig.wifi === "8188fu") {
-        console.log("Using 8188fu WiFi tools...");
-        if (!shell.run(`cp 8188fu_tools/bin/* ${tempAppDir}/bin/ -uv`)) {
-            throw new Error("Failed to copy 8188fu binaries");
-        }
-        if (!shell.run(`cp 8188fu_tools/lib/* ${tempAppDir}/lib/ --no-dereference -uv`)) {
-            throw new Error("Failed to copy 8188fu libraries");
-        }
-    }
 
     // Copy AI plugin (local file, use shell.run)
     console.log("Copying AI plugin...");
