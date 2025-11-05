@@ -48,19 +48,6 @@ typedef struct {
     u8 key_frame; ///< Whether it's a key frame (including certain audio formats)
 } ipc_middleware_sal_get_media_frame_t, *ipc_middleware_sal_get_media_frame_p;
 
-/**
- * @brief Generic stream retrieval queue interface (adheres to ipc_core ipc_iter standard).
- *
- * @param h_iter ipc_iter standard handle
- * @param locate_tms <=0: Desired pre-recording time >0: Locate data at a specific timestamp (if not feasible, try to achieve seamless continuation
- * with the previous recording) (Note: only needs to be effective during initialization)
- * @param clarity Type of channel for stream retrieval (real-time updates)
- * @param frame Retrieved frame data
- * @return ipc_iter standard return value, IPC_ITER_CONTINUE: Continue IPC_ITER_BREAK: Exit
- * @note Normally, the function should wait until a stream is retrieved before returning.
- * @note h_iter->ret = Actual return value
- */
-EXAPI s32 ipc_middleware_sal_get_media_iter(ipc_iter_p h_iter, s64 locate_tms, ipc_middleware_sal_clarity_e clarity, ipc_middleware_sal_get_media_frame_p frame);
 
 /************************ main *****************************/
 

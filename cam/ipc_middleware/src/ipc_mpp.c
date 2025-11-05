@@ -7,6 +7,7 @@
 #include "ipc_ptz.h"
 #include "ipc_sal_api.h"
 #include "ipc_thread.h"
+#include "ipc_time.h"
 #include "ipc_type_trans.h"
 #include "ipc_voice_file.h"
 
@@ -15,6 +16,7 @@
 
 
 enum { MPP_HD, MPP_SD, MPP_AUDIO, MPP_OSD, MPP_SPEAK, MPP_JPEG, MPP_NUM };
+
 static struct {
     u8 gorun;
     u8 osd_run;
@@ -36,6 +38,9 @@ static struct {
     ipc_mpp_push_video_f f_push_video;
     ipc_mpp_push_audio_f f_push_audio;
     ipc_mpp_play_finish_f f_play_finish;
+    u8 video_channel_started[2]; // 0: MAIN, 1: SUB - track manual video start/stop in non-thread mode
+    s32 video_wdg_fd[2];         // 0: MAIN, 1: SUB - watchdog file descriptors for video channels
+    s32 audio_wdg_fd;            // Audio watchdog file descriptor
 
     u8 qr_enable;
 } _gh_mpp = {
@@ -43,6 +48,8 @@ static struct {
     .f_push_video  = NOT_DO_ANYTHING,
     .f_push_audio  = NOT_DO_ANYTHING,
     .f_play_finish = NOT_DO_ANYTHING,
+    .video_wdg_fd  = {-1, -1},    // Initialize video watchdog file descriptors
+    .audio_wdg_fd  = -1,          // Initialize audio watchdog file descriptor
 };
 
 /******************************** speak & player ********************************************/
@@ -631,6 +638,41 @@ static void __plat_recv_video_frame_cb(struct ipc_frame_data_s* frame, vptr _use
     }
 }
 
+s32 ipc_mpp_recv_video(IPC_VIDEO_CHN_TYPE chn,
+                       void (*callback)(struct ipc_frame_data_s* frame, void* user_data),
+                       void* user_data,
+                       s32 timeout_ms)
+{
+    if (!callback || (chn != IPC_VIDEO_CHN_MAIN && chn != IPC_VIDEO_CHN_SUB)) {
+        return IPC_INVALID_ARGS;
+    }
+
+    struct ipc_api_s* h_plat = ipc_plat_api(0);
+    if (!h_plat) {
+        return IPC_NOT_INIT;
+    }
+
+    // Check if video channel has been started via ipc_mpp_video_start
+    s32 idx = chn - IPC_VIDEO_CHN_MAIN;
+    if (idx >= 0 && idx < 2) {
+        if (!_gh_mpp.video_channel_started[idx]) {
+            ipctrace("Video channel %d not started, call ipc_mpp_video_start first", chn);
+            return IPC_NOT_INIT; // Channel not started
+        }
+    }
+
+    // Watchdog feeding logic - separate for each channel
+    if (_gh_mpp.video_wdg_fd[idx] < 0) {
+        _gh_mpp.video_wdg_fd[idx] = ipc_swdg_reg(1);
+    }
+    if (_gh_mpp.video_wdg_fd[idx] >= 0) {
+        ipc_swdg_feed(_gh_mpp.video_wdg_fd[idx], 10);
+    }
+
+    // Call platform API with user callback
+    return h_plat->video_recv_frame(chn, callback, user_data, timeout_ms);
+}
+
 static vptr _pth_video(vptr arg)
 {
     s32 mpp_chn  = (s32)(word)arg;
@@ -726,6 +768,118 @@ static void __plat_recv_audio_frame_cb(struct ipc_frame_data_s* frame, vptr _use
     extinfo.sound_frame_max_db = _get_sound_frame_max_db(fix_80db, frame->pack[0].data, frame->pack[0].data_len, __IPC_LOG__);
 
     _push_audio(frame->pack[0].data, frame->pack[0].data_len, &extinfo, __IPC_LOG__);
+}
+
+// Audio wrapper callback structure and function
+typedef struct {
+    void (*user_callback)(struct ipc_frame_data_s* frame, void* user_data);
+    void* user_data;
+    ipc_mpp_ai_extinfo_p extinfo;
+} ipc_audio_wrapper_ctx_t;
+
+static void ipc_audio_wrapper_callback(struct ipc_frame_data_s* frame, void* ctx)
+{
+    ipc_audio_wrapper_ctx_t* wctx = (ipc_audio_wrapper_ctx_t*)ctx;
+
+    if (wctx->extinfo) {
+        // Calculate fix_80db
+        u16 amplitude_80db = ipc_factory(mplitude_80db);
+        f32 fix_80db = _get_pcm_db(amplitude_80db) - 80;
+
+        // Calculate VAD detection number
+        wctx->extinfo->vad_det_number = ipc_vad_process_ai_frame(_gh_mpp.h_ai_vad,
+                                                                 frame->pack[0].data,
+                                                                 frame->pack[0].data_len);
+
+        // Calculate sound frame max db
+        wctx->extinfo->sound_frame_max_db = _get_sound_frame_max_db(fix_80db,
+                                                                 (ps16)frame->pack[0].data,
+                                                                 frame->pack[0].data_len,
+                                                                 __IPC_LOG__);
+    }
+
+    // Call user callback with calculated extended information
+    wctx->user_callback(frame, wctx->user_data);
+}
+
+s32 ipc_mpp_recv_audio(void (*callback)(struct ipc_frame_data_s* frame, void* user_data),
+                       void* user_data,
+                       ipc_mpp_ai_extinfo_p extinfo,
+                       s32 timeout_ms)
+{
+    if (!callback) {
+        return IPC_INVALID_ARGS;
+    }
+
+    struct ipc_api_s* h_plat = ipc_plat_api(0);
+    if (!h_plat) {
+        return IPC_NOT_INIT;
+    }
+
+    // Watchdog feeding logic
+    if (_gh_mpp.audio_wdg_fd < 0) {
+        _gh_mpp.audio_wdg_fd = ipc_swdg_reg(1);
+    }
+    if (_gh_mpp.audio_wdg_fd >= 0) {
+        ipc_swdg_feed(_gh_mpp.audio_wdg_fd, 10);
+    }
+
+    // Create wrapper callback to calculate audio extended information
+    ipc_audio_wrapper_ctx_t wrapper_ctx = {callback, user_data, extinfo};
+
+    // Call platform API with wrapper callback
+    return h_plat->audio_ai_recv_frame(ipc_audio_wrapper_callback, &wrapper_ctx, timeout_ms);
+}
+
+s32 ipc_mpp_video_start(IPC_VIDEO_CHN_TYPE chn, s32 param)
+{
+    if (chn != IPC_VIDEO_CHN_MAIN && chn != IPC_VIDEO_CHN_SUB) {
+        return IPC_INVALID_ARGS;
+    }
+
+    struct ipc_api_s* h_plat = ipc_plat_api(0);
+    if (!h_plat) {
+        return IPC_NOT_INIT;
+    }
+
+    s32 ret = h_plat->video_start(chn, (vptr)(word)param);
+    if (ret == IPC_SUCCESS) {
+        // Record that this channel was started manually in non-thread mode
+        s32 idx = chn - IPC_VIDEO_CHN_MAIN;
+        if (idx >= 0 && idx < 2) {
+            _gh_mpp.video_channel_started[idx] = 1;
+        }
+    }
+
+    return ret;
+}
+
+s32 ipc_mpp_video_stop(IPC_VIDEO_CHN_TYPE chn)
+{
+    if (chn != IPC_VIDEO_CHN_MAIN && chn != IPC_VIDEO_CHN_SUB) {
+        return IPC_INVALID_ARGS;
+    }
+    struct ipc_api_s* h_plat = ipc_plat_api(0);
+    if (!h_plat) {
+        return IPC_NOT_INIT;
+    }
+
+      // Clear the manual start state for this channel
+    s32 idx = chn - IPC_VIDEO_CHN_MAIN;
+    if (idx >= 0 && idx < 2) {
+        _gh_mpp.video_channel_started[idx] = 0;
+
+        // Unregister watchdog for this channel
+        if (_gh_mpp.video_wdg_fd[idx] >= 0) {
+            ipc_swdg_unreg(_gh_mpp.video_wdg_fd[idx]);
+            _gh_mpp.video_wdg_fd[idx] = -1;
+            ipctrace("Unregistered watchdog for video channel %d", chn);
+        }
+    }
+
+    ipc_sleep(1);
+
+    return h_plat->video_stop(chn);
 }
 
 static vptr _pth_audio(vptr arg)
@@ -1323,6 +1477,9 @@ s32 ipc_mpp_init(ipc_mpp_cb_p mpp_cb)
     if (mpp_cb->f_play_finish)
         _gh_mpp.f_play_finish = mpp_cb->f_play_finish;
 
+    // Default create_threads to 1 if not specified (for backward compatibility)
+    u8 create_threads = (mpp_cb->create_threads == 0) ? 0 : 1;
+
     ipc_decrypt_ininfo_p decrypt = ipc_decrypt_ininfo();
     if (decrypt == NULL) {
         ipcfatal("Decrypt verify failed");
@@ -1400,16 +1557,19 @@ s32 ipc_mpp_init(ipc_mpp_cb_p mpp_cb)
         return IPC_FAILED;
     }
 
-    ret = ipc_create_thread("ipc_video_hd", _pth_video, (vptr)MPP_HD, 128 * 1024, 0);
-    if (ret < 0) {
-        ipcfatal("Create video HD thread failed! retcode=[%d]", ret);
-        return ret;
-    }
+    // Create audio/video threads only if requested
+    if (create_threads) {
+        ret = ipc_create_thread("ipc_video_hd", _pth_video, (vptr)MPP_HD, 128 * 1024, 0);
+        if (ret < 0) {
+            ipcfatal("Create video HD thread failed! retcode=[%d]", ret);
+            return ret;
+        }
 
-    ret = ipc_create_thread("ipc_video_sd", _pth_video, (vptr)MPP_SD, 128 * 1024, 0);
-    if (ret < 0) {
-        ipcfatal("Create video SD thread failed! retcode=[%d]", ret);
-        return ret;
+        ret = ipc_create_thread("ipc_video_sd", _pth_video, (vptr)MPP_SD, 128 * 1024, 0);
+        if (ret < 0) {
+            ipcfatal("Create video SD thread failed! retcode=[%d]", ret);
+            return ret;
+        }
     }
 
     ipc_lock_init(_gh_mpp.snapshot_lock, IPC_THREAD_MUTEX);
@@ -1421,10 +1581,13 @@ s32 ipc_mpp_init(ipc_mpp_cb_p mpp_cb)
         return ret;
     }
 
-    ret = ipc_create_thread("ipc_audio", _pth_audio, (vptr)MPP_AUDIO, 128 * 1024, 0);
-    if (ret < 0) {
-        ipcfatal("Create audio in thread failed! retcode=[%d]", ret);
-        return ret;
+    // Create audio thread only if requested
+    if (create_threads) {
+        ret = ipc_create_thread("ipc_audio", _pth_audio, (vptr)MPP_AUDIO, 128 * 1024, 0);
+        if (ret < 0) {
+            ipcfatal("Create audio in thread failed! retcode=[%d]", ret);
+            return ret;
+        }
     }
 
     if (decrypt->product_type != IPC_PRODUCT_TYPE_PANO_360) {
@@ -1482,6 +1645,25 @@ void ipc_mpp_uninit(s32 is_wait)
 
     ipc_lock_uninit(_gh_mpp.snapshot_lock);
     ipc_cond_uninit(_gh_mpp.snapshot_cond);
+
+    // Auto-stop video channels that were manually started in non-thread mode
+    for (s32 i = 0; i < 2; i++) {
+        if (_gh_mpp.video_channel_started[i]) {
+            IPC_VIDEO_CHN_TYPE chn = (i == 0) ? IPC_VIDEO_CHN_MAIN : IPC_VIDEO_CHN_SUB;
+            ipctrace("Auto-stopping video channel %d in uninit", chn);
+            ipc_mpp_video_stop(chn);  // Use the wrapper interface instead of direct platform call
+        }
+    }
+
+    // Stop audio and cleanup watchdog in non-thread mode
+    if (_gh_mpp.audio_wdg_fd >= 0) {
+        ipctrace("Auto-unregistering audio watchdog in uninit");
+        ipc_swdg_unreg(_gh_mpp.audio_wdg_fd);
+        _gh_mpp.audio_wdg_fd = -1;
+    }
+
+    ipc_sleep(1);
+
     h_plat->audio_stop(1, 1);
     h_plat->audio_uninit();
     h_plat->video_uninit();

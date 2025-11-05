@@ -203,6 +203,7 @@ typedef enum {
     IPC_IO_NAME_WIRELESS_PWR,       ///< Wireless module (WiFi/4G) switch
     IPC_IO_NAME_FRONT_BUTTON,       ///< Front button responsible for user interaction
     IPC_IO_NAME_ETH0_RST,           ///< Wired network card reset pin
+    IPC_IO_NAME_FILL_LIGHT,
     IPC_IO_NAME_NUM,                ///< Number of IOs
 } IPC_IO_NAME;
 

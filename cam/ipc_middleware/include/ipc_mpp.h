@@ -50,16 +50,18 @@ typedef struct {
     ipc_mpp_push_audio_f f_push_audio;
     ipc_mpp_get_realts_f f_realts;
     ipc_mpp_play_finish_f f_play_finish;
+    u8 create_threads; // 1: create audio/video threads (default), 0: only init systems, no threads
 } ipc_mpp_cb_t, *ipc_mpp_cb_p;
 
 /**
  * @brief Initializes resources for the streaming media/board I/O related functional module
- * 
- * @param is_flip Initial flip state
- * @param f_push_video Video stream callback
- * @param f_push_audio Audio stream callback
- * @param f_realts Real-time timestamp callback (if NULL, default ipc_real_ts is used)
+ *
+ * @param mpp_cb Callback configuration structure
  * @return ipc_std.h standard return value
+ * @note
+ * - Set mpp_cb->create_threads = 1 to create audio/video threads (callback mode, default)
+ * - Set mpp_cb->create_threads = 0 to only init systems, no threads (direct recv mode)
+ * - For direct recv mode, use ipc_mpp_recv_video() and ipc_mpp_recv_audio() functions
  */
 EXAPI s32 ipc_mpp_init(ipc_mpp_cb_p mpp_cb);
 
@@ -282,6 +284,51 @@ EXAPI s32 ipc_mpp_vad_sensitivity(s32 sensitivity);
  * @return ipc_std.h standard return value
  */
 EXAPI s32 ipc_mpp_qr_enhancement(u32 enable);
+
+/**
+ * @brief Direct video stream reception, similar to h_plat->video_recv_frame design
+ *
+ * @param chn Video channel (IPC_VIDEO_CHN_MAIN or IPC_VIDEO_CHN_SUB)
+ * @param callback User callback function to handle received video frame
+ * @param user_data User data passed to callback function
+ * @param timeout_ms Timeout in milliseconds
+ * @return ipc_std.h standard return value
+ */
+EXAPI s32 ipc_mpp_recv_video(IPC_VIDEO_CHN_TYPE chn,
+                            void (*callback)(struct ipc_frame_data_s* frame, void* user_data),
+                            void* user_data,
+                            s32 timeout_ms);
+
+/**
+ * @brief Direct audio stream reception, similar to h_plat->audio_ai_recv_frame design
+ *
+ * @param callback User callback function to handle received audio frame
+ * @param user_data User data passed to callback function
+ * @param extinfo Pointer to receive audio extended information (VAD detection, sound level db, etc.)
+ * @param timeout_ms Timeout in milliseconds
+ * @return ipc_std.h standard return value
+ */
+EXAPI s32 ipc_mpp_recv_audio(void (*callback)(struct ipc_frame_data_s* frame, void* user_data),
+                            void* user_data,
+                            ipc_mpp_ai_extinfo_p extinfo,
+                            s32 timeout_ms);
+
+/**
+ * @brief Start video channel control interface
+ *
+ * @param chn Video channel (IPC_VIDEO_CHN_MAIN or IPC_VIDEO_CHN_SUB)
+ * @param param Video start parameters (passed to platform API)
+ * @return ipc_std.h standard return value
+ */
+EXAPI s32 ipc_mpp_video_start(IPC_VIDEO_CHN_TYPE chn, s32 param);
+
+/**
+ * @brief Stop video channel control interface
+ *
+ * @param chn Video channel (IPC_VIDEO_CHN_MAIN or IPC_VIDEO_CHN_SUB)
+ * @return ipc_std.h standard return value
+ */
+EXAPI s32 ipc_mpp_video_stop(IPC_VIDEO_CHN_TYPE chn);
 
 #ifdef __cplusplus
 }
