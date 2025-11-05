@@ -1,0 +1,24 @@
+#export PATH="/usr/bin:/usr/sbin"
+export PATH=/bin:/sbin:/usr/bin:/usr/sbin
+export PATH=/app/bin:$PATH
+export LD_LIBRARY_PATH=/lib:/app/lib
+
+if [ "$PS1" ]; then
+	if [ "`id -u`" -eq 0 ]; then
+		# export PS1='\[\e[32m\][\u@\h:\w]#\[\e[m\] '
+		export PS1="\[\e[32;1m\][\[\e[33;1m\]\u\[\e[31;1m\]@\[\e[33;1m\]\h \[\e[36;1m\]\w\[\e[32;1m\]]\[\e[34;1m\]\# \[\e[0m\]"
+	else
+		# export PS1='\[\e[32m\][\u@\h:\w]$\[\e[m\] '
+		export PS1="\[\e[32;1m\][\[\e[33;1m\]\u\[\e[31;1m\]@\[\e[33;1m\]\h \[\e[36;1m\]\w\[\e[32;1m\]]\[\e[34;1m\]\$ \[\e[0m\]"
+	fi
+fi
+
+export EDITOR='/bin/vi'
+
+# Source configuration files from /etc/profile.d
+for i in /etc/profile.d/*.sh ; do
+	if [ -r "$i" ]; then
+		. $i
+	fi
+done
+unset i

@@ -1,0 +1,31 @@
+/dts-v1/;
+
+/ {
+	description = "Linux kernel";
+	#address-cells = <1>;
+
+	images {
+		kernel-1 {
+			description = "Linux kernel";
+			data = /incbin/("TAG_KERNEL_BIN");
+			type = "kernel";
+			arch = "arm";
+			os = "linux";
+			compression = "none";
+			load = <TAG_LOAD_ADDR>;
+			entry = <TAG_ENTRY_ADDR>;
+			signature-1 {
+				algo = "sha256,rsa2048";
+				key-name-hint = "verity_key1";
+			};
+		};
+	};
+
+	configurations {
+		default = "config-1";
+		config-1 {
+			description = "Boot Linux kernel";
+			kernel = "kernel-1";
+		};
+	};
+};

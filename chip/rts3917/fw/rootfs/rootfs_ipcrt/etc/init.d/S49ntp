@@ -1,0 +1,46 @@
+#!/bin/sh
+
+start_prog(){
+
+	start_ntpdate > /dev/null 2>&1 &
+}
+
+stop_prog(){
+	killall ntpd
+}
+
+restart_prog(){
+	stop_prog
+	start_prog
+}
+
+print_usage(){
+	echo "usage: $PN [start | stop | restart]"
+}
+
+PN="$0"
+
+if [ $# -eq 0 ]; then
+	start_prog
+elif [ $# -eq 1 ]; then
+	case $1 in
+		"start"):
+			#echo start
+			start_prog
+			;;
+		"stop"):
+			#echo stop
+			stop_prog
+			;;
+		"restart"):
+			#echo restart
+			restart_prog
+			;;
+		*):
+			print_usage
+			;;
+	esac
+else
+	print_usage
+fi
+unset PN

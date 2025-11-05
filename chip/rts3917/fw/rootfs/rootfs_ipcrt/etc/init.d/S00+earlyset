@@ -1,0 +1,73 @@
+#!/bin/sh
+#
+# System setup at early boot
+#
+
+[ -r /etc/default/earlyset ] && . /etc/default/earlyset
+
+initdevnod() {
+	mknod /dev/dbg_iomem c 120 0
+	mknod /dev/usb_phy_mdio c 121 0
+	mknod /dev/hconf c 123 0
+	mknod /dev/crypto c 124 0
+	mknod /dev/ram0 b 1 0
+}
+
+sethostname() {
+	ethaddr=$(fw_printenv hostname|awk '{print $1}' 2>/dev/null)
+	if [ ${#ethaddr} == 0 ]; then
+		printf "get hostname from fw_env fail, set to default"
+		ethaddr=$(ifconfig eth0|grep HWaddr|awk '{print $5}' 2>/dev/null)
+		if [ $? != 0 ]; then
+			printf "get ethaddr from eth0 fail\n"
+			return
+		fi
+		ethaddr=${ethaddr:9:17}
+		hostname="IPCAM-"${ethaddr//:/}
+		fw_setenv hostname $hostname
+	else
+		hostname=${ethaddr:9:64}
+	fi
+	hostname $hostname
+}
+
+start() {
+	if [ -d /sys/kernel/debug ]; then
+		mount -t debugfs none /sys/kernel/debug
+	fi
+
+	mount -t ramfs ramfs /var
+	mkdir -p /var/tmp /var/log /var/run /var/lock /var/spool /var/cache \
+		/var/nm /var/conf /var/lib /var/lib/misc
+
+	initdevnod
+
+	ifconfig lo 127.0.0.1
+
+	# sethostname
+
+	# Set initial date/time
+	date -s "2018-06-01 00:00:00" >/dev/null
+}
+
+stop() {
+	:
+}
+
+case "$1" in
+  start)
+        start
+        ;;
+  stop)
+        stop
+        ;;
+  restart|reload)
+        stop
+        start
+        ;;
+  *)
+        echo "Usage: $0 {start|stop|restart}"
+        exit 1
+esac
+
+exit $?

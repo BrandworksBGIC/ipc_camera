@@ -1,0 +1,11 @@
+# Aliases extracted from modules themselves.
+alias platform:rts_isp_mem rts_cam_mem
+alias platform:rts_soc_camera rts_cam_soc
+alias platform:rts_zoom rts_cam_zoom
+alias platform:rts_isp rts_cam_isp
+alias platform:rts_md rts_cam_md
+alias platform:rts_jpgenc rts_camera_jpgenc
+alias platform:rts_osd2 rts_camera_osd2
+alias platform:rts_osdi rts_camera_osdi
+alias of:N*T*Crealtek,rts3917-sdhcC* rtsx_icr
+alias of:N*T*Crealtek,rts3917-sdhc rtsx_icr

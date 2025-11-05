@@ -1,0 +1,5 @@
+#!/bin/sh
+#this is automatically generated
+
+
+modprobe rtsx-icr.ko

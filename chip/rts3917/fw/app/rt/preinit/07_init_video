@@ -1,0 +1,15 @@
+#!/bin/sh
+#this is automatically generated
+
+
+modprobe rts_cam_mem.ko
+modprobe rts_cam_lock.ko
+modprobe rts_cam_soc.ko
+modprobe rts_cam_zoom.ko
+modprobe rts_cam_isp.ko
+modprobe rts_cam_md.ko
+modprobe vpu_w521mp.ko
+modprobe rts_camera_jpgenc.ko
+modprobe rts_camera_osd2.ko
+modprobe rts_camera_osdi.ko
+modprobe rtstream.ko

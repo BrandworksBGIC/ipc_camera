@@ -1,0 +1,3 @@
+#<type>	<src>	<mnt_point>	<fstype>	<mnt_flags and options>	<fsmgr_flags>
+nor	/dev/mtdblock5	/app	squashfs	ro	wait,encrypt=/etc/keys/crypto_key.bin,verify=/etc/keys/verity_key2.der
+nor	/dev/mtdblock6	/conf	jffs2	rw	defaults

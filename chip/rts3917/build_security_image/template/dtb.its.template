@@ -1,0 +1,29 @@
+/dts-v1/;
+
+/ {
+	description = "FDT blob";
+	#address-cells = <1>;
+
+	images {
+		fdt-1 {
+			description = "FDT blob";
+			data = /incbin/("TAG_DTB");
+			type = "flat_dt";
+			arch = "arm";
+			compression = "none";
+			signature-1 {
+				algo = "sha256,rsa2048";
+				key-name-hint = "verity_key1";
+				value = <SIG_DTB>;
+			};
+		};
+	};
+
+	configurations {
+		default = "config-1";
+		config-1 {
+			description = "Boot FDT";
+			fdt = "fdt-1";
+		};
+	};
+};

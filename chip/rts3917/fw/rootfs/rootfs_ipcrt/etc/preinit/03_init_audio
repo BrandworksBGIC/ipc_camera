@@ -1,0 +1,9 @@
+#!/bin/sh
+#this is automatically generated
+#please ensure rts_snd_xx.ko is inserted at last
+
+
+modprobe rts_dma.ko
+modprobe rts_i2s.ko
+modprobe rts_codec.ko
+modprobe rts_snd_intern.ko
