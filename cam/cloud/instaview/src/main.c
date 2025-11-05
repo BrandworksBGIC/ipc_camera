@@ -438,7 +438,7 @@ static void init_callback_functions()
     callback_functions.MFG_OtaStart_Callback            = MFG_OtaStart_callback;
     callback_functions.MFG_SDCardFormat_Callback        = MFG_SDCardFormat;
     callback_functions.MFG_SDCardMountStatus_Callback   = MFG_SDCardMountStatus;
-    callback_functions.MfgEnableBluetooth_Callback      = MFG_EnableBluetooth;
+    callback_functions.MfgEnableBluetooth_Callback      = NULL; //MFG_EnableBluetooth;
     callback_functions.MFG_PtzSetPvcMode_Callback       = MFG_PtzSetPvcMode;
 
     callback_functions.MFG_SetFloodLightMode_Callback   = MFG_SetFloodLightMode;
@@ -565,7 +565,7 @@ s32 ipc_middleware_main_process(pv8 ipc_version)
     h_plat->video_query_capability(&video_cap);
     iv_sdk_set_venc_type(video_cap.type[IPC_VIDEO_CHN_MAIN] == IPC_VIDEO_ENC_TYPE_H265 ? E_MEDIA_VENC_H265 : E_MEDIA_VENC_H264);
 
-    ipc_iv_queue_init_aac_encode();
+    // ipc_iv_queue_init_aac_encode();
     /* The following function fills in the callbacks within the callback_functions structure*/
     memset(&callback_functions, 0, sizeof(MFG_CALLBACK_FUNCTIONS));
     init_callback_functions();

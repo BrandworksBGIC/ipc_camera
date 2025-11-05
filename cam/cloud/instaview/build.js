@@ -1,4 +1,5 @@
 const t = createTarget("instaview", "../../ipc_middleware/")
+t.setTargetType('static')
 t.addFiles("src/*.c")
 t.addIncludeDirs("include")
 

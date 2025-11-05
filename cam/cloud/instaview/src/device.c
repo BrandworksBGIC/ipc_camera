@@ -334,7 +334,7 @@ E_WIFI_STATUS MFG_GetWifiLinkStatus() // get wifi status, obtained based on prev
 {
     if (_g_net_conn_status == 1) {
         printf("wifi status:connect success!!!\r\n");
-        ipc_iv_ble_uninit();
+        // ipc_iv_ble_uninit();
         return WIFI_LINKED;
     } else if (_g_net_conn_status == 0) {
         printf("wifi status:connect failed!!!\r\n");
