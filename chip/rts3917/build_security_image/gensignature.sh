@@ -30,25 +30,14 @@ gen_uboot_sign()
 	if file_needs_update "${SHA_DIR}/uboot.sha256" "${SIG_DIR}/uboot.signature"; then
 		echo "🔐 Generating uboot signature..."
 		#${TOOLS_DIR}/sign_uboot ${SIG_FILE_DIR}/tb_fw_to_sig.crt ${RTSKEY_DIR}/verity_key0.key ${SIG_DIR}/uboot.signature
-		./sign_partition.sh ${SIG_FILE_DIR}/tb_fw_to_sig.crt  rts3917 rsa_pkcs_pss ${SIG_DIR}/uboot.signature
+		python3 ./sign_partition.py ${SIG_FILE_DIR}/tb_fw_to_sig.crt  rts3917 rsa_pkcs_pss ${SIG_DIR}/uboot.signature
 		echo "✅ uboot signature generated"
 	else
 		echo "⏭️  uboot signature skipped (no changes)"
 	fi
 }
 
-gen_dtb_sign()
-{
-	if file_needs_update "${SHA_DIR}/dtb.sha256" "${SIG_DIR}/dtb.signature"; then
-		echo "🔐 Generating dtb signature..."
-		#openssl dgst -sha256 -sign ${RTSKEY_DIR}/verity_key1.key -out ${SIG_DIR}/dtb.signature ${IMAGE_DIR}/rts3917n_evb_cp_16m.dtb
 
-		../../../hsm/signEmul/signEmul rts3917_sec_boot ${SHA_DIR}/dtb.sha256 ${SIG_DIR}/dtb.signature
-		echo "✅ dtb signature generated"
-	else
-		echo "⏭️  dtb signature skipped (no changes)"
-	fi
-}
 
 # kernel
 gen_kernel_sign()
@@ -57,7 +46,7 @@ gen_kernel_sign()
 		echo "🔐 Generating kernel signature..."
 		# openssl dgst -sha256 -sign ${RTSKEY_DIR}/verity_key1.key -out ${SIG_DIR}/kernel.signature ${IMAGE_DIR}/zImage
 
-		./sign_partition.sh ${IMAGE_DIR}/zImage  rts3917 rsa_pkcs ${SIG_DIR}/kernel.signature
+		python3 ./sign_partition.py ${IMAGE_DIR}/zImage  rts3917 rsa_pkcs ${SIG_DIR}/kernel.signature
 
 		echo "✅ kernel signature generated"
 	else
@@ -72,7 +61,7 @@ gen_rootfs_sign()
 		echo "🔐 Generating rootfs signature..."
 		# openssl dgst -sha256 -sign ${RTSKEY_DIR}/verity_key2.key -out ${SIG_DIR}/rootfs.squashfs.signature ${IMAGE_DIR}/rootfs.squashfs.table
 
-		./sign_partition.sh ${IMAGE_DIR}/rootfs.squashfs.table  rts3917 rsa_pkcs ${SIG_DIR}/rootfs.squashfs.signature
+		python3 ./sign_partition.py ${IMAGE_DIR}/rootfs.squashfs.table  rts3917 rsa_pkcs ${SIG_DIR}/rootfs.squashfs.signature
 
 		echo "✅ rootfs signature generated"
 	else
@@ -87,7 +76,7 @@ gen_user_sign()
 		echo "🔐 Generating app signature..."
 		# openssl dgst -sha256 -sign ${RTSKEY_DIR}/verity_key2.key -out ${SIG_DIR}/app.bin.signature ${IMAGE_DIR}/app.bin.table
 
-		./sign_partition.sh ${IMAGE_DIR}/app.bin.table  rts3917 rsa_pkcs ${SIG_DIR}/app.bin.signature
+		python3 ./sign_partition.py ${IMAGE_DIR}/app.bin.table  rts3917 rsa_pkcs ${SIG_DIR}/app.bin.signature
 
 		echo "✅ app signature generated"
 	else
