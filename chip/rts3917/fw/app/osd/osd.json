@@ -8,12 +8,5 @@
 		"format":"%F %T",
 		"order": "0123456789- :",
 		"file":"/app/osd/time.rgba"
-	},
-	"logo": {
-		"x_pct": 80,
-		"y_pct": 90,
-		"w_pix": 200,
-		"h_pix": 31,
-		"file":"/app/osd/logo.rgba"
 	}
 }
