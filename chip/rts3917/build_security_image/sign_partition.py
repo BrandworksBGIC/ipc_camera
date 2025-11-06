@@ -72,15 +72,11 @@ def show_help():
 
 def get_public_key(server_url, token, key_name, public_key_path):
     """Retrieve public key from HSM"""
-    print("1. Retrieving public key from HSM...")
-
     if os.path.exists(public_key_path):
-        print(f"✅ Public key file '{public_key_path}' already exists locally")
-        print("   Skipping HSM retrieval (use -f flag to force re-fetch)")
+        print(f"✅ Public key already exists: {public_key_path}")
         return True
 
-    print("   No local public key found, retrieving from HSM...")
-
+    print("🔑 Retrieving public key from HSM...")
     try:
         response = requests.get(
             f"{server_url}/api/v1/keys/{key_name}",
@@ -95,20 +91,20 @@ def get_public_key(server_url, token, key_name, public_key_path):
                 if public_key:
                     with open(public_key_path, 'w') as f:
                         f.write(public_key)
-                    print(f"✅ Public key saved to {public_key_path}")
+                    print(f"✅ Public key saved: {public_key_path}")
                     return True
                 else:
-                    print("⚠️  Could not retrieve public key (this is normal if key doesn't exist yet)")
+                    print("⚠️  No public key found (key may not exist yet)")
                     return True
             except json.JSONDecodeError:
-                print("⚠️  Could not parse JSON response")
+                print("⚠️  Invalid JSON response")
                 return True
         else:
-            print(f"⚠️  HTTP {response.status_code} when retrieving public key")
+            print(f"⚠️  HTTP {response.status_code}")
             return True
 
     except requests.RequestException as e:
-        print(f"⚠️  Error retrieving public key: {e}")
+        print(f"⚠️  Request failed: {e}")
         return True
 
 def calculate_file_hash(file_path, hash_algorithm="sha256"):
@@ -126,23 +122,19 @@ def calculate_file_hash(file_path, hash_algorithm="sha256"):
 
 def sign_file(server_url, token, file_to_sign, key_name, mechanism, signature_file, hash_alg, salt_len):
     """Sign file using HSM"""
-    print("2. Signing file with HSM...")
+    print("🔐 Signing file...")
 
     try:
         # Different handling for RSA vs EdDSA
         if mechanism.startswith("rsa_"):
             # Calculate hash locally for RSA
-            print("   Calculating file hash locally...")
             file_hash = calculate_file_hash(file_to_sign, hash_alg)
-            print(f"   Hash calculated: {len(file_hash)} bytes")
-
-            # Upload hash as file content (like EdDSA)
             files = {'file': ('hash', file_hash, 'application/octet-stream')}
 
             data = {
                 'key_name': key_name,
                 'mechanism': mechanism,
-                'skip_hash_calculation': 'true',  # Skip backend hash calculation
+                'skip_hash_calculation': 'true',
                 'hash_algorithm': hash_alg
             }
 
@@ -157,17 +149,16 @@ def sign_file(server_url, token, file_to_sign, key_name, mechanism, signature_fi
                 data=data
             )
 
-        else:  # EdDSA - unchanged, keep original logic
+        else:  # EdDSA
             with open(file_to_sign, 'rb') as f:
                 files = {'file': f}
 
                 data = {
                     'key_name': key_name,
                     'mechanism': mechanism,
-                    'skip_hash_calculation': 'true'  # Skip backend hash calculation for Ed25519
+                    'skip_hash_calculation': 'true'
                 }
 
-                # Add EdDSA-specific parameters
                 if mechanism == "eddsa":
                     data['curve'] = 'ed25519'
 
@@ -183,27 +174,18 @@ def sign_file(server_url, token, file_to_sign, key_name, mechanism, signature_fi
                 sig_file.write(response.content)
 
             signature_size = len(response.content)
-            print("✅ File signed successfully!")
-            print()
-            print("📊 Signature details:")
-            print(f"  Output file: {signature_file}")
-            print(f"  Signature size: {signature_size} bytes")
-            print()
+            print(f"✅ Signed successfully! Size: {signature_size} bytes")
             return True
         else:
-            # Delete signature file on error
             if os.path.exists(signature_file):
                 os.remove(signature_file)
-
-            print("❌ Signing failed!")
-            print(f"HTTP Response Code: {response.status_code}")
-            print(f"Response: {response.text}")
+            print(f"❌ Signing failed! HTTP {response.status_code}")
             return False
 
     except requests.RequestException as e:
         if os.path.exists(signature_file):
             os.remove(signature_file)
-        print(f"❌ Signing failed! Request error: {e}")
+        print(f"❌ Request failed: {e}")
         return False
     except IOError as e:
         print(f"❌ File operation failed: {e}")
@@ -216,12 +198,7 @@ def verify_ed25519_signature(file_to_sign, signature_file, public_key_path):
         with open(public_key_path, 'rb') as f:
             public_key_pem = f.read()
 
-        print(f"   Public key PEM: {public_key_pem}")
-
-        # Parse public key using x509 format like Go version
-        from cryptography import x509
-
-        # First try parsing as PEM then extract the raw bytes like Go version
+        # Parse public key
         public_key = serialization.load_pem_public_key(
             public_key_pem,
             backend=default_backend()
@@ -231,7 +208,7 @@ def verify_ed25519_signature(file_to_sign, signature_file, public_key_path):
             print("❌ Not an Ed25519 public key")
             return False
 
-        # Get raw public key bytes like Go version's ed25519.PublicKey
+        # Get raw public key bytes
         raw_public_key = public_key.public_bytes(
             encoding=serialization.Encoding.Raw,
             format=serialization.PublicFormat.Raw
@@ -250,37 +227,29 @@ def verify_ed25519_signature(file_to_sign, signature_file, public_key_path):
         with open(signature_file, 'rb') as f:
             signature = f.read()
 
-        print(f"   Original data: {original_data.hex()}")
-        print(f"   Signature: {signature.hex()}")
-
         # Verify signature using cryptography library
         try:
             public_key.verify(signature, original_data)
-            print("✅ Ed25519 signature verification PASSED!")
-            print("   The signature is valid and matches the file.")
+            print("✅ Ed25519 signature verified successfully")
             return True
         except Exception as verify_error:
-            print(f"❌ Ed25519 signature verification FAILED: {verify_error}")
-            print("   The signature does not match the file.")
+            print(f"❌ Ed25519 verification failed: {verify_error}")
             return False
 
     except Exception as e:
-        print(f"❌ Ed25519 signature verification failed: {e}")
+        print(f"❌ Ed25519 verification error: {e}")
         return False
 
 def verify_signature(file_to_sign, signature_file, public_key_path, mechanism):
     """Verify signature using OpenSSL or Python Ed25519 verification"""
-    print("3. Verifying signature (mandatory)...")
+    print("🔍 Verifying signature...")
 
     if not os.path.exists(public_key_path):
-        print("❌ Error: Cannot verify signature - public key not available!")
-        print(f"   Expected file: {public_key_path}")
+        print(f"❌ Public key not found: {public_key_path}")
         return False
 
     # Build verification command based on mechanism
     if mechanism == "eddsa":
-        # Use Python Ed25519 verification
-        print(f"   Using Python cryptography library for Ed25519 verification")
         return verify_ed25519_signature(file_to_sign, signature_file, public_key_path)
     elif mechanism == "rsa_pkcs_pss":
         verify_cmd = [
@@ -302,19 +271,13 @@ def verify_signature(file_to_sign, signature_file, public_key_path, mechanism):
     try:
         result = subprocess.run(verify_cmd, capture_output=True, text=True)
 
-        # OpenSSL verification
         if "Verified OK" in result.stdout:
-            print("✅ Signature verification PASSED!")
-            print("   The signature is valid and matches the file.")
+            print("✅ Signature verified successfully")
             return True
         else:
-            print("❌ Signature verification FAILED!")
-            print("   The signature does not match the file.")
-            print()
-            print("Debug output:")
-            print(result.stdout)
+            print("❌ Signature verification failed")
             if result.stderr:
-                print("STDERR:", result.stderr)
+                print(f"Error: {result.stderr.strip()}")
             return False
 
     except subprocess.SubprocessError as e:
@@ -323,27 +286,13 @@ def verify_signature(file_to_sign, signature_file, public_key_path, mechanism):
 
 def display_signature_info(signature_file, verify_cmd):
     """Display signature file information"""
-    print("4. Signature file information:")
-
-    try:
-        # Use file command to get file type
-        result = subprocess.run(["file", signature_file], capture_output=True, text=True)
-        print(result.stdout.strip())
-    except subprocess.SubprocessError:
-        print("   Could not determine file type")
-
-    print()
-    print("   First 32 bytes (hex):")
-
     try:
         with open(signature_file, 'rb') as f:
             data = f.read(32)
             hex_str = ' '.join(f'{b:02x}' for b in data)
-            print(f"   {hex_str}")
+            print(f"📄 Signature preview: {hex_str}")
     except IOError:
-        print("   Could not read file")
-
-    print()
+        print("⚠️  Could not read signature file")
 
 def main():
     """Main function"""
@@ -381,26 +330,10 @@ Examples:
     # Get file size
     file_size = os.path.getsize(args.file_to_sign)
 
-    print("=== HSM Partition File Signing Tool ===")
-    print()
-    print("📋 Configuration:")
-    print(f"  Mechanism: {args.mechanism} (user-specified)")
-    print()
-    print("Configuration:")
-    print(f"  Server URL: {SERVER_URL}")
-    print(f"  Token: [hardcoded] {TOKEN[:20]}...")
-    print(f"  File to sign: {args.file_to_sign}")
-    print(f"  Signature directory: {signature_dir}/")
-    print(f"  Signature output: {args.signature_file}")
-    print(f"  Public key directory: {PUBLIC_KEY_DIR}/")
-    print(f"  Public key file: {public_key_path}")
-    print(f"  Key name: {args.key_name}")
-    print(f"  Mechanism: {args.mechanism}")
-    print()
-
-    print("📄 File information:")
-    print(f"  File: {args.file_to_sign}")
-    print(f"  Size: {file_size} bytes")
+    print("=== HSM Partition Signing Tool ===")
+    print(f"📁 File: {args.file_to_sign} ({file_size} bytes)")
+    print(f"🔧 Mechanism: {args.mechanism}")
+    print(f"🔑 Key: {args.key_name}")
     print()
 
     # Set mechanism-specific parameters
@@ -408,24 +341,12 @@ Examples:
     salt_len = ""
 
     if args.mechanism == "eddsa":
-        print("🔐 Signature mechanism: Ed25519 (EdDSA)")
-        print("   - Algorithm: Ed25519")
-        print("   - Curve: Ed25519")
-        print("   - Signature size: 64 bytes")
-        print("   - Built-in hashing")
+        print("ℹ️  Ed25519: 64-byte signatures, built-in hashing")
     elif args.mechanism == "rsa_pkcs_pss":
         salt_len = "32"
-        print("🔐 Signature mechanism: RSA PKCS1-PSS")
-        print("   - Padding: PSS")
-        print("   - Hash: SHA-256")
-        print("   - MGF: MGF1-SHA256")
-        print("   - Salt length: 32 bytes")
+        print("ℹ️  RSA-PSS: SHA-256, 32-byte salt")
     elif args.mechanism == "rsa_pkcs":
-        print("🔐 Signature mechanism: RSA PKCS#1 v1.5")
-        print("   - Padding: PKCS#1 v1.5")
-        print("   - Hash: SHA-256")
-
-    print()
+        print("ℹ️  RSA-PKCS#1: SHA-256")
 
     # Get public key
     if not get_public_key(SERVER_URL, TOKEN, args.key_name, public_key_path):
@@ -455,42 +376,11 @@ Examples:
     # Display signature info
     display_signature_info(args.signature_file, verify_cmd_display)
 
-    # Usage instructions
-    print("=== Signing Complete ===")
-    print()
-    print("📝 Summary:")
-    print(f"  ✅ File signed with {args.mechanism} successfully")
-    print("  ✅ Signature verified and validated")
-    print(f"  📂 Signature location: {args.signature_file}")
-    print()
-    print("🔧 To verify this signature later:")
-    print(f"  {verify_cmd_display}")
-    print()
-    print("🔑 Public key location:")
-    print(f"  {public_key_path} (retrieved from HSM)")
-    print()
-    print("📊 Technical details:")
+    print("✅ Signing complete!")
+    print(f"📁 Output: {args.signature_file}")
+    print(f"🔑 Public key: {public_key_path}")
     if args.mechanism == "eddsa":
-        print("  Algorithm: Ed25519")
-        print("  Curve: Ed25519")
-        print("  Signature size: 64 bytes")
-        print("  Hash function: Built-in SHA-512")
-    else:
-        print(f"  Algorithm: RSA-{DEFAULT_KEY_SIZE}")
-        if args.mechanism == "rsa_pkcs_pss":
-            print("  Padding: PKCS#1 v1.5 PSS")
-            print("  Salt length: 32 bytes")
-        else:
-            print("  Padding: PKCS#1 v1.5")
-        print("  Hash function: SHA-256")
-    print(f"  Key name: {args.key_name} (shared for all partitions)")
-    print(f"  Signature file: {args.signature_file} (user-specified)")
-    print()
-    print("✨ This script supports RSA (PKCS#1 v1.5, PKCS1-PSS) and Ed25519 signatures!")
-    print("✨ Signature verification is automatically performed after signing!")
-    print("✨ Signature file location is fully customizable by user!")
-    if args.mechanism == "eddsa":
-        print("✨ Ed25519 offers fast performance and small signature sizes!")
+        print("💡 Fast Ed25519 verification available")
 
 if __name__ == "__main__":
     main()
