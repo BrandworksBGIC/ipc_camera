@@ -198,11 +198,11 @@ nor\t/dev/mtdblock5\t/app\tsquashfs\tro\twait,${encryptOption}verify=/etc/keys/v
 nor\t/dev/mtdblock6\t/conf\tjffs2\trw\tdefaults
 `;
 
-    if (!shell.run(`mkdir -p rootfs/rootfs_cprt/etc`)) {
+    if (!shell.run(`mkdir -p rootfs/rootfs_ipcrt/etc`)) {
         throw new Error("Failed to create etc directory");
     }
 
-    fs.writeFileSync("rootfs/rootfs_cprt/etc/fstab.user", fstabContent);
+    fs.writeFileSync("rootfs/rootfs_ipcrt/etc/fstab.user", fstabContent);
 
     // Build rootfs
     console.log("Building rootfs...");
