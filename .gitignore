@@ -10,3 +10,10 @@ jsconfig.json
 **/build/
 # End JMake generated files
 chip/rts3917/fw/rootfs/rootfs_cprt/etc/fstab.user
+**/.*.o.cmd
+**/*.o
+**/*.ko.cmd
+**/.*.ko.cmd
+**/.*.mod.cmd
+**/.modules.order.cmd
+**/.Module.symvers.cmd
