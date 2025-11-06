@@ -36,7 +36,7 @@ DEFAULT_KEY_SIZE = 2048
 PUBLIC_KEY_DIR = "public_key"
 
 # Certificate caching
-CERT_CACHE_DIR = os.path.expanduser(".openhsm/cert")
+CERT_CACHE_DIR = os.path.expanduser("~/.openhsm/cert")
 CERT_FILE = os.path.join(CERT_CACHE_DIR, "openhsm.crt")
 
 # Disable SSL warnings for self-signed certificates
