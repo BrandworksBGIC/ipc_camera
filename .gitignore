@@ -9,3 +9,4 @@ jsconfig.json
 **/.cache/
 **/build/
 # End JMake generated files
+chip/rts3917/fw/rootfs/rootfs_cprt/etc/fstab.user

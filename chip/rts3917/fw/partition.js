@@ -43,7 +43,7 @@ function createFirmwarePackage(chipName, version, outputDir) {
     const partitions = getSignedTable(chipName);
 
     // Create package with the selected partition table
-    const pkg = partitions.newPackage(chipName, outputDir, "echo", "cp_upgrade_key", "cppa");
+    const pkg = partitions.newPackage(chipName, outputDir, "./sign_update_pkg.sh", "ipc_upgrade_key", "ippa");
 
     pkg.flash(version);
     pkg.ota();

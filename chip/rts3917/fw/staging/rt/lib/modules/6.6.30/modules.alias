@@ -1,4 +1,14 @@
 # Aliases extracted from modules themselves.
+alias crypto-cmac cmac
+alias cmac cmac
+alias crypto-cbcmac ccm
+alias cbcmac ccm
+alias crypto-ccm ccm
+alias ccm ccm
+alias crypto-rfc4309 ccm
+alias rfc4309 ccm
+alias crypto-ccm_base ccm
+alias ccm_base ccm
 alias platform:rts_isp_mem rts_cam_mem
 alias platform:rts_soc_camera rts_cam_soc
 alias platform:rts_zoom rts_cam_zoom

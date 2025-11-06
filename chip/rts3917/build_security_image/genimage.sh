@@ -152,7 +152,7 @@ build_image(){
 }
 
 get_sha(){
-		gen_pubkey_dtb
+		#gen_pubkey_dtb
 		gen_uboot_sha
 #   gen_dtb_sha
 	gen_kernel_sha

@@ -1,3 +1,6 @@
+kernel/crypto/cmac.ko
+kernel/crypto/ccm.ko
+kernel/lib/crypto/libarc4.ko
 kernel/drivers/media/common/videobuf2/videobuf2-common.ko
 kernel/drivers/media/common/videobuf2/videobuf2-dma-contig.ko
 kernel/drivers/media/common/videobuf2/videobuf2-memops.ko
@@ -19,3 +22,4 @@ kernel/sound/soc/realtek/rts_dma.ko
 kernel/sound/soc/realtek/rts_i2s.ko
 kernel/sound/soc/realtek/rts_codec.ko
 kernel/sound/soc/realtek/rts_snd_intern.ko
+kernel/net/mac80211/mac80211.ko
