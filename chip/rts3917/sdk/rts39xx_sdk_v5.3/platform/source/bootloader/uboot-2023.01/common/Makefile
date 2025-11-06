@@ -112,3 +112,7 @@ obj-$(CONFIG_QFW) += qfw.o
 obj-y += cmd_update.o
 obj-$(CONFIG_RTS_SPI_NAND_FLASH) += nand_ops.o
 obj-$(CONFIG_RTS_EMMC_BOOT) += mmc_ops.o
+
+include common/ipc_updater/uboot/uboot_make.mk
+obj-y += $(IPC_OBJS)
+PLATFORM_CPPFLAGS += $(IPC_CFLAGS)

@@ -214,8 +214,8 @@ static u32 _do_get_file_(char *filename)
 
 	tmpfile = filename;
 
-	if  (net_loop(TFTPSRV) < 0)
-		return 0;
+	//if  (net_loop(TFTPSRV) < 0)
+	//	return 0;
 
 	len = env_get_hex("filesize", 0);
 
@@ -242,7 +242,7 @@ static int do_update_uboot(const char *dfu)
 		dfu_all_len = 0;
 	} else
 #endif
-		len = _do_get_file_("/u-boot.bin");
+		// len = _do_get_file_("/u-boot.bin");
 
 	ret = _do_write_file_(offset, len, loadaddr, 0, 0);
 

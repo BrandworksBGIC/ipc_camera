@@ -11,4 +11,6 @@
 
 #define UINT8_MAX	0xff
 
+#include_next <stdint.h>
+
 #endif

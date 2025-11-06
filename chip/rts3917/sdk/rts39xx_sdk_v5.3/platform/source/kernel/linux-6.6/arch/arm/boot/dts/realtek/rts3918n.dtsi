@@ -29,7 +29,7 @@
 };
 
 &sdhc0 {
-	pwr-ctrl-gpio = <&pinctrl 12 GPIO_ACTIVE_HIGH>;
+	// pwr-ctrl-gpio = <&pinctrl 12 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 };
 

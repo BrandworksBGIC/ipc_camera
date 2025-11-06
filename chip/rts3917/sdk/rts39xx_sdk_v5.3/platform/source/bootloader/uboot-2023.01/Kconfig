@@ -7,6 +7,15 @@ mainmenu "U-Boot $(UBOOTVERSION) Configuration"
 
 comment "Compiler: $(CC_VERSION_TEXT)"
 
+config IPC_ARCH_PLATFORM
+	string "IPC Architecture Platform String"
+	default ""
+	help
+	  This option allows specifying a custom architecture platform string
+	  that can be used during compilation to identify the specific platform
+	  variant. The string can be used in the build system or code for
+	  platform-specific conditional compilation.
+
 source "scripts/Kconfig.include"
 source "board/realtek/Kconfig.top"
 source "board/realtek/Kconfig.soc"

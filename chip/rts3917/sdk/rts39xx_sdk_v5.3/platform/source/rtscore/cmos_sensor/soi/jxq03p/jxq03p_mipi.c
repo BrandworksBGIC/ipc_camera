@@ -288,6 +288,31 @@ static int jxq03p_get_exposure_gain_info(uint32_t isp_id,
 	return RTS_ISP_OK;
 }
 
+static int jxq03p_get_mirror_flip(uint32_t isp_id,
+				   const struct rts_isp_mirror_flip *mf_info,
+				   struct rts_isp_sync_regs *regs)
+{
+	int i = 0;
+	uint32_t val = 0x00;
+	struct rts_isp_sync_reg *reg;
+
+	if (isp_id >= SUPPORTED_ISP_NUM || !mf_info || !regs)
+		return -RTS_ISP_EINVAL;
+
+	rts_isp_drop_frames(isp_id, 1);
+
+	reg = regs->reg;
+	if (mf_info->mirror)
+		val |= 0x20;
+	if (mf_info->flip)
+		val |= 0x10;
+
+	set_sync_i2c_mask(&reg[i++], 0x12, val, 0x30);
+	regs->num = i;
+
+	return RTS_ISP_OK;
+}
+
 static int jxq03p_check(uint32_t isp_id)
 {
 	int ret;
@@ -321,6 +346,7 @@ static const struct rts_isp_sensor_ops jxq03p_ops = {
 	.get_tuned_again = jxq03p_get_tuned_again,
 	.get_tuned_dgain = jxq03p_get_tuned_dgain,
 	.get_exposure_gain_info = jxq03p_get_exposure_gain_info,
+	.get_mirror_flip = jxq03p_get_mirror_flip,
 	.check = jxq03p_check,
 };
 

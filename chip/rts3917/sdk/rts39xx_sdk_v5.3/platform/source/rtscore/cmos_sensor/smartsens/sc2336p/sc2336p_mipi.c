@@ -435,6 +435,30 @@ static int sc2336p_get_exposure_gain_info(uint32_t isp_id,
 	return RTS_ISP_OK;
 }
 
+static int sc2336p_get_mirror_flip(uint32_t isp_id,
+	const struct rts_isp_mirror_flip *mf_info,
+	struct rts_isp_sync_regs *regs)
+{
+	int i = 0;
+	uint32_t val = 0;
+	struct rts_isp_sync_reg *reg;
+
+	if (isp_id >= SUPPORTED_ISP_NUM || !mf_info || !regs)
+		return -RTS_ISP_EINVAL;
+
+	rts_isp_drop_frames(isp_id, 1);
+	if (mf_info->mirror)
+		val |= 0x6;
+	if (mf_info->flip)
+		val |= 0x60;
+
+	reg = regs->reg;
+	set_sync_i2c_mask(&reg[i++], 0x3221, val, 0x66);
+	regs->num = i;
+
+	return RTS_ISP_OK;
+}
+
 static int sc2336p_check(uint32_t isp_id)
 {
 	int ret;
@@ -474,6 +498,7 @@ static const struct rts_isp_sensor_ops sc2336p_ops = {
 	.get_tuned_again = sc2336p_get_tuned_again,
 	.get_tuned_dgain = sc2336p_get_tuned_dgain,
 	.get_exposure_gain_info = sc2336p_get_exposure_gain_info,
+	.get_mirror_flip = sc2336p_get_mirror_flip,
 	.check = sc2336p_check,
 };
 

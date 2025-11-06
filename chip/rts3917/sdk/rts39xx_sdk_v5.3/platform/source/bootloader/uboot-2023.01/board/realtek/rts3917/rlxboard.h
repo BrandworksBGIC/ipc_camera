@@ -47,7 +47,7 @@
 #ifdef CONFIG_FAST_BOOT
 #define CONFIG_BOOTCOMMAND		"bootm 0xa0000"
 #else
-#define CONFIG_BOOTCOMMAND		"bootm ${kernel_offset}"
+#define CONFIG_BOOTCOMMAND "ipcsdupdate;bootm ${kernel_offset}"
 #endif
 #else
 #ifdef CONFIG_TARGET_EMULATOR
@@ -56,7 +56,7 @@
 #ifdef CONFIG_FAST_BOOT
 #define CONFIG_BOOTCOMMAND		"bootm 0xa0000"
 #else
-#define CONFIG_BOOTCOMMAND		"bootm ${kernel_offset}"
+#define CONFIG_BOOTCOMMAND "ipcsdupdate;bootm ${kernel_offset}"
 #endif
 #endif
 #endif
@@ -64,7 +64,7 @@
 #ifdef CONFIG_FAST_BOOT
 #define CONFIG_BOOTCOMMAND		"bootm 0x100000"
 #else
-#define CONFIG_BOOTCOMMAND		"bootm ${kernel_offset}"
+#define CONFIG_BOOTCOMMAND "ipcsdupdate;bootm ${kernel_offset}"
 #endif
 #endif
 
@@ -96,7 +96,7 @@
 
 /* Size of malloc() pool */
 #ifndef CONFIG_SYS_MALLOC_LEN
-#define CONFIG_SYS_MALLOC_LEN           (CONFIG_ENV_SIZE + (8 << 20))
+#define CONFIG_SYS_MALLOC_LEN           (CONFIG_ENV_SIZE + (32 << 20))
 #endif
 #define CONFIG_SYS_BOOTPARAMS_LEN	(32 << 10)
 #define CONFIG_SYS_HZ_CLOCK		25000000

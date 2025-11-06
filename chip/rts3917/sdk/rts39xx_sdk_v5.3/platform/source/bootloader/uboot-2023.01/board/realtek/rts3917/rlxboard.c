@@ -327,6 +327,36 @@ int init_dm_spi_flash_sheipa(void)
  */
 int board_early_init_r(void)
 {
+    gpio_request(5, NULL);
+    gpio_request(14, NULL);
+    gpio_request(4, NULL);
+    gpio_request(15, NULL);
+    //
+    gpio_request(16, NULL);
+    gpio_request(17, NULL);
+    gpio_request(18, NULL);
+    gpio_request(19, NULL);
+    //
+    gpio_direction_output(5, 0);
+    gpio_direction_output(14, 0);
+    gpio_direction_output(4, 0);
+    gpio_direction_output(15, 0);
+    //
+    gpio_direction_output(16, 0);
+    gpio_direction_output(17, 0);
+    gpio_direction_output(18, 0);
+    gpio_direction_output(19, 0);
+    //
+    gpio_set_value(5, 0);
+    gpio_set_value(14, 0);
+    gpio_set_value(4, 0);
+    gpio_set_value(15, 0);
+    //
+    gpio_set_value(16, 0);
+    gpio_set_value(17, 0);
+    gpio_set_value(18, 0);
+    gpio_set_value(19, 0);
+
 #if defined(CONFIG_DM_SPI_FLASH)
 	return init_dm_spi_flash_sheipa();
 #endif
