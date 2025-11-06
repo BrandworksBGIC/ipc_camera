@@ -18,12 +18,82 @@ from cryptography.hazmat.primitives.asymmetric import ed25519
 from cryptography.hazmat.backends import default_backend
 import base64
 import hashlib
+import tempfile
+import time
+import urllib3
 
-SERVER_URL = "http://localhost:8080"
+# Server configuration for dual HTTP/HTTPS setup
+SERVER_IP = "192.166.0.145"  # Configurable server IP address
+HTTP_PORT = "8080"
+HTTPS_PORT = "8443"
+
+HTTP_SERVER_URL = f"http://{SERVER_IP}:{HTTP_PORT}"
+HTTPS_SERVER_URL = f"https://{SERVER_IP}:{HTTPS_PORT}"
+CERT_DOWNLOAD_URL = f"http://{SERVER_IP}:{HTTP_PORT}/api/v1/cert/download"
 TOKEN = "4d0a780cf562a217d432bbda9fb1837db10d8e5ec5e033f51fac808c36a7e35a"
 DEFAULT_KEY_NAME = "partition_key"
 DEFAULT_KEY_SIZE = 2048
 PUBLIC_KEY_DIR = "public_key"
+
+# Certificate caching
+CERT_CACHE_DIR = os.path.expanduser(".openhsm/cert")
+CERT_FILE = os.path.join(CERT_CACHE_DIR, "openhsm.crt")
+
+# Disable SSL warnings for self-signed certificates
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+def download_certificate():
+    """Download server certificate via HTTP"""
+    print("🔐 Downloading server certificate...")
+
+    # Create certificate cache directory
+    os.makedirs(CERT_CACHE_DIR, exist_ok=True)
+
+    try:
+        response = requests.get(CERT_DOWNLOAD_URL, timeout=30)
+        if response.status_code == 200:
+            with open(CERT_FILE, 'w', encoding='utf-8') as f:
+                f.write(response.text)
+            print(f"✅ Certificate downloaded and cached: {CERT_FILE}")
+            return True
+        else:
+            print(f"❌ Failed to download certificate. HTTP {response.status_code}")
+            return False
+    except requests.RequestException as e:
+        print(f"❌ Certificate download failed: {e}")
+        return False
+
+def ensure_certificate():
+    """Ensure certificate is available, download if necessary"""
+    if os.path.exists(CERT_FILE):
+        # Check if certificate is not too old (optional)
+        try:
+            stat = os.stat(CERT_FILE)
+            file_age = time.time() - stat.st_mtime
+            if file_age < 86400:  # Less than 1 day old
+                print(f"✅ Using cached certificate: {CERT_FILE}")
+                return True
+            else:
+                print(f"⚠️  Certificate is old ({file_age/3600:.1f}h), refreshing...")
+        except OSError:
+            pass
+
+    # Certificate doesn't exist or is old, download it
+    return download_certificate()
+
+def setup_https_session():
+    """Setup HTTPS session with certificate verification"""
+    if not ensure_certificate():
+        print("❌ Failed to setup HTTPS session - no certificate available")
+        return None
+
+    try:
+        session = requests.Session()
+        session.verify = CERT_FILE
+        return session
+    except Exception as e:
+        print(f"❌ Failed to setup HTTPS session: {e}")
+        return None
 
 def show_help():
     """Display help information"""
@@ -71,16 +141,24 @@ def show_help():
     print()
 
 def get_public_key(server_url, token, key_name, public_key_path):
-    """Retrieve public key from HSM"""
+    """Retrieve public key from HSM using HTTPS"""
     if os.path.exists(public_key_path):
         print(f"✅ Public key already exists: {public_key_path}")
         return True
 
     print("🔑 Retrieving public key from HSM...")
+
+    # Setup HTTPS session with certificate verification
+    session = setup_https_session()
+    if not session:
+        print("❌ Failed to setup HTTPS session for public key retrieval")
+        return False
+
     try:
-        response = requests.get(
-            f"{server_url}/api/v1/keys/{key_name}",
-            headers={"Authorization": f"Bearer {token}"}
+        response = session.get(
+            f"{HTTPS_SERVER_URL}/api/v1/keys/{key_name}",
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=30
         )
 
         if response.status_code == 200:
@@ -100,12 +178,12 @@ def get_public_key(server_url, token, key_name, public_key_path):
                 print("⚠️  Invalid JSON response")
                 return True
         else:
-            print(f"⚠️  HTTP {response.status_code}")
-            return True
+            print(f"⚠️  HTTPS {response.status_code}")
+            return False
 
     except requests.RequestException as e:
-        print(f"⚠️  Request failed: {e}")
-        return True
+        print(f"⚠️  HTTPS request failed: {e}")
+        return False
 
 def calculate_file_hash(file_path, hash_algorithm="sha256"):
     """Calculate file hash locally and return binary digest"""
@@ -121,8 +199,14 @@ def calculate_file_hash(file_path, hash_algorithm="sha256"):
     return hash_obj.digest()
 
 def sign_file(server_url, token, file_to_sign, key_name, mechanism, signature_file, hash_alg, salt_len):
-    """Sign file using HSM"""
+    """Sign file using HSM via HTTPS"""
     print("🔐 Signing file...")
+
+    # Setup HTTPS session with certificate verification
+    session = setup_https_session()
+    if not session:
+        print("❌ Failed to setup HTTPS session for signing")
+        return False
 
     try:
         # Different handling for RSA vs EdDSA
@@ -142,11 +226,12 @@ def sign_file(server_url, token, file_to_sign, key_name, mechanism, signature_fi
             if mechanism == "rsa_pkcs_pss" and salt_len:
                 data['salt_length'] = salt_len
 
-            response = requests.post(
-                f"{server_url}/api/v1/sign/file",
+            response = session.post(
+                f"{HTTPS_SERVER_URL}/api/v1/sign/file",
                 headers={"Authorization": f"Bearer {token}"},
                 files=files,
-                data=data
+                data=data,
+                timeout=60
             )
 
         else:  # EdDSA
@@ -162,11 +247,12 @@ def sign_file(server_url, token, file_to_sign, key_name, mechanism, signature_fi
                 if mechanism == "eddsa":
                     data['curve'] = 'ed25519'
 
-                response = requests.post(
-                    f"{server_url}/api/v1/sign/file",
+                response = session.post(
+                    f"{HTTPS_SERVER_URL}/api/v1/sign/file",
                     headers={"Authorization": f"Bearer {token}"},
                     files=files,
-                    data=data
+                    data=data,
+                    timeout=60
                 )
 
         if response.status_code == 200:
@@ -179,13 +265,13 @@ def sign_file(server_url, token, file_to_sign, key_name, mechanism, signature_fi
         else:
             if os.path.exists(signature_file):
                 os.remove(signature_file)
-            print(f"❌ Signing failed! HTTP {response.status_code}")
+            print(f"❌ Signing failed! HTTPS {response.status_code}")
             return False
 
     except requests.RequestException as e:
         if os.path.exists(signature_file):
             os.remove(signature_file)
-        print(f"❌ Request failed: {e}")
+        print(f"❌ HTTPS request failed: {e}")
         return False
     except IOError as e:
         print(f"❌ File operation failed: {e}")
@@ -349,13 +435,14 @@ Examples:
         print("ℹ️  RSA-PKCS#1: SHA-256")
 
     # Get public key
-    if not get_public_key(SERVER_URL, TOKEN, args.key_name, public_key_path):
+    if not get_public_key(None, TOKEN, args.key_name, public_key_path):
         print("⚠️  Continuing with public key retrieval...")
+        # Don't exit on certificate failure, as the function may have cached the public key
 
     print()
 
     # Sign file
-    if not sign_file(SERVER_URL, TOKEN, args.file_to_sign, args.key_name,
+    if not sign_file(None, TOKEN, args.file_to_sign, args.key_name,
                     args.mechanism, args.signature_file, hash_alg, salt_len):
         sys.exit(1)
 
