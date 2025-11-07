@@ -7,9 +7,9 @@
 #define DRIVER_DISK "0:"
 
 static char* aufile[] = {
-    IPC_ARCH_PLATFORM_NAME "all.ipa",
-    IPC_ARCH_PLATFORM_NAME "sd.ipa",
-    IPC_ARCH_PLATFORM_NAME "ota.ipa",
+    IPC_ARCH_PLATFORM_NAME "all." IPC_FIRMWARE_FLAG,
+    IPC_ARCH_PLATFORM_NAME "sd." IPC_FIRMWARE_FLAG,
+    IPC_ARCH_PLATFORM_NAME "ota." IPC_FIRMWARE_FLAG,
 };
 
 #define __PRINT_MACRO(x) #x

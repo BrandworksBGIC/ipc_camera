@@ -62,7 +62,7 @@ static ipc_decrypt_f _get_decrypt_func(pv8 so_file, vptr* _handle)
     return (ipc_decrypt_f)dlsym(handle, "ipc_decode_id_decrypt_buffer");
 }
 
-#define DECRYPT_LIB_PATH "/app/lib/libcp_device_id_decryption.so"
+#define DECRYPT_LIB_PATH "/app/lib/libipc_device_id_decryption.so"
 #define DEV_NODE_24C02   "/dev/i2c-1"
 
 static struct {
