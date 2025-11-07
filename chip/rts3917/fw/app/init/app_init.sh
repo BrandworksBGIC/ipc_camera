@@ -27,6 +27,20 @@ insmod /app/drivers/m433_driver.ko
 
 #/app/rt/load.sh
 
+otp_mfg --ipc_verify
+if [ $? -ne 0 ]; then
+    echo start write otp
+    otp_mfg --ipc_write
+    otp_mfg --ipc_lock
+
+    otp_mfg --ipc_verify
+    if [ $? -ne 0 ]; then
+        echo "OTP verification failed, aborting..."
+    fi
+    reboot -f
+fi
+
+
 otp_mfg -r --pg --loglv=3
 
 sleep 3
