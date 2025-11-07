@@ -26,6 +26,9 @@ export IPC_CAM_ROOT="$PROJECT_DIR"
 
 export JMAKE_CFLAGS="-I$(pwd)/cam/include/"
 
+export HSM_SERVER_IP='127.0.0.1'
+export HSM_TOKEN='3bf1a8f69584ca8cf900eb2217813fa3eea1d3a56345ff60431cf78fc6e7b099'
+
 echo "IPC Camera development environment configured"
 echo "Project root: $PROJECT_DIR"
 echo "Tools directory: $TOOLS_DIR"

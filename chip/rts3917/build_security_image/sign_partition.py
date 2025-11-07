@@ -22,15 +22,26 @@ import tempfile
 import time
 import urllib3
 
-# Server configuration for dual HTTP/HTTPS setup
-SERVER_IP = "192.166.0.145"  # Configurable server IP address
-HTTP_PORT = "8080"
-HTTPS_PORT = "8443"
+# Server configuration for dual HTTP/HTTPS setup with environment variable support
+def get_env_config():
+    """Get configuration from environment variables with fallbacks"""
+    return {
+        'server_ip': os.getenv('HSM_SERVER_IP', '127.0.0.1'),
+        'http_port': os.getenv('HSM_HTTP_PORT', '8080'),
+        'https_port': os.getenv('HSM_HTTPS_PORT', '8443'),
+        'token': os.getenv('HSM_TOKEN', '4d0a780cf562a217d432bbda9fb1837db10d8e5ec5e033f51fac808c36a7e35a')
+    }
+
+# Get configuration
+config = get_env_config()
+SERVER_IP = config['server_ip']
+HTTP_PORT = config['http_port']
+HTTPS_PORT = config['https_port']
+TOKEN = config['token']
 
 HTTP_SERVER_URL = f"http://{SERVER_IP}:{HTTP_PORT}"
 HTTPS_SERVER_URL = f"https://{SERVER_IP}:{HTTPS_PORT}"
 CERT_DOWNLOAD_URL = f"http://{SERVER_IP}:{HTTP_PORT}/api/v1/cert/download"
-TOKEN = "4d0a780cf562a217d432bbda9fb1837db10d8e5ec5e033f51fac808c36a7e35a"
 DEFAULT_KEY_NAME = "partition_key"
 DEFAULT_KEY_SIZE = 2048
 PUBLIC_KEY_DIR = "public_key"
@@ -116,6 +127,12 @@ def show_help():
     print("                      eddsa         - Ed25519 (modern, fast)")
     print("  signature_file  - Output signature file path (REQUIRED, no default)")
     print()
+    print("Environment Variables:")
+    print("  HSM_SERVER_IP   - HSM server IP address (default: 127.0.0.1)")
+    print("  HSM_HTTP_PORT   - HSM HTTP port (default: 8080)")
+    print("  HSM_HTTPS_PORT  - HSM HTTPS port (default: 8443)")
+    print("  HSM_TOKEN       - HSM authentication token (default: hardcoded)")
+    print()
     print("Examples:")
     print("  # Sign uboot with PSS padding, save to custom location")
     print("  python3 sign_partition.py uboot.bin partition_key rsa_pkcs_pss /custom/path/signed_uboot.bin")
@@ -128,6 +145,11 @@ def show_help():
     print()
     print("  # Sign with custom key name and custom output")
     print("  python3 sign_partition.py file.bin my_key rsa_pkcs_pss /output/my_file.sig")
+    print()
+    print("  # Use environment variables for configuration")
+    print("  export HSM_SERVER_IP=192.168.1.100")
+    print("  export HSM_TOKEN=your_token_here")
+    print("  python3 sign_partition.py uboot.bin partition_key rsa_pkcs_pss signed_uboot.bin")
     print()
     print("Ed25519 Advantages:")
     print("  - Fast signing and verification")
