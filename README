@@ -1,5 +1,7 @@
 # setup build env
 
+edit hsm configure in setup.sh , change to your hsm server ip and token
+
 ```shell
 source setup.sh
 ```
