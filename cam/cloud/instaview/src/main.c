@@ -21,6 +21,29 @@
 
 #define SESSION "instaview"
 
+// Helper function to extract version part before '-' character
+static void extract_version(const char *full_version, char *version_only, size_t buffer_size)
+{
+    char *dash_pos = strchr(full_version, '-');
+    if (dash_pos != NULL) {
+        // Calculate length of version part
+        size_t version_len = dash_pos - full_version;
+        // Ensure we don't exceed buffer size
+        if (version_len < buffer_size) {
+            strncpy(version_only, full_version, version_len);
+            version_only[version_len] = '\0'; // Null-terminate
+        } else {
+            // Fallback: copy up to buffer size - 1
+            strncpy(version_only, full_version, buffer_size - 1);
+            version_only[buffer_size - 1] = '\0';
+        }
+    } else {
+        // No dash found, use original string (fallback)
+        strncpy(version_only, full_version, buffer_size - 1);
+        version_only[buffer_size - 1] = '\0';
+    }
+}
+
 static MFG_CALLBACK_FUNCTIONS callback_functions;
 static bool g_exit = false;
 ipc_qrcode_info_t _g_wifi_info;
@@ -574,7 +597,11 @@ s32 ipc_middleware_main_process(pv8 ipc_version)
     iv_sdk_set_cfg_path("/conf");
     iv_sdk_set_sdcard_mount_path("/mnt/sdcard");
     /* This function is used to initialize the SDK */
-    iv_sdk_set_ota_version(ipc_version);
+    // Extract version part before '-' character
+    char version_only[64]; // Buffer large enough for version format like "01.00.001"
+    extract_version(ipc_version, version_only, sizeof(version_only));
+
+    iv_sdk_set_ota_version(version_only);
 
     iv_sdk_set_substream(1);
 
