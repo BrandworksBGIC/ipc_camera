@@ -490,7 +490,7 @@ int rts_otp_load_aes_key(unsigned int k)
 		return -EINVAL;
 
 	/* key index 0-1 put into key group-0, 2-3 put into key group-1 */
-	g = k % KEY_GROUP_NUMS;
+	g = k / KEY_GROUP_NUMS;
 	write_reg(REG_AES_KEY_GROUP, g);
 
 	if (1 << k & otp->key)
@@ -500,12 +500,11 @@ int rts_otp_load_aes_key(unsigned int k)
 	change_reg(REG_SF_CTRL_0, 1, BIT(RG_PENVDD2_VDD2_SW));
 
 	/* binding key group */
-	for (i = 0; i < KEY_NUMS; i++) {
-		dev_dbg(otp->dev, "%d, %d, %ld\n", KEY(i, k),
-				KEY_SEL(i), KEY_SEL_MASK(i));
-		change_reg(REG_AES_KEY_SEL, KEY(i, k) << KEY_SEL(i),
-					KEY_SEL_MASK(i));
-	}
+	change_reg(REG_AES_KEY_SEL, KEY(0, k) << KEY_SEL(g * 2),
+		   KEY_SEL_MASK(g * 2));
+	change_reg(REG_AES_KEY_SEL, KEY(1, k) << KEY_SEL(g * 2 + 1),
+		   KEY_SEL_MASK(g * 2 + 1));
+
 	/* enable load key */
 	write_reg(REG_LOAD_KEY, 1);
 
@@ -513,7 +512,7 @@ int rts_otp_load_aes_key(unsigned int k)
 	if (ret)
 		goto err;
 
-	otp->key &= ~(11 << g);
+	otp->key &= ~(3 << (g * 2));
 	otp->key |= 1 << k;
 
 err:
