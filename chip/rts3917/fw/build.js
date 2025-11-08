@@ -8,6 +8,7 @@ const sdkDir = path.resolve('../sdk/rts39xx_sdk_v5.3/')
 
 
 config.set('kernelDir', sdkDir+'/out/rts3917n_base/build/linux-custom/');
+config.set('openssl_dir', sdkDir+'/out/rts3917n_base/build/libopenssl-custom/')
 
 // Set up RTS3917 cross-compilation toolchain
 compiler.setToolchain('rts3917', {
@@ -67,6 +68,7 @@ const cloud = 'instaview'
 config.set('cloud', cloud);
 config.set('platform','rts3917');
 config.set('ipc_version', version);
+
 
 // Create temporary directory path
 const tempAppDir = `/dev/shm/${chipName}_ipc/app`;

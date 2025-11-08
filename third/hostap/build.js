@@ -44,7 +44,7 @@ CONFIG_NO_HOSTAPD_LOGGER=y
 
 // Build command arguments
 const buildArgs = `cd ${baseDir}/wpa_supplicant; make all -j 4`;
-const sslBaseDir =  path.resolve('../../chip/rts3917/sdk/rts39xx_sdk_v5.3/out/rts3917n_base/build/libopenssl-custom/');
+const sslBaseDir = config.get('openssl_dir')
 
 
 // If architecture changes, clean and reconfigure

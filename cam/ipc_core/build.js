@@ -2,6 +2,7 @@
 const core = createTarget('ipc_core', '../../third/cjson/');
 
 const kind = config.getOrDefault('library_kind', "shared")
+const openssl_dir = config.get('openssl_dir')
 
 
 core.setTargetType(kind);
@@ -22,10 +23,10 @@ core.addIncludeDirs(
 );
 
 // Add OpenSSL include directories
-core.addIncludeDirs('../../chip/rts3917/sdk/rts39xx_sdk_v5.3/out/rts3917n_base/build/libopenssl-custom/include');
+core.addIncludeDirs(`${openssl_dir}/include`);
 
 // Add OpenSSL shared library
-core.addLdfiles('../../chip/rts3917/sdk/rts39xx_sdk_v5.3/out/rts3917n_base/build/libopenssl-custom/libcrypto.so');
+core.addLdfiles(`${openssl_dir}/libcrypto.so`);
 
 // Build core library
 if (core.build()) {
