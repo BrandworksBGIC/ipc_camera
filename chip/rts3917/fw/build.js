@@ -62,8 +62,9 @@ function generateVersion() {
 const version = generateVersion();
 const chipName = buildConfig.mainChip;
 const useEncrypt = false;
+const cloud = 'instaview'
 
-config.set('cloud', 'instaview');
+config.set('cloud', cloud);
 config.set('platform','rts3917');
 config.set('ipc_version', version);
 
@@ -83,7 +84,7 @@ buildTarget.setTargetType("void");
 
 // Build function - main build logic
 function buildFirmwarePackage() {
-    console.log("=== Building CPPlus Firmware Package ===");
+    console.log("=== Building Instaview Firmware Package ===");
     console.log(`Version: ${version}`);
     console.log(`Chip: ${chipName}`);
     console.log(`WiFi: ${buildConfig.wifi}`);
@@ -226,7 +227,7 @@ nor\t/dev/mtdblock6\t/conf\tjffs2\trw\tdefaults
 
 function createFirmwarePackageWrapper() {
     // Create package with the selected partition table
-    const outputDir = `out/${chipName}_sign_ipc_${version}`;
+    const outputDir = `out/${chipName}_${cloud}_sign_${version}`;
     createFirmwarePackage(chipName, version, outputDir);
 }
 
