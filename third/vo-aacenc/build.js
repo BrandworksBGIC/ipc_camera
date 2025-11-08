@@ -1,10 +1,10 @@
-git.clone('https://github.com/thom311/libnl.git', "src")
+git.cloneTag('https://github.com/mstorsjo/vo-aacenc', "v0.1.3", "src")
 
 const path = require('path');
 const fs = require('fs');
 
-// Create libnl NetLink library target
-const libnl = createTarget('libnl');
+// Create ipc_aacenc target
+const ipc_aacenc = createTarget('ipc_aacenc');
 
 // Get base directory
 const baseDir = 'src';
@@ -21,7 +21,7 @@ if (fs.existsSync(configFile)) {
 }
 
 // Build configuration command
-const configureArgs = `cd ${baseDir}; ./autogen.sh; ./configure --prefix=${installDir} --host=${config.get('compiler.host') || 'arm-linux-gnueabi'} --enable-shared=no --enable-static=yes`;
+const configureArgs = `cd ${baseDir}; autoreconf -vfi && ./configure --prefix=${installDir} --host=${config.get('compiler.host') || ''} `;
 
 // If architecture changes, clean and reconfigure
 if (perArch !== curArch) {
@@ -36,7 +36,7 @@ if (perArch !== curArch) {
     }
 
     // Execute configuration
-    console.log('Configuring libnl library');
+    console.log('Configuring vo_aacenc library');
     const configResult = shell.run(configureArgs);
     if (!configResult) {
         console.error('Configuration failed:', configResult.stderr);
@@ -44,7 +44,7 @@ if (perArch !== curArch) {
     }
 
     // Build and install
-    console.log('Building and installing libnl library');
+    console.log('Building and installing vo_aacenc library');
     const buildResult = shell.run(`cd ${baseDir}; make && make install`);
     if (!buildResult) {
         console.error('Build failed:', buildResult.stderr);
@@ -54,9 +54,13 @@ if (perArch !== curArch) {
     console.log('Configuration unchanged, skipping reconfiguration');
 }
 
-// Set target type (libnl is built via autotools, marked as complete here)
-libnl.setTargetType('void');
-libnl.addIncludeDirs('install/include', true)
-libnl.addLdfiles('install/lib/libnl*.a')
 
-console.log('libnl library build completed');
+ipc_aacenc.setTargetType('static');
+ipc_aacenc.addIncludeDirs('include', true)
+ipc_aacenc.addIncludeDirs('install/include')
+
+ipc_aacenc.addLdfiles('install/lib/libvo-aacenc.a')
+ipc_aacenc.addFiles('aac.c')
+ipc_aacenc.build()
+
+console.log('ipc_aacenc library build completed');

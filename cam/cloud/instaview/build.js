@@ -1,4 +1,4 @@
-const t = createTarget("instaview", "../../ipc_middleware/")
+const t = createTarget("instaview", "../../ipc_middleware/","../../../third/vo-aacenc/")
 t.setTargetType('static')
 t.addFiles("src/*.c")
 t.addIncludeDirs("include")

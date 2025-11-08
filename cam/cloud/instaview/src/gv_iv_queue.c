@@ -14,6 +14,11 @@
 #include "iv_types.h"
 #include <fcntl.h>
 
+#include "ipc_aac.h"
+
+static u8 g_is_init = 0;
+static vptr _gh_aac = NULL;
+
 // Context structure for passing frame data between callback and main function
 typedef struct {
     MfgVideoFrame* pframeInfo;
@@ -215,22 +220,69 @@ int MFG_ReadAudioPcmFrame(char* buffer, int32_t len, int64_t* time_stamp, int64_
 
 int MFG_EncodeAACAudio(char* pcm_data, int32_t pcm_len, char* encoded_data, int32_t encoded_len)
 {
-    // AAC encoding function - simplified for direct API usage
-    // Note: This function may need platform-specific implementation
-    // For now, it's simplified to remove queue dependencies
 
-    if (pcm_data == NULL || encoded_data == NULL || pcm_len <= 0 || encoded_len <= 0) {
+#ifdef __CHIP_RTS3903__
+    if (!g_is_init) {
         return -1;
     }
+    ipc_aac_data_p _aac_data = ipc_aac_encode_iter(_gh_aac, pcm_data, pcm_len);
+    if (_aac_data) {
+        memcpy(encoded_data, _aac_data->buf, _aac_data->len);
+        return _aac_data->len;
+    } else {
+        return -1;
+    }
+#else
+    int ret     = -1;
+    int aac_len = 0;
 
-    // This function should use platform-specific AAC encoding
-    // The implementation depends on the available audio encoding APIs
-    // For now, return the input as PCM data (placeholder implementation)
-
-    if (pcm_len <= encoded_len) {
-        memcpy(encoded_data, pcm_data, pcm_len);
-        return pcm_len;
+    if (!g_is_init) {
+        goto _exit;
     }
 
-    return -1;
+    ipc_aac_data_p _aac_data = NULL;
+    if (_gh_aac) {
+        while ((_aac_data = ipc_aac_encode_iter(_gh_aac, pcm_data, pcm_len))) {
+            if (aac_len + _aac_data->len > encoded_len) {
+                goto _exit;
+            }
+            memcpy(encoded_data + aac_len, _aac_data->buf, _aac_data->len);
+            aac_len += _aac_data->len;
+        }
+    }
+
+    if (aac_len > 0) {
+        return aac_len;
+    } else if (aac_len < 0) {
+        goto _exit;
+    }
+
+_exit:
+    return ret;
+#endif
+}
+s32 ipc_iv_queue_init_aac_encode(void)
+{
+    s32 ret = -1;
+
+#if 1
+    _gh_aac = ipc_aac_encode_open(16, 8000, 1);
+    if (_gh_aac == NULL) {
+        goto _exit;
+    }
+#else
+    _gh_aac = ipc_aac_encode_open(16, 16000, 1);
+    if (_gh_aac == NULL) {
+        goto _exit;
+    }
+#endif
+
+    ret = 0;
+_exit:
+    return ret;
+}
+
+void ipc_iv_queue_uninit_aac_encode(void)
+{
+    ipc_aac_encode_close(_gh_aac);
 }
