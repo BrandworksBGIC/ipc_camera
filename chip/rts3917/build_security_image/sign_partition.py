@@ -235,7 +235,7 @@ def sign_file(server_url, token, file_to_sign, key_name, mechanism, signature_fi
         if mechanism.startswith("rsa_"):
             # Calculate hash locally for RSA
             file_hash = calculate_file_hash(file_to_sign, hash_alg)
-            files = {'file': ('hash', file_hash, 'application/octet-stream')}
+            files = {'file': (file_to_sign, file_hash, 'application/octet-stream')}
 
             data = {
                 'key_name': key_name,

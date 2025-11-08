@@ -21,6 +21,18 @@ SIG_FILE_DIR=${BASE_DIR}/${gv_chip_name}/file_to_sign
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${BASE_DIR}/lib
 echo $LD_LIBRARY_PATH
 
+# File dependency checking function
+file_needs_update() {
+    local src_file="$1"
+    local target_file="$2"
+
+    if [[ ! -f "$target_file" ]]; then
+        return 0  # Target file doesn't exist, need to create
+    fi
+
+    [[ "$src_file" -nt "$target_file" ]]
+}
+
 
 # uboot
 gen_pubkey_dtb()
@@ -40,7 +52,7 @@ gen_pubkey_dtb()
 
 gen_uboot()
 {
-	cp ${BUILD_DIR}/tb_fw_no_sig.crt ${BUILD_DIR}/tb_fw.crt
+	cp ${BUILD_DIR}/tb_fw_no_sig.crt ${BUILD_DIR}/tb_fw.crt -uv
 	cat ${SIG_DIR}/uboot.signature >> ${BUILD_DIR}/tb_fw.crt
 	echo "Generate fip.bin"
 	${TOOLS_DIR}/fiptool create \
@@ -51,30 +63,36 @@ gen_uboot()
 
 gen_uboot_sha()
 {
-	cp ${IMAGE_DIR}/bl2.bin ${BUILD_DIR}/bl2.bin
+	if file_needs_update ${IMAGE_DIR}/bl2.bin ${SHA_DIR}/uboot.sha256; then
+		echo "🔄 Generating uboot SHA256..."
+		cp ${IMAGE_DIR}/bl2.bin ${BUILD_DIR}/bl2.bin -uv
 
-        echo "Generate bl2 content certificate with fake private key and real public key"
-        ${TOOLS_DIR}/cert_create_rts \
-                -n \
-                --tfw-nvctr 31 \
-                --ntfw-nvctr 223 \
-                --key-alg rsa \
-                --rot-key ${RTSKEY_DIR}/verity_key0_fake.key \
+		echo "Generate bl2 content certificate with fake private key and real public key"
+		${TOOLS_DIR}/cert_create_rts \
+				-n \
+				--tfw-nvctr 31 \
+				--ntfw-nvctr 223 \
+				--key-alg rsa \
+				--rot-key ${RTSKEY_DIR}/verity_key0_fake.key \
 		--rot-public-key ${RTSKEY_DIR}/verity_key0.pem \
-                --tb-fw ${BUILD_DIR}/bl2.bin \
-                --tb-fw-cert ${BUILD_DIR}/tb_fw_fake.crt
-	
-	echo "Generate bl2 content certificate without signature"
-	cert_size=$(stat -c%s "${BUILD_DIR}/tb_fw_fake.crt")
-	no_sig_cert_size=$((cert_size - 256))
-	dd if=${BUILD_DIR}/tb_fw_fake.crt of=${BUILD_DIR}/tb_fw_no_sig.crt bs=1 count=$no_sig_cert_size
+				--tb-fw ${BUILD_DIR}/bl2.bin \
+				--tb-fw-cert ${BUILD_DIR}/tb_fw_fake.crt
 
-	echo "Generate bl2 content certificate to be signed"
-	sha_bytes=$(dd if=${BUILD_DIR}/tb_fw_fake.crt bs=1 skip=6 count=2 2>/dev/null | xxd -p)
-	length=$(echo "ibase=16; $sha_bytes" | bc)
-	length=$((length + 4))
-	dd if=${BUILD_DIR}/tb_fw_fake.crt of=${SIG_FILE_DIR}/tb_fw_to_sig.crt bs=1 skip=4 count=$length
-	${BASE_DIR}/tools/openssl dgst -sha256 -binary -out ${SHA_DIR}/uboot.sha256 ${SIG_FILE_DIR}/tb_fw_to_sig.crt
+		echo "Generate bl2 content certificate without signature"
+		cert_size=$(stat -c%s "${BUILD_DIR}/tb_fw_fake.crt")
+		no_sig_cert_size=$((cert_size - 256))
+		dd if=${BUILD_DIR}/tb_fw_fake.crt of=${BUILD_DIR}/tb_fw_no_sig.crt bs=1 count=$no_sig_cert_size
+
+		echo "Generate bl2 content certificate to be signed"
+		sha_bytes=$(dd if=${BUILD_DIR}/tb_fw_fake.crt bs=1 skip=6 count=2 2>/dev/null | xxd -p)
+		length=$(echo "ibase=16; $sha_bytes" | bc)
+		length=$((length + 4))
+		dd if=${BUILD_DIR}/tb_fw_fake.crt of=${SIG_FILE_DIR}/tb_fw_to_sig.crt bs=1 skip=4 count=$length
+		${BASE_DIR}/tools/openssl dgst -sha256 -binary -out ${SHA_DIR}/uboot.sha256 ${SIG_FILE_DIR}/tb_fw_to_sig.crt
+		echo "✅ uboot SHA256 generated"
+	else
+		echo "⏭️  uboot SHA256 skipped (no changes in bl2.bin)"
+	fi
 }
 
 
@@ -90,8 +108,14 @@ gen_kernel()
 
 gen_kernel_sha()
 {
-	cp ${IMAGE_DIR}/zImage ${SIG_FILE_DIR}/
-	${TOOLS_DIR}/openssl dgst -sha256 -binary -out ${SHA_DIR}/kernel.sha256 ${SIG_FILE_DIR}/zImage
+	if file_needs_update ${IMAGE_DIR}/zImage ${SHA_DIR}/kernel.sha256; then
+		echo "🔄 Generating kernel SHA256..."
+		cp ${IMAGE_DIR}/zImage ${SIG_FILE_DIR}/
+		${TOOLS_DIR}/openssl dgst -sha256 -binary -out ${SHA_DIR}/kernel.sha256 ${SIG_FILE_DIR}/zImage
+		echo "✅ kernel SHA256 generated"
+	else
+		echo "⏭️  kernel SHA256 skipped (no changes in zImage)"
+	fi
 }
 
 # rootfs
@@ -109,14 +133,20 @@ gen_rootfs()
 
 gen_rootfs_sha()
 {
-        ${TOOLS_DIR}/build_verity_img.py sha \
-                ${TOOLS_DIR} \
-                ${IMAGE_DIR}/rootfs.squashfs \
-                "/newroot" \
-                "/dev/mtdblock4" \
-                ${RELEASE_DIR}/rootfs.squashfs.signed \
-		${SHA_DIR}
-	cp ${IMAGE_DIR}/rootfs.squashfs.table ${SIG_FILE_DIR}/
+	if file_needs_update ${IMAGE_DIR}/rootfs.squashfs ${SHA_DIR}/rootfs.squashfs.sha256; then
+		echo "🔄 Generating rootfs SHA256..."
+		${TOOLS_DIR}/build_verity_img.py sha \
+			${TOOLS_DIR} \
+			${IMAGE_DIR}/rootfs.squashfs \
+			"/newroot" \
+			"/dev/mtdblock4" \
+			${RELEASE_DIR}/rootfs.squashfs.signed \
+			${SHA_DIR}
+		cp ${IMAGE_DIR}/rootfs.squashfs.table ${SIG_FILE_DIR}/
+		echo "✅ rootfs SHA256 generated"
+	else
+		echo "⏭️  rootfs SHA256 skipped (no changes in rootfs.squashfs)"
+	fi
 }
 
 # user partition
@@ -132,15 +162,20 @@ gen_user()
 
 gen_user_sha()
 {
-        echo "Generate app.signed.sha"
-        ${TOOLS_DIR}/build_verity_img.py sha \
-                ${TOOLS_DIR} \
-                ${IMAGE_DIR}/app.bin \
-                "/app" \
-                "/dev/mtdblock5" \
-                ${RELEASE_DIR}/app.bin.signed \
-                ${SHA_DIR}
-	cp ${IMAGE_DIR}/app.bin.table ${SIG_FILE_DIR}/
+	if file_needs_update ${IMAGE_DIR}/app.bin ${SHA_DIR}/app.bin.sha256; then
+		echo "🔄 Generating app SHA256..."
+		${TOOLS_DIR}/build_verity_img.py sha \
+			${TOOLS_DIR} \
+			${IMAGE_DIR}/app.bin \
+			"/app" \
+			"/dev/mtdblock5" \
+			${RELEASE_DIR}/app.bin.signed \
+			${SHA_DIR}
+		cp ${IMAGE_DIR}/app.bin.table ${SIG_FILE_DIR}/
+		echo "✅ app SHA256 generated"
+	else
+		echo "⏭️  app SHA256 skipped (no changes in app.bin)"
+	fi
 }
 
 build_image(){

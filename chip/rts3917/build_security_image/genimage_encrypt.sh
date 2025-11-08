@@ -53,7 +53,7 @@ gen_pubkey_dtb()
 
 gen_uboot()
 {
-	cp ${BUILD_DIR}/tb_fw_no_sig.crt ${BUILD_DIR}/tb_fw.crt
+	cp ${BUILD_DIR}/tb_fw_no_sig.crt ${BUILD_DIR}/tb_fw.crt -uv
 	cat ${SIG_DIR}/uboot.signature >> ${BUILD_DIR}/tb_fw.crt
 	echo "Generate fip.bin"
 	${TOOLS_DIR}/fiptool create \
@@ -150,14 +150,20 @@ gen_rootfs()
 
 gen_rootfs_sha()
 {
-	${TOOLS_DIR}/build_verity_img.py sha \
-		${TOOLS_DIR} \
-		${IMAGE_DIR}/rootfs.squashfs \
-		"/newroot" \
-		"dev/mapper/dm-crypt-newroot" \
-		${BUILD_DIR}/rootfs.squashfs.signed \
-		${SHA_DIR}
-	cp ${IMAGE_DIR}/rootfs.squashfs.table ${SIG_FILE_DIR}/
+	if file_needs_update "${IMAGE_DIR}/rootfs.squashfs" "${SHA_DIR}/rootfs.squashfs.sha256"; then
+		echo "🔍 Generating encrypted rootfs SHA256..."
+		${TOOLS_DIR}/build_verity_img.py sha \
+			${TOOLS_DIR} \
+			${IMAGE_DIR}/rootfs.squashfs \
+			"/newroot" \
+			"dev/mapper/dm-crypt-newroot" \
+			${BUILD_DIR}/rootfs.squashfs.signed \
+			${SHA_DIR}
+		cp ${IMAGE_DIR}/rootfs.squashfs.table ${SIG_FILE_DIR}/
+		echo "✅ encrypted rootfs SHA256 generated"
+	else
+		echo "⏭️  encrypted rootfs SHA256 skipped (no changes in rootfs.squashfs)"
+	fi
 }
 
 # user partition
@@ -179,15 +185,20 @@ gen_user()
 
 gen_user_sha()
 {
-        echo "Generate app.signed.sha"
-        ${TOOLS_DIR}/build_verity_img.py sha \
-                ${TOOLS_DIR} \
-                ${IMAGE_DIR}/app.bin \
-                "/app" \
-                "dev/mapper/dm-crypt-app" \
-                ${BUILD_DIR}/app.bin.signed \
-                ${SHA_DIR}
-	cp ${IMAGE_DIR}/app.bin.table ${SIG_FILE_DIR}/
+	if file_needs_update "${IMAGE_DIR}/app.bin" "${SHA_DIR}/app.bin.sha256"; then
+		echo "🔍 Generating encrypted app SHA256..."
+		${TOOLS_DIR}/build_verity_img.py sha \
+			${TOOLS_DIR} \
+			${IMAGE_DIR}/app.bin \
+			"/app" \
+			"dev/mapper/dm-crypt-app" \
+			${BUILD_DIR}/app.bin.signed \
+			${SHA_DIR}
+		cp ${IMAGE_DIR}/app.bin.table ${SIG_FILE_DIR}/
+		echo "✅ encrypted app SHA256 generated"
+	else
+		echo "⏭️  encrypted app SHA256 skipped (no changes in app.bin)"
+	fi
 }
 
 build_image(){

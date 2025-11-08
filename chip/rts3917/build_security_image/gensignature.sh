@@ -27,7 +27,7 @@ file_needs_update() {
 # uboot
 gen_uboot_sign()
 {
-	if file_needs_update "${SHA_DIR}/uboot.sha256" "${SIG_DIR}/uboot.signature"; then
+	if file_needs_update ${SIG_FILE_DIR}/tb_fw_to_sig.crt "${SIG_DIR}/uboot.signature"; then
 		echo "🔐 Generating uboot signature..."
 		#${TOOLS_DIR}/sign_uboot ${SIG_FILE_DIR}/tb_fw_to_sig.crt ${RTSKEY_DIR}/verity_key0.key ${SIG_DIR}/uboot.signature
 		python3 ./sign_partition.py ${SIG_FILE_DIR}/tb_fw_to_sig.crt  rts3917_sec_boot rsa_pkcs_pss ${SIG_DIR}/uboot.signature
@@ -42,7 +42,7 @@ gen_uboot_sign()
 # kernel
 gen_kernel_sign()
 {
-	if file_needs_update "${SHA_DIR}/kernel.sha256" "${SIG_DIR}/kernel.signature"; then
+	if file_needs_update ${IMAGE_DIR}/zImage "${SIG_DIR}/kernel.signature"; then
 		echo "🔐 Generating kernel signature..."
 		# openssl dgst -sha256 -sign ${RTSKEY_DIR}/verity_key1.key -out ${SIG_DIR}/kernel.signature ${IMAGE_DIR}/zImage
 
