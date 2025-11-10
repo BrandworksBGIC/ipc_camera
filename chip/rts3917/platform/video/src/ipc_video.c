@@ -1956,7 +1956,7 @@ s32 ipc_plat_sys_init(IPC_PRODUCT_TYPE type)
         return IPC_NOT_INIT;
     }
 
-    rts_set_log_ident("CP_RTS3917");
+    rts_set_log_ident("RTS3917");
     rts_set_log_mask(RTS_LOG_MASK_SYSLOG);
     rts_set_log_level(1 << RTS_LOG_ERR);
 
@@ -1982,7 +1982,7 @@ s32 ipc_plat_sys_init(IPC_PRODUCT_TYPE type)
 
     /* sub channel */
     {
-        sub_video_context->encode_h26x_type = IPC_VIDEO_ENC_TYPE_H264;
+        sub_video_context->encode_h26x_type = IPC_VIDEO_ENC_TYPE_H265;
         sub_video_context->encode_type      = (_gvrt_video_attr.jpeg_res_chn == IPC_VIDEO_CHN_SUB)
                                                   ? (sub_video_context->encode_h26x_type | IPC_VIDEO_ENC_TYPE_JPEG)
                                                   : sub_video_context->encode_h26x_type;
