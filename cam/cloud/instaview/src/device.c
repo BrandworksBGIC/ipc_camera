@@ -144,8 +144,11 @@ int MFG_LedSetColor_Callback(E_LED_COLOR_MODE led, int value) // LED control fun
 int MFG_VideoStreamInit_callback(int stream_index)
 {
 
-    IPC_VIDEO_CHN_TYPE chn = (stream_index == E_VIDEO_MAIN_STREAM) ? IPC_VIDEO_CHN_MAIN : IPC_VIDEO_CHN_SUB;
-    ipc_mpp_video_start(chn, 0);
+    printf("%s:%d\n", __func__, stream_index);
+
+    
+    ipc_mpp_video_start(IPC_VIDEO_CHN_MAIN, 0);
+    ipc_mpp_video_start(IPC_VIDEO_CHN_SUB, 0);
     return 0;
 }
 

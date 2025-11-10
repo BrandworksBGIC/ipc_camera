@@ -20,7 +20,7 @@ mainProcess.addCflags(`-D__IPC_VERSION__="${ipcVersion}"`);
 mainProcess.addFiles('*.c');
 
 // Build main process
-if (mainProcess.build()) {
+if (mainProcess.build(true)) {
     console.log('Main process build successful');
 } else {
     console.error('Main process build failed');
