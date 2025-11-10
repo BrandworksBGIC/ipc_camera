@@ -45,7 +45,7 @@ otp_mfg -r --pg --loglv=3
 
 sleep 3
 
-echo 9 >/proc/sys/kernel/printk
+echo 0 >/proc/sys/kernel/printk
 
 dmsetup info -c
 
