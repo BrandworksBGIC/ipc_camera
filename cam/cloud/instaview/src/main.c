@@ -603,6 +603,8 @@ s32 ipc_middleware_main_process(pv8 ipc_version)
 
     iv_sdk_set_ota_version(version_only);
 
+    iv_sdk_set_venc_type(E_MEDIA_VENC_H265);
+
     iv_sdk_set_substream(1);
 
     iv_sdk_init();
