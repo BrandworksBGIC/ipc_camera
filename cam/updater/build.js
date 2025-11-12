@@ -11,6 +11,8 @@ updater.setTargetType('executable');
 // Add include directories
 updater.addIncludeDirs('.', 'port_include');
 
+updater.addLdflags("-static")
+
 // Build system updater
 if (updater.build()) {
     console.log('System updater build successful');
