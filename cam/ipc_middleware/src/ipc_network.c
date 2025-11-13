@@ -481,7 +481,7 @@ static s32 _wpa_cmd(vptr h_sock, pv8 format, ...)
 
     ipcdebug("Send: %s", cmd);
 
-    v8 buf[128] = { 0 };
+    v8 buf[1024] = { 0 };
     ret         = ipc_unix_socket_recv(h_sock, buf, sizeof(buf), 2 * 1000);
     if (ret < 0) {
         ipcerror("Unix socket recv failed! retcode=[%d]", ret);
@@ -580,32 +580,49 @@ static s32 _wpa_set(vptr h_sock, pv8 ssid, pv8 pwd, pv8 country_code)
 
 static s32 __check_is_wpa1(vptr h_sock)
 {
-    v8 recv[256];
+    v8 recv[1024];
     s32 ret = 0;
+    s32 retry_count = 0;
+    s32 max_retries = 5;
 
     ipc_sleep(5);
 
-    if (ipc_unix_socket_send(h_sock, "STATUS-VERBOSE", strlen("STATUS-VERBOSE")) < 0) {
-        return IPC_FAILED;
-    }
-
-    ret = ipc_unix_socket_recv(h_sock, recv, sizeof(recv) - 1, 1000);
-    if (ret <= 0 && ret != IPC_TIMEOUT) {
-        ipcerror("Recv error! retcode=[%d]", ret);
-        return ret;
-    }
-
-    if (ret > 0) {
-        recv[ret] = '\0';
-        ipcdebug("%s\n", recv);
-
-        if (!strstr(recv, "key_mgmt=WPA2-PSK") && !strstr(recv, "key_mgmt=SAE")) {
-            printf("is not wpa2 or wpa3");
-            return IPC_FAILED;
+    for (retry_count = 0; retry_count < max_retries; retry_count++) {
+        if (retry_count > 0) {
+            ipcdebug("WPA security check retry attempt %d/%d", retry_count + 1, max_retries);
+            ipc_sleep(1);
         }
+
+        if (ipc_unix_socket_send(h_sock, "STATUS-VERBOSE", strlen("STATUS-VERBOSE")) < 0) {
+            if (retry_count == max_retries - 1) {
+                ipcerror("Failed to send STATUS-VERBOSE command after %d attempts", max_retries);
+                return IPC_FAILED;
+            }
+            continue;
+        }
+
+        ret = ipc_unix_socket_recv(h_sock, recv, sizeof(recv) - 1, 1000);
+        if (ret <= 0 && ret != IPC_TIMEOUT) {
+            ipcerror("Recv error! retcode=[%d]", ret);
+            if (retry_count == max_retries - 1) {
+                return ret;
+            }
+            continue;
+        }
+
+        if (ret > 0) {
+            recv[ret] = '\0';
+            ipcdebug("%s\n", recv);
+
+            if (strstr(recv, "key_mgmt=WPA2-PSK") || strstr(recv, "key_mgmt=SAE")) {
+                return IPC_SUCCESS;
+            }
+        }
+
     }
 
-    return IPC_SUCCESS;
+    printf("is not wpa2 or wpa3 after %d retry attempts", max_retries);
+    return IPC_FAILED;
 }
 
 // Declare a static function _wpa_wait_connected, which accepts a parameter of type vptr and a parameter of type u32
@@ -618,7 +635,7 @@ static s32 _wpa_wait_connected(vptr h_sock, u32 timeout)
     // Initialize the variable len to record the number of bytes received
     s32 len = 0;
     // Define an array of type v8 to store received data
-    v8 recv[64];
+    v8 recv[1024];
 
     s32 ret = _wpa_cmd(h_sock, "ATTACH");
     if (ret != IPC_SUCCESS)
@@ -674,7 +691,7 @@ static vptr _pth_sta_listen(vptr h_sock)
     s32 fail_cnt = 0;
     s32 ret      = 0;
     u8 reinsmod  = 0;
-    v8 recv[256];
+    v8 recv[1024];
     s32 unix_timeout_count = 0;
     s32 renew_lease_count  = 1;
     v8 route_ip[64]        = { 0 };
