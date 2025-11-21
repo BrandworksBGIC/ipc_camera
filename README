@@ -18,6 +18,7 @@ cd chip/rts3917/sdk/rts39xx_sdk_v5.3/
 
 cd chip/rts3917/sdk/rts39xx_sdk_v5.3/out/rts3917n_base
 
+# if can`t link ram_init try  mkdir build/uboot-custom/ram_init and run again
 make secure_boot M=1  # build once, every time run this , need rerun get_hash.sh
 
 
