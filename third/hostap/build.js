@@ -7,7 +7,7 @@ const fs = require('fs');
 
 
 
-const hostap = createTarget('hostap', "../libnl");
+const hostap = createTarget('hostap', "../libnl", "../wolfssl");
 
 const baseDir = 'src';
 const libnlDir = path.resolve('.', '../libnl');
@@ -26,7 +26,7 @@ if (fs.existsSync(configFile)) {
 // hostap configuration content
 const hostapConfig = `CONFIG_LIBNL32=y
 CONFIG_DRIVER_NL80211=y
-CONFIG_TLS=openssl
+CONFIG_TLS=wolfssl
 CONFIG_INTERNAL_LIBTOMMATH=y
 CONFIG_WEP=n
 CONFIG_AP=y
@@ -37,15 +37,13 @@ CONFIG_CTRL_IFACE=y
 CONFIG_SAE=y
 CONFIG_P2P=y
 
-#CONFIG_NO_STDOUT_DEBUG=y
+CONFIG_NO_STDOUT_DEBUG=y
 CONFIG_NO_WPA_MSG=y
 CONFIG_NO_HOSTAPD_LOGGER=y
 `;
 
 // Build command arguments
 const buildArgs = `cd ${baseDir}/wpa_supplicant; make all -j 4`;
-const sslBaseDir = config.get('openssl_dir')
-
 
 // If architecture changes, clean and reconfigure
 if (perArch !== curArch) {
@@ -63,7 +61,8 @@ if (perArch !== curArch) {
     fs.writeFileSync(wpaConfigPath, hostapConfig, 'utf8');
     
     // Add OpenSSL path
-    const additionalConfig = `CC=${toolchainPrefix}-gcc\nCFLAGS += -I${sslBaseDir}/include/\nLIBS += -L${sslBaseDir} -lpthread -L${libnlDir}/install/lib\nLIBNL_INC=${libnlDir}/install/include/libnl3\n`;
+    const sslBaseDir =  path.resolve('../wolfssl/install/');
+    const additionalConfig = `CC=${toolchainPrefix}-gcc\nCFLAGS += -I${sslBaseDir}/include/ -ffunction-sections -fdata-sections \nLIBS +=  -Wl,--gc-sections  -L${sslBaseDir}/lib -lpthread -L${libnlDir}/install/lib\nLIBNL_INC=${libnlDir}/install/include/libnl3\n`;
     fs.appendFileSync(wpaConfigPath, additionalConfig, 'utf8');
 
     
@@ -88,13 +87,10 @@ const installDir = path.resolve('.', 'install');
 fs.mkdirSync(path.join(installDir, 'bin'));
 
 console.log('Installing wpa_supplicant tools');
-const tools = ['wpa_supplicant', 'wpa_cli', 'wpa_passphrase'];
+const tools = ['wpa_supplicant', 'wpa_cli'];
 for (const tool of tools) {
 
     hostap.addInstallFiles('bin', `${baseDir}/wpa_supplicant/${tool}`)
 }
-
-hostap.addInstallFiles('lib', `${sslBaseDir}/libcrypto.so`)
-hostap.addInstallFiles('lib', `${sslBaseDir}/libssl.so`)
 
 console.log('hostap WiFi hotspot library build completed');
