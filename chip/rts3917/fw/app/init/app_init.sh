@@ -15,7 +15,7 @@ echo 1 >/proc/sys/kernel/panic_on_oops
 
 
 echo 100 > /proc/sys/vm/swappiness
-echo 8388608 > /sys/block/zram0/disksize
+echo 15728640 > /sys/block/zram0/disksize
 mkswap /dev/zram0
 swapon /dev/zram0
 
