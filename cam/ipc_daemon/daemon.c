@@ -2,6 +2,7 @@
 
 #include <errno.h>
 #include <signal.h>
+#include <sys/resource.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -148,6 +149,21 @@ static void _signal_exit(s32 sig)
 #include <sys/stat.h>
 #include <sys/types.h>
 
+static void set_highest_priority(void)
+{
+    s32 ret = setpriority(PRIO_PROCESS, 0, -20);
+    if (ret != 0) {
+        if (errno == EPERM) {
+            ipcwarn("Permission denied when setting highest priority (need root privileges)");
+        } else {
+            ipcwarn("Failed to set highest priority: %s", strerror(errno));
+        }
+    } else {
+        ipcinfo("Successfully set watchdog daemon to highest priority (-20)");
+    }
+}
+
+
 static void _daemon(void)
 {
     if (fork() != 0)
@@ -169,6 +185,10 @@ s32 main(s32 argc, pcv8 argv[])
     signal(SIGINT, _signal_exit);
 
     _start_apps(argc - 1, argv + 1);
+
+    // Set watchdog daemon to highest priority
+    set_highest_priority();
+
 
     s32 pid     = 0;
     s32 swdg_fd = 0;
