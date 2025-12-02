@@ -2900,6 +2900,7 @@ rtl8168_set_speed_xmii(struct net_device *dev,
 			auto_nego |= ADVERTISE_10HALF;
 		if (adv & ADVERTISED_10baseT_Full)
 			auto_nego |= ADVERTISE_10FULL;
+#if 0
 		if (adv & ADVERTISED_100baseT_Half)
 			auto_nego |= ADVERTISE_100HALF;
 		if (adv & ADVERTISED_100baseT_Full)
@@ -2908,7 +2909,7 @@ rtl8168_set_speed_xmii(struct net_device *dev,
 			giga_ctrl |= ADVERTISE_1000HALF;
 		if (adv & ADVERTISED_1000baseT_Full)
 			giga_ctrl |= ADVERTISE_1000FULL;
-
+#endif
 		//flow control
 		if (dev->mtu <= ETH_DATA_LEN)
 			auto_nego |= ADVERTISE_PAUSE_CAP|ADVERTISE_PAUSE_ASYM;
@@ -2926,6 +2927,7 @@ rtl8168_set_speed_xmii(struct net_device *dev,
 		if (speed == SPEED_10 || speed == SPEED_100 ||
 			(speed == SPEED_1000 && duplex == DUPLEX_FULL &&
 			 tp->HwSuppGigaForceMode)) {
+			speed = SPEED_10;
 			rtl8168_phy_setup_force_mode(dev, speed, duplex);
 		} else
 			goto out;
