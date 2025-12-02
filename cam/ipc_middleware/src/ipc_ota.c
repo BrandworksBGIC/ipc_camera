@@ -103,14 +103,16 @@ s32 ipc_ota_prepare(pv8 path, s32 pack_size, u8 has_backup)
     ipc_status_led_uninit(1);
     ipc_ptz_uninit();
     ipc_tfcard_monitor_uninit(1);
-    ipc_mpp_uninit(1);
-
+    
     /* step 2: Delete all TF card upgrade packages to prevent rollback upgrade by TF card after OTA */
     ipc_exec("rm %s/*all.cppa", TFCARD_PATH);
     ipc_exec("rm %s/*sd.cppa", TFCARD_PATH);
     ipc_exec("rm %s/*ota.cppa", TFCARD_PATH);
     ipc_exec("umount -f %s", TFCARD_PATH);
     ipc_exec("sync");
+
+    ipc_mpp_uninit(1);
+
     ipc_exec("echo 3 > /proc/sys/vm/drop_caches");
 
     if (has_backup) {

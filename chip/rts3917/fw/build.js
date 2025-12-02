@@ -180,6 +180,16 @@ function buildFirmwarePackage() {
     // Copy modules and sensors from staging to tempAppDir
     copyStagingModulesAndSensorsToTempAppDir();
 
+    // Remove mac80211.ko file from tempAppDir/rt/ using find -exec
+    console.log("Removing mac80211.ko file from tempAppDir/rt/...");
+    if (!shell.run(`find ${tempAppDir}/rt/ -name "mac80211.ko" -exec rm {} \\;`)) {
+        console.warn("Warning: Failed to remove mac80211.ko file (file may not exist)");
+    }
+
+    console.log("Removing bluetooth.ko file from tempAppDir/rt/...");
+    if (!shell.run(`find ${tempAppDir}/rt/ -name "bluetooth.ko" -exec rm {} \\;`)) {
+        console.warn("Warning: Failed to remove bluetooth.ko file (file may not exist)");
+    }
 
     // Copy AI plugin (local file, use shell.run)
     console.log("Copying AI plugin...");

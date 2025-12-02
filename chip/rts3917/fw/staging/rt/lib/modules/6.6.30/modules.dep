@@ -1,6 +1,17 @@
 kernel/crypto/cmac.ko:
+kernel/crypto/hmac.ko:
+kernel/crypto/sha512_generic.ko:
+kernel/crypto/sha3_generic.ko:
+kernel/crypto/ctr.ko:
+kernel/crypto/gcm.ko:
 kernel/crypto/ccm.ko:
+kernel/crypto/drbg.ko:
+kernel/crypto/jitterentropy_rng.ko:
+kernel/crypto/ghash-generic.ko:
+kernel/crypto/ecc.ko:
+kernel/crypto/ecdh_generic.ko: kernel/crypto/ecc.ko
 kernel/lib/crypto/libarc4.ko:
+kernel/lib/crc16.ko:
 kernel/drivers/media/common/videobuf2/videobuf2-common.ko:
 kernel/drivers/media/common/videobuf2/videobuf2-dma-contig.ko: kernel/drivers/media/common/videobuf2/videobuf2-memops.ko kernel/drivers/media/common/videobuf2/videobuf2-common.ko
 kernel/drivers/media/common/videobuf2/videobuf2-memops.ko: kernel/drivers/media/common/videobuf2/videobuf2-common.ko
@@ -17,9 +28,14 @@ kernel/drivers/media/platform/rts_camera/rts_camera_jpgenc.ko: kernel/drivers/me
 kernel/drivers/media/platform/rts_camera/rts_camera_osd2.ko: kernel/drivers/media/platform/rts_camera/rts_cam.ko kernel/drivers/media/common/videobuf2/videobuf2-v4l2.ko kernel/drivers/media/common/videobuf2/videobuf2-common.ko
 kernel/drivers/media/platform/rts_camera/rts_camera_osdi.ko: kernel/drivers/media/platform/rts_camera/rts_cam.ko kernel/drivers/media/common/videobuf2/videobuf2-v4l2.ko kernel/drivers/media/common/videobuf2/videobuf2-common.ko
 kernel/drivers/media/platform/rts_camera/rtstream.ko: kernel/drivers/media/platform/rts_camera/rts_cam.ko kernel/drivers/media/common/videobuf2/videobuf2-v4l2.ko kernel/drivers/media/common/videobuf2/videobuf2-common.ko
-kernel/drivers/mmc/host/rtsx-icr.ko:
+kernel/drivers/mmc/host/rtsx-icr.ko: kernel/drivers/mmc/core/mmc_core.ko
+kernel/drivers/mmc/core/mmc_core.ko:
+kernel/drivers/mmc/core/pwrseq_simple.ko: kernel/drivers/mmc/core/mmc_core.ko
+kernel/drivers/mmc/core/pwrseq_emmc.ko: kernel/drivers/mmc/core/mmc_core.ko
+kernel/drivers/mmc/core/mmc_block.ko: kernel/drivers/mmc/core/mmc_core.ko
 kernel/sound/soc/realtek/rts_dma.ko:
 kernel/sound/soc/realtek/rts_i2s.ko:
 kernel/sound/soc/realtek/rts_codec.ko:
 kernel/sound/soc/realtek/rts_snd_intern.ko:
+kernel/net/bluetooth/bluetooth.ko: kernel/lib/crc16.ko kernel/crypto/ecdh_generic.ko kernel/crypto/ecc.ko
 kernel/net/mac80211/mac80211.ko: kernel/lib/crypto/libarc4.ko

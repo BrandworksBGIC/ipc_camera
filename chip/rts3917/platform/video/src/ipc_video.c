@@ -21,6 +21,8 @@
 #include <rtscamkit.h>
 #include <rtsvideo.h>
 
+#include "ipc_core.h"
+
 #define IPC_VIDEO_PRINT(fmt, ...) printf("[%s:%d]" fmt, __func__, __LINE__, ##__VA_ARGS__)
 
 #define IPRT_ALGO_AE_ID_D RTS_ISP_ALGO_AE_ID0
@@ -41,7 +43,11 @@
 
 #define IPRT_ISP_WDR_LEVEL_D 50
 
-typedef enum { IPRT_ENCODER_TYPE_H264, IPRT_ENCODER_TYPE_H265, IPRT_ENCODER_TYPE_ALL } IPRT_ENCODER_TYPED_E;
+    typedef enum {
+        IPRT_ENCODER_TYPE_H264,
+        IPRT_ENCODER_TYPE_H265,
+        IPRT_ENCODER_TYPE_ALL
+    } IPRT_ENCODER_TYPED_E;
 
 typedef enum {
     IPRT_VIDEO_CHN_MAIN = IPC_VIDEO_CHN_MAIN,
@@ -739,16 +745,16 @@ isp_init_err:
     if (ret)
         rts_isp_perror(ret, "rts isp fail");
 
-    rts_av_isp_cleanup();
     rts_av_isp_stop();
+    rts_av_isp_cleanup();
 
     return IPC_FAILED;
 }
 
 static void _gvrt_isp_uninit(void)
 {
-    rts_av_isp_cleanup();
     rts_av_isp_stop();
+    rts_av_isp_cleanup();
 }
 
 static s32 _g_frame_cnt[4];
@@ -2049,6 +2055,28 @@ s32 ipc_plat_sys_uninit(void)
     _gvrt_isp_uninit();
     IPC_VIDEO_PRINT("=== sys uninit success ===\n");
 
+    ipc_sleep(3);
+    ipc_exec("lsof");
+    
+    ipc_exec("rmmod rts_camera_jpgenc");
+    ipc_exec("rmmod vpu_w521mp");
+    ipc_exec("rmmod rts_cam_isp");
+    ipc_exec("rmmod rts_cam_zoom");
+    ipc_exec("rmmod rts_cam_soc");
+    ipc_exec("rmmod rts_cam_mem");
+    ipc_exec("rmmod rts_cam_lock");
+    ipc_exec("rmmod rts_cam_md");
+    ipc_exec("rmmod rts_camera_osd2");
+    ipc_exec("rmmod rts_camera_osdi");
+    ipc_exec("rmmod rtstream");
+    ipc_exec("rmmod rts_cam");
+    ipc_exec("rmmod videobuf2-v4l2");
+    ipc_exec("rmmod videobuf2-memops");
+    ipc_exec("rmmod videobuf2-common");
+
+    ipc_exec("rmmod rtsx_icr");
+    ipc_exec("rmmod mmc_block");
+    ipc_exec("rmmod mmc_core");
     return 0;
 }
 

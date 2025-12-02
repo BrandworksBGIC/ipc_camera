@@ -2124,11 +2124,6 @@ static int vpu_remove(struct platform_device *pdev)
 	}
 #endif
 
-#ifdef VPU_SUPPORT_ISR
-	if (s_vpu_irq)
-		free_irq(s_vpu_irq, &s_vpu_drv_context);
-#endif
-
 	if (s_vpu_register.virt_addr)
 		iounmap((void *)s_vpu_register.virt_addr);
 
@@ -2494,11 +2489,6 @@ static void __exit vpu_exit(void)
 		unregister_chrdev_region(s_vpu_major, 1);
 		s_vpu_major = 0;
 	}
-#endif
-
-#ifdef VPU_SUPPORT_ISR
-	if (s_vpu_irq)
-		free_irq(s_vpu_irq, &s_vpu_drv_context);
 #endif
 
 #ifdef SUPPORT_MULTI_INST_INTR
