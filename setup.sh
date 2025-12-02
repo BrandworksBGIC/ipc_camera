@@ -1,5 +1,25 @@
 #!/bin/bash
 
+# Check if virtual environment exists, create if not
+if [ ! -d "$HOME/.rts3917_build" ]; then
+    echo "Creating virtual environment..."
+    sudo apt install make autoconf libtool bzip2 g++ unzip  autopoint automake pkg-config automake pkg-config autoconf m4 bison flex device-tree-compiler python3-venv
+    python3 -m venv $HOME/.rts3917_build
+    echo "Virtual environment created at $HOME/.rts3917_build"
+else
+    echo "Virtual environment already exists at $HOME/.rts3917_build"
+fi
+
+# Activate virtual environment
+source $HOME/.rts3917_build/bin/activate
+
+# Install required packages
+pip install pycryptodome
+pip install requests
+pip install cryptography
+
+
+
 # Setup script for IPC Camera project
 # This script configures the environment for the IPC camera development
 
