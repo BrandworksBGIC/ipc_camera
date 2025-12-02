@@ -4,8 +4,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <openssl/evp.h> // Extended crypto primitives (optional)
-#include <openssl/sha.h> // Main SHA-256 functions
+#include "ipc_sha256.h" // Custom SHA-256 implementation
 
 /* Include custom modules for key management, utilities, and file system operations */
 #include "ipc_dfs.h"
@@ -352,35 +351,22 @@ s32 key_manage_create_conf_key_2(pv8 seed)
     }
 
     // Generate new key
-    EVP_MD_CTX* mdctx = EVP_MD_CTX_new();
-    const EVP_MD* md  = EVP_sha256();
-    unsigned char md_value[EVP_MAX_MD_SIZE];
-    unsigned int md_len;
-
-    if (!mdctx) {
-        printf("Error creating EVP context\n");
-        return -1;
-    }
+    u8 md_value[32];
+    ipc_sha256_ctx_t sha_ctx;
 
     // Derive key
-    if (!EVP_DigestInit_ex(mdctx, md, NULL) || !EVP_DigestUpdate(mdctx, seed, strlen(seed)) || !EVP_DigestFinal_ex(mdctx, md_value, &md_len)) {
-        printf("Error in hash operation\n");
-        EVP_MD_CTX_free(mdctx);
-        return -1;
-    }
+    ipc_sha256_init(&sha_ctx);
+    ipc_sha256_update(&sha_ctx, (u8*)seed, strlen(seed));
+    ipc_sha256_final(&sha_ctx, md_value);
     memcpy(conf_key_2, md_value, 32);
 
     // Derive IV
     char iv_seed[256];
     snprintf(iv_seed, sizeof(iv_seed), "%s_IV", seed);
-    if (!EVP_DigestInit_ex(mdctx, md, NULL) || !EVP_DigestUpdate(mdctx, iv_seed, strlen(iv_seed)) || !EVP_DigestFinal_ex(mdctx, md_value, &md_len)) {
-        printf("Error in IV hash operation\n");
-        EVP_MD_CTX_free(mdctx);
-        return -1;
-    }
+    ipc_sha256_init(&sha_ctx);
+    ipc_sha256_update(&sha_ctx, (u8*)iv_seed, strlen(iv_seed));
+    ipc_sha256_final(&sha_ctx, md_value);
     memcpy(conf_key_2 + 32, md_value, 16);
-
-    EVP_MD_CTX_free(mdctx);
 
     // Compare with existing key if it exists
     if (key_buf_len > 0) {
