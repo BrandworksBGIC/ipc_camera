@@ -1,8 +1,4 @@
-#include <openssl/conf.h>
-#include <openssl/engine.h>
-#include <openssl/err.h>
-#include <openssl/evp.h>
-#include <openssl/provider.h>
+#include <kcapi.h>
 #include <string.h>
 
 #include "ipc_aes.h"
@@ -20,7 +16,7 @@ int main(void)
 
 #if 1 // use otp key 0
     unsigned char key[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+                            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 #else // assign real key
     unsigned char key[] = { 0x64, 0x43, 0x11, 0x0b, 0xba, 0x0d, 0xea, 0x3c, 0x9c, 0x71, 0x91, 0xf2, 0x20, 0x90, 0x80, 0x09,
                             0x7d, 0xe0, 0x2a, 0xb6, 0x51, 0x17, 0xc9, 0x3f, 0x69, 0x6c, 0x77, 0x55, 0x9a, 0x31, 0xa8, 0xa6 };
@@ -44,18 +40,6 @@ int main(void)
 
     int decryptedtext_len, ciphertext_len;
 
-#if 1 // use hw engine
-    ENGINE_load_builtin_engines();
-#endif
-
-#if 1
-    printf("key:\n");
-    BIO_dump_fp(stdout, (const char*)key, sizeof(key));
-
-    printf("plaintext:\n");
-    BIO_dump_fp(stdout, (const char*)plaintext, strlen((char*)plaintext));
-#endif
-
     /* Encrypt the plaintext */
     ciphertext_len = encrypt(plaintext, strlen((char*)plaintext), key, iv, ciphertext);
 
@@ -73,9 +57,7 @@ int main(void)
     printf("Decrypted text is:\n");
     printf("%s\n", decryptedtext);
 
-#if 1
     BIO_dump_fp(stdout, (const char*)decryptedtext, decryptedtext_len);
-#endif
 
     return 0;
 }
@@ -84,8 +66,7 @@ int main(void)
 
 void ipc_aes_service_init(void)
 {
-    OPENSSL_init_crypto(OPENSSL_INIT_ENGINE_ALL_BUILTIN, NULL);
-
+    /* kcapi does not require explicit initialization */
 }
 
 void ipc_aes_init_ctx_iv(struct ipc_aes_ctx* ctx, const uint8_t* key, const uint8_t* iv)
@@ -96,121 +77,34 @@ void ipc_aes_init_ctx_iv(struct ipc_aes_ctx* ctx, const uint8_t* key, const uint
 
 int ipc_aes_cbc_encrypt_buffer(struct ipc_aes_ctx* aes_ctx, unsigned char* plaintext, int plaintext_len)
 {
-    EVP_CIPHER_CTX* ctx;
-
-    int len;
-
-    int ciphertext_len;
-
+    int ret;
     unsigned char* ciphertext = plaintext;
+    int ciphertext_len        = plaintext_len;
 
-    /* Create and initialise the context */
-    if (!(ctx = EVP_CIPHER_CTX_new())) {
-        ERR_print_errors_fp(stderr);
+    /* kcapi AES-CBC encryption requires data length to be multiple of 16 bytes */
+    /* Since we disabled padding in OpenSSL, data should already be properly aligned */
+
+    ret = kcapi_cipher_enc_aes_cbc(aes_ctx->key, 32, plaintext, ciphertext_len, aes_ctx->iv, ciphertext, ciphertext_len);
+    if (ret < 0) {
         return -1;
     }
-
-    /*
-     * Initialise the encryption operation. IMPORTANT - ensure you use a key
-     * and IV size appropriate for your cipher
-     * In this example we are using 256 bit AES (i.e. a 256 bit key). The
-     * IV size for *most* modes is the same as the block size. For AES this
-     * is 128 bits
-     */
-    if (1 != EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, aes_ctx->key, aes_ctx->iv)) {
-        ERR_print_errors_fp(stderr);
-        EVP_CIPHER_CTX_free(ctx);
-        return -1;
-    }
-
-
-    EVP_CIPHER_CTX_set_padding(ctx, 0);
-
-    /*
-     * Provide the message to be encrypted, and obtain the encrypted output.
-     * EVP_EncryptUpdate can be called multiple times if necessary
-     */
-    if (1 != EVP_EncryptUpdate(ctx, ciphertext, &len, plaintext, plaintext_len)) {
-        ERR_print_errors_fp(stderr);
-        EVP_CIPHER_CTX_free(ctx);
-        return -1;
-    }
-
-    ciphertext_len = len;
-
-    /*
-     * Finalise the encryption. Further ciphertext bytes may be written at
-     * this stage.
-     */
-    if (1 != EVP_EncryptFinal_ex(ctx, ciphertext + len, &len)) {
-        ERR_print_errors_fp(stderr);
-        EVP_CIPHER_CTX_free(ctx);
-        return -1;
-    }
-    ciphertext_len += len;
-
-    /* Clean up */
-    EVP_CIPHER_CTX_free(ctx);
 
     return ciphertext_len;
 }
 
 int ipc_aes_cbc_decrypt_buffer(struct ipc_aes_ctx* aes_ctx, unsigned char* ciphertext, int ciphertext_len)
 {
-    EVP_CIPHER_CTX* ctx;
-
-    int len;
-
-    int plaintext_len;
+    int ret;
     unsigned char* plaintext = ciphertext;
+    int plaintext_len        = ciphertext_len;
 
-    /* Create and initialise the context */
-    if (!(ctx = EVP_CIPHER_CTX_new())) {
-        ERR_print_errors_fp(stderr);
+    /* kcapi AES-CBC decryption requires data length to be multiple of 16 bytes */
+    /* Since we disabled padding in OpenSSL, data should already be properly aligned */
+
+    ret = kcapi_cipher_dec_aes_cbc(aes_ctx->key, 32, ciphertext, plaintext_len, aes_ctx->iv, plaintext, plaintext_len);
+    if (ret < 0) {
         return -1;
     }
-
-    /*
-     * Initialise the decryption operation. IMPORTANT - ensure you use a key
-     * and IV size appropriate for your cipher
-     * In this example we are using 256 bit AES (i.e. a 256 bit key). The
-     * IV size for *most* modes is the same as the block size. For AES this
-     * is 128 bits
-     */
-    if (1 != EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, aes_ctx->key, aes_ctx->iv)) {
-        ERR_print_errors_fp(stderr);
-        EVP_CIPHER_CTX_free(ctx);
-        return -1;
-    }
-
-    EVP_CIPHER_CTX_set_padding(ctx, 0);
-
-    /*
-     * Provide the message to be decrypted, and obtain the plaintext output.
-     * EVP_DecryptUpdate can be called multiple times if necessary.
-     */
-    if (1 != EVP_DecryptUpdate(ctx, plaintext, &len, ciphertext, ciphertext_len)) {
-        ERR_print_errors_fp(stderr);
-        EVP_CIPHER_CTX_free(ctx);
-        return -1;
-    }
-
-    plaintext_len = len;
-
-    /*
-     * Finalise the decryption. Further plaintext bytes may be written at
-     * this stage.
-     */
-    if (1 != EVP_DecryptFinal_ex(ctx, plaintext + len, &len)) {
-        ERR_print_errors_fp(stderr);
-        EVP_CIPHER_CTX_free(ctx);
-        return -1;
-    }
-
-    plaintext_len += len;
-
-    /* Clean up */
-    EVP_CIPHER_CTX_free(ctx);
 
     return plaintext_len;
 }

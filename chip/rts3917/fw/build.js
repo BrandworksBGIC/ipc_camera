@@ -8,7 +8,7 @@ const sdkDir = path.resolve('../sdk/rts39xx_sdk_v5.3/')
 
 
 config.set('kernelDir', sdkDir+'/out/rts3917n_base/build/linux-custom/');
-config.set('openssl_dir', sdkDir+'/out/rts3917n_base/build/libopenssl-custom/')
+config.set('libkcapi', sdkDir+'/out/rts3917n_base/build/libkcapi1-1.2.0/')
 
 // Set up RTS3917 cross-compilation toolchain
 compiler.setToolchain('rts3917', {

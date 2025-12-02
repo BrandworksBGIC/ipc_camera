@@ -2,7 +2,7 @@
 const core = createTarget('ipc_core', '../../third/cjson/');
 
 const kind = config.getOrDefault('library_kind', "shared")
-const openssl_dir = config.get('openssl_dir')
+const libkcapi_dir = config.get('libkcapi')
 
 
 core.setTargetType(kind);
@@ -23,10 +23,10 @@ core.addIncludeDirs(
 );
 
 // Add OpenSSL include directories
-core.addIncludeDirs(`${openssl_dir}/include`);
+core.addIncludeDirs(`${libkcapi_dir}/lib/`);
 
 // Add OpenSSL shared library
-core.addLdfiles(`${openssl_dir}/libcrypto.so`);
+core.addLdfiles(`${libkcapi_dir}/.libs/libkcapi.so`);
 
 // Build core library
 if (core.build()) {
