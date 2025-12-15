@@ -21,7 +21,7 @@ if (fs.existsSync(configFile)) {
 }
 
 // Build configuration command
-const configureArgs = `cd ${baseDir}; autoreconf -vfi && ./configure --prefix=${installDir} --host=${config.get('compiler.host') || ''} `;
+const configureArgs = `cd ${baseDir}; autoreconf -vfi && ./configure CFLAGS='-fPIC'  --prefix=${installDir} --host=${config.get('compiler.host') || ''} `;
 
 // If architecture changes, clean and reconfigure
 if (perArch !== curArch) {
