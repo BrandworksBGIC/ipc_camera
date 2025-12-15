@@ -162,6 +162,36 @@ static IPRT_VIDEO_ATTR_S _gvrt_video_attr = {
     }
 };
 
+#ifdef __SCALER_ENABLE__
+static void __scale_up_100w(ps32 w, ps32 h)
+{
+    switch (*w) {
+        case 1280:
+            *w = 1920;
+            *h = 1080;
+            break;
+        case 1920:
+            *w = 2304;
+            *h = 1296;
+            break;
+        case 2304:
+            *w = 2560;
+            *h = 1440;
+            break;
+        case 2560:
+            *w = 2816;
+            *h = 1584;
+            break;
+        case 2816:
+            *w = 3840;
+            *h = 2160;
+            break;
+        default:
+            break;
+    }
+}
+#endif
+
 static s32 _gvrt_get_sensor_info(P_IPRT_SENSOR_INFO_S sensor_info, pv8 sensor_dir)
 {
     s32 ret          = 0;
@@ -239,29 +269,6 @@ static s32 _gvrt_get_sensor_info(P_IPRT_SENSOR_INFO_S sensor_info, pv8 sensor_di
           .main_height   = 1440,
           .sub_width     = 640,
           .sub_height    = 360 },
-#ifdef __SCALER_ENABLE__
-        { .sensor_name   = "sc2336_mipi",
-          .sensor_width  = 1920,
-          .sensor_height = 1080,
-          .main_width    = 2304,
-          .main_height   = 1296,
-          .sub_width     = 640,
-          .sub_height    = 360 },
-        { .sensor_name   = "sc3338_mipi",
-          .sensor_width  = 2304,
-          .sensor_height = 1296,
-          .main_width    = 2560,
-          .main_height   = 1440,
-          .sub_width     = 640,
-          .sub_height    = 360 },
-        { .sensor_name   = "sc5336",
-          .sensor_width  = 2816,
-          .sensor_height = 1584,
-          .main_width    = 3840,
-          .main_height   = 2160,
-          .sub_width     = 640,
-          .sub_height    = 360 },
-#else
         { .sensor_name   = "sc2336_mipi",
           .sensor_width  = 1920,
           .sensor_height = 1080,
@@ -290,7 +297,6 @@ static s32 _gvrt_get_sensor_info(P_IPRT_SENSOR_INFO_S sensor_info, pv8 sensor_di
           .main_height   = 1584,
           .sub_width     = 640,
           .sub_height    = 360 },
-#endif
     };
 
     // IPC_VIDEO_PRINT("=== sensor so [%s] ===\n", sensor_so);
@@ -298,6 +304,12 @@ static s32 _gvrt_get_sensor_info(P_IPRT_SENSOR_INFO_S sensor_info, pv8 sensor_di
         // IPC_VIDEO_PRINT("sensor so: %s, sensor_table: %s\n", sensor_so, sensor_table[i].sensor_name);
         if (strncmp(sensor_so, sensor_table[i].sensor_name, strlen(sensor_table[i].sensor_name)) == 0) {
             memcpy(sensor_info, &sensor_table[i], sizeof(IPRT_SENSOR_INFO_S));
+
+#ifdef __SCALER_ENABLE__
+            if (sensor_info->main_width == sensor_info->sensor_width) {
+                __scale_up_100w(&sensor_info->main_width, &sensor_info->main_height);
+            }
+#endif
             IPC_VIDEO_PRINT("match sensor [%s], resolution [%d x %d]\n", sensor_info->sensor_name,
                            sensor_info->main_width, sensor_info->main_height);
             return IPC_SUCCESS;

@@ -3,6 +3,7 @@ const platform = createTarget('ipc_platform','../../../cam/ipc_core/');
 
 // Add source files
 platform.addFiles('*/src/*.c');
+platform.addCflags("-D__SCALER_ENABLE__")
 
 // Set target type as static library
 platform.setTargetType('static');
