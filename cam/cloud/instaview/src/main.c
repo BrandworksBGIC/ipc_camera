@@ -19,6 +19,8 @@
 #include "ipc_iv_alarm.h"
 #include "ipc_iv_ble.h"
 
+#include "ipc_middleware_sal.h"
+
 #define SESSION "instaview"
 
 // Helper function to extract version part before '-' character
@@ -205,7 +207,7 @@ static u32 _mpp_get_realts(void)
     return ipc_date2ts(&ipc_data);
 }
 
-vptr ipc_middleware_sal_media_info(struct ipc_plat_audio_init_attr *audio_attr)
+EXAPI vptr ipc_middleware_sal_media_info(struct ipc_plat_audio_init_attr *audio_attr)
 {
     struct ipc_api_s *h_plat = NULL;
     struct ipc_plat_audio_capability audio_cap;
