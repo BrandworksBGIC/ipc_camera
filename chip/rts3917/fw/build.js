@@ -132,6 +132,7 @@ function buildFirmwarePackage() {
             "soi/jxk06/libsensor_jxk06.so",
             "soi/jxk347p/libsensor_jxk347p_mipi.so",
             "smartsens/sc2336p/libsensor_sc2336p_mipi.so",
+            "smartsens/sc1b5ak/libsensor_sc1b5ak_mipi.so",
             // Add more sensor file names as needed
         ];
 

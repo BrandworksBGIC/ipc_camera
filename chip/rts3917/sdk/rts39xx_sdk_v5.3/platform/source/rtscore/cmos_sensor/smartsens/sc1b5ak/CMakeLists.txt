@@ -1,0 +1,1 @@
+add_sensor(sc1b5ak_mipi)

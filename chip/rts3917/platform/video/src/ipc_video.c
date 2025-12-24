@@ -297,6 +297,13 @@ static s32 _gvrt_get_sensor_info(P_IPRT_SENSOR_INFO_S sensor_info, pv8 sensor_di
           .main_height   = 1584,
           .sub_width     = 640,
           .sub_height    = 360 },
+        { .sensor_name   = "sc1b5ak_mipi",
+          .sensor_width  = 1280,
+          .sensor_height = 720,
+          .main_width    = 1280,
+          .main_height   = 720,
+          .sub_width     = 640,
+          .sub_height    = 360 }
     };
 
     // IPC_VIDEO_PRINT("=== sensor so [%s] ===\n", sensor_so);
