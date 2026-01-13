@@ -946,6 +946,8 @@ int MFG_OsdShowTime(int enable) // display time
         ipc_mpp_osd_time_switch(time_sw);
     }
 
+    ipc_mpp_osd_logo_switch(time_sw);
+
     return 0;
 }
 

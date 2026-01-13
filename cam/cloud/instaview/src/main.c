@@ -564,6 +564,7 @@ s32 ipc_middleware_main_process(pv8 ipc_version)
     }
 
     ipc_mpp_osd_time_switch(ipc_iv_device_get_time_status());
+    ipc_mpp_osd_logo_switch(ipc_iv_device_get_time_status());
 
     ipc_status_led_init();
 

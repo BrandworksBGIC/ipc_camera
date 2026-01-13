@@ -118,7 +118,7 @@ typedef struct video_attr {
 } IPRT_VIDEO_ATTR_S, *P_IPRT_VIDEO_ATTR_S;
 
 static pthread_mutex_t _gvrt_video_ctrl_mutex   = PTHREAD_MUTEX_INITIALIZER;
-static u8              _g_yuv_buffer[640 * 368] = { 0 };
+static u8              _g_yuv_buffer[640 * 368 * 3 / 2] = { 0 };
 static volatile u8     _g_in_process_yuv        = 0;
 
 static IPRT_VIDEO_ATTR_S _gvrt_video_attr = {
@@ -1113,7 +1113,7 @@ static void save_yuv(void* priv, struct rts_av_profile* profile, struct rts_av_b
         return;
     }
 
-    memcpy(_g_yuv_buffer, buffer->vm_addr, 640 * 360);
+    memcpy(_g_yuv_buffer, buffer->vm_addr, 640 * 360 * 3 / 2);
 
     _g_in_process_yuv = 2;
 }
@@ -2238,7 +2238,7 @@ s32 ipc_plat_video_recv_frame(s32 channel, ipc_plat_recv_frame_cb_f cb, vptr __u
             frame.pack_num               = 1;
             frame.timestamp              = 0;
             frame.pack[0].data           = _g_yuv_buffer;
-            frame.pack[0].data_len       = 640 * 360;
+            frame.pack[0].data_len       = 640 * 360 * 3 / 2;
 
             _g_in_process_yuv = 1;
 
