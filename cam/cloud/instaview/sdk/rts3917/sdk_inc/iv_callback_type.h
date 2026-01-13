@@ -51,6 +51,7 @@ typedef enum {
     E_AUDIO_FILE_POWEROFF,
     E_AUDIO_FILE_INTRUDER_SIREN_BIRD,
     E_AUDIO_FILE_INTRUDER_SIREN_COMMON,
+    E_AUDIO_FILE_VIDEO_CALL,
     E_AUDIO_FILE_TEST,
 } E_AUDIO_FILE_NAME;
 
@@ -114,6 +115,13 @@ typedef enum {
 } E_BUTTON_TYPE;
 
 typedef enum {
+    E_VIDEO_CALL_STATUS_CALLING = 0x0,
+    E_VIDEO_CALL_STATUS_ACCEPTED,
+    E_VIDEO_CALL_STATUS_DISCONNECTED,
+} E_VIDEO_CALL_STATUS;
+
+
+typedef enum {
     E_IV_EVENT_NOTFOUND = 0x0,
     E_IV_EVENT_DOORBELL,
     E_IV_EVENT_VIDEO_CALL,
@@ -123,6 +131,12 @@ typedef enum {
     E_SLEEP_NORMAL = 0x0,
     E_SLEEP_DEEP,
 } E_MODE_SLEEP;
+
+typedef enum {
+    E_NETWORK_UNAVAILABLE = 0x0,
+    E_NETWORK_AVAILABLE
+} E_NETWORK_STATUS;
+
 
 
 typedef struct _PTZ_STATUS_T {
@@ -501,8 +515,8 @@ typedef struct {
     int (*MfgVideoParamGet_Callback)(E_VIDEO_STREAM_INDEX, HalVideoEncodeParam *);
 
     /*Get a snapshot and save it to a file
-    * @param[in]  unsigned char*        Path to save the capture file
-    * @return     int                   0 : success jpeg bytes, -1: failed
+    * @param[in]  char*                 Path to save the snapshot file
+    * @return     int                   0 : success, -1: failed
     */
     int (*MFG_Snapshot_Callback)(char *);
 
@@ -680,7 +694,7 @@ typedef struct {
 
 	/*
     * sdcard mount status
-    * @return     int                   1: mount, 0: umount, -1 error
+    * @return     int                   0: umount, 1: mount, -1 error
     * note:when sdcard insert or remove ,need to let this interface return 0 or -1
     */
 	E_MOUNT_STATUS (*MFG_SDCardMountStatus_Callback)();
@@ -728,18 +742,18 @@ typedef struct {
     int (*MFG_SetPIRSensitivity_Callback)(E_PIR_SEN_LEVEL level);
     
     /*
+    * set PIR Sensitivity
+    * @param[in]    int	     0-255
+    * @return       int             0: success, -1: failed
+    */
+    int (*MFG_SetPIRSensitivityEx_Callback)(int);
+    
+    /*
     * brun mcu firmware
     * @param[in] const char*  ota package path
     * @return     int         0: success, -1: failed
     */
     int (*MFG_BurnMcuFirmware_Callback)(const char *);
-    
-    /*
-    * get reset status fro mcu
-    * @param[in] void
-    * @return     int         0: not reset, 1: reset
-    */
-    int (*MFG_GetResetStatusFromMCU_Callback)(void);
 
     /* set flood light mode
     * @param[in] int                  0: Off,
@@ -756,14 +770,34 @@ typedef struct {
     */
    int (*MFG_SetSecurityLightMode_Callback)(E_SECURITY_LIGHT_MODE);
 
-   /*
+    /*
+    * sync time
+    * @param[in] long long    timestamp_ms
+    * @return     int         0: success, 1: failed
+    */
+    int (*MFG_SyncTime_Callback)(long long timestamp_ms);
+    
+    /*
+    * mcu wakeup timer
+    * @param[in] int    period (unit second)
+    * @return    int    0: success, 1: failed
+    */
+    int (*MFG_McuWakeupTimer_Callback)(int period);
+    
+    /*
     * set pairing state
     * @param[in] int    state
     * @return    int    0: success, 1: failed
     */
     int (*MFG_SetPairingStatus_Callback)(E_PAIRING_STATUS state);
 
-   /*
+    /*
+    * get charging status
+    * @return    int    0: not charging, 1: charging
+    */
+    int (*MFG_GetChargingStatus_Callback)(void);
+
+    /*
     * get AI checking result
     * @return    int    0: not found
                         1: human
@@ -779,6 +813,57 @@ typedef struct {
     * @return    int    0: success, 1: failed
     */
     int (*MFG_SetAIConfig_Callback)(MfgAIConfigInfo *);
+
+    /*
+    * get PIR checking result
+    * @return    int    0: No detected, 1: detected
+    */
+    int (*MFG_GetPIRResult_Callback)(void);
+
+    /*
+    * HDR enable
+    * @param[in]    int  0:disable, 1:enable
+    * @return       int  0: success, -1: failed
+    */
+    int (*MFG_EnableHDR_Callback)(int);
+
+    /*
+    * mcu report
+    * @param[in] const char* topic
+    * @param[in] const char* message
+    * @return    int    0: success, 1: failed
+    */
+    int (*MFG_McuReport_Callback)(const char* topic, const char* message);
+
+    /*
+    * set timezone
+    * @param[in]    const char*  timezone
+    * @return       int  0: success, -1: failed
+    */
+    int (*MFG_SetTZ_Callback)(const char* tz);
+
+    /*
+    * set lamp mode
+    * @param[in] int                  0: Intelligent
+                                      1: Auto
+                                      2: Off
+                                      3: MANUAL
+    * @return    int                  0: success, -1: failed
+    */
+    int (*MFG_SetLampMode_Callback)(E_LAMP_MODE);
+
+    /* 
+    * enable Lamp
+    * @param[in] int                   0: turn off , 1: turn on
+    * @return    int                   0: success, -1: failed
+    */
+    int (*MFG_EnableLamp_Callback)(int);
+
+	/* 
+    * notify oem when mqtt connect to cloud server success
+    * @return    int                   0: success, -1: failed
+    */
+    int (*MFG_mqtt_online_Callback)();
     
 	/* 
     * start light flash
@@ -793,26 +878,11 @@ typedef struct {
     int (*MFG_StopLightFlash_Callback)();
 
 	/* 
-    * notify oem when mqtt connect to cloud server success
-    * @return    int                   0: success, -1: failed
-    */
-    int (*MFG_mqtt_online_Callback)();
-
-	/* 
     * when app speaker button click/release will notify you
     * @param[in] int                   0: button release , 1: button click
     * @return    int                   0: success, -1: failed
     */
 	int (*MFG_speaker_button_notify)(int);
-
-#ifdef SET_TZ_FILE
-	/*
-    * set timezone
-    * @param[in]    const char*  timezone
-    * @return       int  0: success, -1: failed
-    */
-    int (*MFG_SetTZ_Callback)(const char* tz);
-#endif
 
 #ifdef TWO_WAY_VIDEO
 	 /* play video
@@ -824,7 +894,34 @@ typedef struct {
     * @return    int              0: success, -1: failed
     */
     int (*MfgWriteVideoFrame_Callback)(char *, int, int, int, long long);
+
+	/* when app calling accepted disconnect will notify oem
+    * @param[in] E_VIDEO_CALL_STATUS	          
+    * @return    int              0: success, -1: failed
+    */
+    int (*Mfg_videoCallStatus_Callback)(E_VIDEO_CALL_STATUS);
 #endif
+
+
+#ifdef VEEPAI_DEVICE
+	/* notify event start uploading
+    * @return    int                   0: success, -1: failed
+    */
+    int (*MFG_NotifyEventStartUploading_Callback)();
+
+	/* notify event stop uploading
+    * @return    int                   0: success, -1: failed
+    */
+    int (*MFG_NotifyEventStopUploading_Callback)();
+#endif
+
+	/* 
+    * notify oem network status:ping check and tcp check
+    * @param[in] E_NETWORK_STATUS
+    * @return    int                   0: success, -1: failed
+    */
+    int (*MFG_network_check_Callback)(E_NETWORK_STATUS);
+
 } MFG_CALLBACK_FUNCTIONS;
 
 #endif

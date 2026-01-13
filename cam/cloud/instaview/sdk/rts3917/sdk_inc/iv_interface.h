@@ -5,6 +5,7 @@
 extern "C" {
 #endif
 #include "iv_callback_type.h"
+#include "iv_log.h"
 	/*
 	* @param[in]  MFG_CALL_BACK_FUNCTIONS*   callback functions
 	* @return     int                         0: success, -1: failed
@@ -68,12 +69,6 @@ extern "C" {
     * @return     int           0:success, -1:failed
     */
     int iv_sdk_get_thing_name(char* thing_name, int size);
-    
-    /*
-    * @param[in]  int          0: pir, 1: remote
-    * @return     int          0:success, -1:failed
-    */
-    int iv_sdk_set_wakeup_method(int wakeup_method);
 
 	/*
 	* @param[in]  set cfg path for home security,default is "/config"
@@ -97,6 +92,12 @@ extern "C" {
     */
     void iv_sdk_set_mcu_version(const char *version);
 
+	/*
+    * @param[in]  const char *  certified firmware version
+    * @return     void
+    */
+    void iv_sdk_set_certified_firmware_version(const char *version);
+	
 	/*
 	must call above function,when you call iv_sdk_init function
 	* @return     int                         0: success, -1: failed
@@ -171,6 +172,63 @@ extern "C" {
     */
     void iv_sdk_set_substream(int enable);
 
+    /*
+    * @param[in]  int          0: unknow, 1: remote, 2: PIR, 3: button
+    * @return     int          0:success, -1:failed
+    */
+    int iv_sdk_set_wakeup_method(int wakeup_method);
+#if 0
+	/*
+	* @brief  lowpower device reset
+	*/
+    void iv_sdk_lowpowr_reset();
+    
+	/*
+	* @brief  lowpower device power off
+	*/
+    void iv_sdk_lowpowr_power_off();
+    
+    /*
+	* @brief    doorbell pressed event
+    */
+    void iv_sdk_doorbell_pressed();
+#endif
+
+    /*
+	* @brief      button event
+    * @param[in]  int     0: NOTFOUND, 
+                          1: RESET, 
+                          2: POWER_OFF, 
+                          3: DOORBELL
+    * @return
+    */
+    void iv_sdk_button_event(E_BUTTON_TYPE button_type);
+
+	/**
+	 * @brief Set the log level.
+	 *
+	 * @param level The desired log level.
+	 */
+	void iv_sdk_set_logLevel(const IVLogLevel level);
+
+	/**
+	 * @brief reset the iv config and play reset audio
+	 *
+	 */
+	int iv_sdk_reset();
+
+	/*if wakeup is remote, can run webrtc first*/
+	int iv_sdk_webrtc_start();
+
+	/*set pir md filter result: 0 no motion, 1:has motion*/
+	int iv_sdk_set_pir_md_filter_result(int result);
+
+	/*set pir human filter result: 0 no human, 1:has human*/
+	int iv_sdk_set_pir_human_filter_result(int result);
+
+	/*set low battery shutdown:0 normal, 1:camera will shutdown*/
+	int iv_sdk_set_low_battery_shutdown(int value);
+    
 #ifdef DEBUG_BACKSTRACE
 	/*
 	* for signal backstrace
@@ -183,6 +241,11 @@ extern "C" {
 	*/
     void iv_sdk_set_event_type(E_IV_EVENT_TYPE event_type);
 
+	/**
+	* Gets the number of seconds of local time (calculated from the Unix epoch)
+	* Returns: The number of seconds of local time, of type uint64_t
+	*/
+	uint64_t iv_sdk_get_local_time(void);
 #ifdef __cplusplus
 }
 #endif
