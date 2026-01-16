@@ -221,7 +221,7 @@ int MFG_ReadAudioPcmFrame(char* buffer, int32_t len, int64_t* time_stamp, int64_
 int MFG_EncodeAACAudio(char* pcm_data, int32_t pcm_len, char* encoded_data, int32_t encoded_len)
 {
 
-#ifdef __CHIP_RTS3903__
+#if 1
     if (!g_is_init) {
         return -1;
     }
@@ -270,6 +270,7 @@ s32 ipc_iv_queue_init_aac_encode(void)
     if (_gh_aac == NULL) {
         goto _exit;
     }
+    g_is_init = 1;
 #else
     _gh_aac = ipc_aac_encode_open(16, 16000, 1);
     if (_gh_aac == NULL) {
@@ -284,5 +285,6 @@ _exit:
 
 void ipc_iv_queue_uninit_aac_encode(void)
 {
+    g_is_init = 0;
     ipc_aac_encode_close(_gh_aac);
 }

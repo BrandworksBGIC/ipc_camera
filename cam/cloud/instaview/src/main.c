@@ -439,6 +439,7 @@ static void init_callback_functions()
     callback_functions.MFG_DeinitIRCut_Callback         = MFG_DeinitIRCut;
     callback_functions.MFG_EnableBulb_Callback          = MFG_EnableBulb;
     callback_functions.MFG_SetBulbMode_Callback         = MFG_SetBulbMode;
+    callback_functions.MFG_SetIRCutMode_Callback        = MFG_SetIRCutMode;
     //----motor control callbacks----//
     callback_functions.MFG_PtzInit_Callback             = MFG_PtzInit_Callback;
     callback_functions.MFG_PtzMove_Callback             = MFG_PtzMove_Callback;
