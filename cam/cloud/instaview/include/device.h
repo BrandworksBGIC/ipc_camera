@@ -56,6 +56,7 @@ void *ipc_global_timer_pool(void);
 int MFG_SetMDArea(IV_Rect_t* MDArea);
 int MFG_EnableBulb(int light_switch);
 int MFG_SetBulbMode(E_BULB_MODE Bulb_mode);
+int MFG_SetIRCutMode(E_MODE_IRCUT mode);
 int MFG_PtzGetParams(int *horizontal, int *vertical, int *speed);
 int MFG_EnableMD(int enableMD);
 void ipc_iv_ptz_set_init();

@@ -481,6 +481,32 @@ int MFG_SetBulbMode(E_BULB_MODE Bulb_mode)
     return 0;
 }
 
+int MFG_SetIRCutMode(E_MODE_IRCUT mode)
+{
+    ipc_env_mode_e _env_mode = IPC_ENV_AUTO;
+    switch (mode) {
+        case E_MODE_AUTO: {
+            _env_mode = IPC_ENV_AUTO;
+            break;
+        }
+        case E_MODE_NIGHT: {
+            _env_mode = IPC_ENV_MODE_NIGHT;
+            break;
+        }
+        case E_MODE_DAY: {
+            _env_mode = IPC_ENV_MODE_DAY;
+            break;
+        }
+        default: {
+            _env_mode = IPC_ENV_AUTO;
+            break;
+        }
+    }
+    ipc_handler_write_int("env_mode", _env_mode);
+    ipc_env_set_mode(_env_mode);
+    return 0;
+}
+
 ipc_env_mode_e ipc_iv_device_get_env_mode(void)
 {
     ipc_env_mode_e _env_mode = IPC_ENV_MODE_DAY;
