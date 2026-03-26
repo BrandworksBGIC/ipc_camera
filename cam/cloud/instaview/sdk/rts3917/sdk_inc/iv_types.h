@@ -262,6 +262,26 @@ typedef struct
 	int enable;
 } MfgAIConfigInfo;
 
+typedef enum {
+    E_WAKE = 0,
+    E_WAKING,
+    E_SLEEPING,
+    E_SLEPT,
+} E_SLEEP_STATUS;
+
+typedef enum {
+    E_NONE = 0,
+    E_MECHANICAL,
+    E_ELECTRONIC,
+} E_CHIME_TYPE;
+
+typedef enum {
+    CAMERA_STATUS_ERROR = -1,
+    CAMERA_STATUS_ONLINE,
+    CAMERA_STATUS_OFFLINE,
+    CAMERA_STATUS_POWEROFF,
+} E_CAMERA_STATUS;
+
 #ifndef MAKEFOURCC
 #define MAKEFOURCC(ch0, ch1, ch2, ch3)                              \
                 ((IVUINT32)(IVUCHAR)(ch0) | ((IVUINT32)(IVUCHAR)(ch1) << 8) |   \

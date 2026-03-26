@@ -211,6 +211,16 @@ extern "C" {
 	 */
 	void iv_sdk_set_logLevel(const IVLogLevel level);
 
+#ifdef OEM_XMI
+    int iv_sdk_pair_by_qrcode(const char* data);
+	/**
+	 * @brief Set the log level.
+	 *
+	 * @param level The desired log level.
+	 */
+	void iv_sdk_set_sdcard_logLevel(const IVLogLevel level);
+#endif
+
 	/**
 	 * @brief reset the iv config and play reset audio
 	 *

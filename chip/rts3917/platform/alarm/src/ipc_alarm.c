@@ -31,6 +31,7 @@
 
 #include <rts_nn.h>
 #include <rts_nn_log.h>
+#include <rts_nn_od.h>
 #include <rts_nn_types.h>
 
 struct iou_box {
@@ -44,32 +45,32 @@ struct iou_box {
 
 static struct {
     struct rts_md2_result md_res;
-    struct iou_box md_box;
-    struct iou_box od_box;
-    struct rts_md2_ctrl* pmd2_ctrl;
-    s32 sensor_width;
-    s32 sensor_height;
-    s32 hd_width;
-    s32 hd_height;
-    s32 sd_width;
-    s32 sd_height;
-    f32 nn_width_scale;
-    f32 nn_height_scale;
-    f32 sensor_width_scale;
-    f32 sensor_height_scale;
-    f32 md_width_scale;
-    f32 md_height_scale;
-    s32 vin_id;
-    s32 vin_chn;
-    s32 vin_buf_num;
-    s32 frame_w;
-    s32 frame_h;
-    s32 fps;
-    f32 alarm_sensitive;
-    rts_nn_handle nn_handle;
-    f32 output_width_scale;
-    f32 output_height_scale;
-    s32 alarm_delay;
+    struct iou_box        md_box;
+    struct iou_box        od_box;
+    struct rts_md2_ctrl*  pmd2_ctrl;
+    s32                   sensor_width;
+    s32                   sensor_height;
+    s32                   hd_width;
+    s32                   hd_height;
+    s32                   sd_width;
+    s32                   sd_height;
+    f32                   nn_width_scale;
+    f32                   nn_height_scale;
+    f32                   sensor_width_scale;
+    f32                   sensor_height_scale;
+    f32                   md_width_scale;
+    f32                   md_height_scale;
+    s32                   vin_id;
+    s32                   vin_chn;
+    s32                   vin_buf_num;
+    s32                   frame_w;
+    s32                   frame_h;
+    s32                   fps;
+    f32                   alarm_sensitive;
+    rts_nn_handle         nn_handle;
+    f32                   output_width_scale;
+    f32                   output_height_scale;
+    s32                   alarm_delay;
 } g_alarm = {
     .hd_width            = 2560,
     .hd_height           = 1440,
@@ -132,9 +133,9 @@ static void make_md_box(struct rts_md2_result* res, int md_index, struct iou_box
     box->bot    = g_alarm.sensor_height_scale * g_alarm.md_height_scale * max_bottom;
 }
 
-static void md_fliter(struct ipc_plat_alarm_result_s* result, struct rts_md2_result* res, f32 score)
+static void md_fliter(struct ipc_plat_alarm_result_s* result, struct rts_md2_result* res, f32 score, f32 score_filter)
 {
-    int j         = 0;
+    int   j       = 0;
     float res_iou = 0.0;
     for (j = 0; j < res->cc_info.cc_len; j++) {
         make_md_box(res, j, &g_alarm.md_box);
@@ -144,11 +145,16 @@ static void md_fliter(struct ipc_plat_alarm_result_s* result, struct rts_md2_res
 
         if (res_iou > IOU_THRESH) {
 
-            result->rect[result->alarm_result_num].alarm_type = IPC_PLAT_ALARM_TYPE_MD | IPC_PLAT_ALARM_TYPE_AI_PEOPLE;
-            result->rect[result->alarm_result_num].lux        = g_alarm.od_box.left;
-            result->rect[result->alarm_result_num].luy        = g_alarm.od_box.top;
-            result->rect[result->alarm_result_num].rdx        = g_alarm.od_box.left + g_alarm.od_box.width;
-            result->rect[result->alarm_result_num].rdy        = g_alarm.od_box.top + g_alarm.od_box.height;
+            result->rect[result->alarm_result_num].alarm_type = IPC_PLAT_ALARM_TYPE_MD;
+
+            if (score > score_filter) {
+                result->rect[result->alarm_result_num].alarm_type |= IPC_PLAT_ALARM_TYPE_AI_PEOPLE;
+            }
+
+            result->rect[result->alarm_result_num].lux = g_alarm.od_box.left;
+            result->rect[result->alarm_result_num].luy = g_alarm.od_box.top;
+            result->rect[result->alarm_result_num].rdx = g_alarm.od_box.left + g_alarm.od_box.width;
+            result->rect[result->alarm_result_num].rdy = g_alarm.od_box.top + g_alarm.od_box.height;
 
             result->rect[result->alarm_result_num].lux *= g_alarm.output_width_scale;
             result->rect[result->alarm_result_num].luy *= g_alarm.output_height_scale;
@@ -165,18 +171,31 @@ static void set_rectangle_parameter(struct ipc_plat_alarm_result_s* result, stru
 {
     int nr_num = 0;
     int i      = 0;
+    s32 ret    = 0;
 
     nr_num = res->num;
 
+    struct rts_isp_control ctrl         = { 0 };
+    f32                    score_filter = 0.7;
+
+    ret = rts_av_get_isp_ctrl(RTS_ISP_CTRL_ID_IR_MODE, &ctrl);
+    if (ret) {
+        printf("Error, id: RTS_ISP_CTRL_ID_IR_MODE get isp attr fail, ret = %d\n", ret);
+    }
+
+    if (1 == ctrl.current_value) {
+        score_filter = 0.8;
+    }
+
     for (i = 0; i < nr_num; i++) {
-        if (res->bboxes[i].id == 0) { // odtiny determines it's a person shape
+        if (res->bboxes[i].id == 0) {
             g_alarm.od_box.left   = g_alarm.nn_width_scale * res->bboxes[i].x1;
             g_alarm.od_box.top    = g_alarm.nn_height_scale * res->bboxes[i].y1;
             g_alarm.od_box.width  = g_alarm.nn_width_scale * (res->bboxes[i].x2 - res->bboxes[i].x1);
             g_alarm.od_box.height = g_alarm.nn_height_scale * (res->bboxes[i].y2 - res->bboxes[i].y1);
             g_alarm.od_box.right  = g_alarm.nn_width_scale * res->bboxes[i].x2;
             g_alarm.od_box.bot    = g_alarm.nn_height_scale * res->bboxes[i].y2;
-            md_fliter(result, &g_alarm.md_res, res->bboxes[i].score);
+            md_fliter(result, &g_alarm.md_res, res->bboxes[i].score, score_filter);
 
             if (result->alarm_result_num >= sizeof(result->rect) / sizeof(result->rect[0])) {
                 goto exit;
@@ -189,9 +208,9 @@ exit:
 
 static int __start_stream(void)
 {
-    struct rts_vin_attr attr = { 0 };
+    struct rts_vin_attr   attr = { 0 };
     struct rts_av_profile pro;
-    int ret = 0;
+    int                   ret = 0;
 
     attr.vin_buf_num = g_alarm.vin_buf_num;
     attr.vin_id      = g_alarm.vin_id;
@@ -223,78 +242,6 @@ err:
 int ivrt_get_alarm_video_chn()
 {
     return g_alarm.vin_chn;
-}
-
-int ivrt_set_odtiny_parameter(const char* key, int size, void* data)
-{
-    if (NULL == g_alarm.nn_handle) {
-        printf("[%d:%s]Warning !!! odtiny not init\n", __LINE__, __func__);
-        return IPC_NOT_INIT;
-    }
-
-    int ret = 0;
-
-    ret = rts_nn_set_property(g_alarm.nn_handle, key, size, data);
-    if (0 != ret) {
-        printf("Error, rts_nn_set_property set failed, ret: %d\n", ret);
-        return IPC_FAILED;
-    }
-
-    return IPC_SUCCESS;
-}
-
-int ivrt_get_odtiny_parameter(const char* key, int size, void* data)
-{
-    if (NULL == g_alarm.nn_handle) {
-        printf("[%d:%s]Warning !!! odtiny not init\n", __LINE__, __func__);
-        return IPC_NOT_INIT;
-    }
-
-    int ret = 0;
-
-    ret = rts_nn_get_property(g_alarm.nn_handle, key, size, data);
-    if (0 != ret) {
-        printf("Error, rts_nn_get_property set failed, ret: %d\n", ret);
-        return IPC_FAILED;
-    }
-
-    return IPC_SUCCESS;
-}
-
-static int set_odtiny_parameter_from_json(rts_nn_handle handle)
-{
-    float nms_thresh            = 0.3;
-    float person_thresh         = IPRT_ODTINY_PERSON_RGB_THRESH;
-    float face_thresh           = 0.3;
-    int ret                     = 0;
-    struct rts_isp_control ctrl = { 0 };
-
-    ret = rts_av_get_isp_ctrl(RTS_ISP_CTRL_ID_IR_MODE, &ctrl);
-    if (ret) {
-        printf("Error, id: RTS_ISP_CTRL_ID_IR_MODE get isp attr fail, ret = %d\n", ret);
-    }
-
-    if (1 == ctrl.current_value) {
-        person_thresh = IPRT_ODTINY_PERSON_IR_THRESH; /* Night vision mode */
-    }
-
-    ret = ivrt_set_odtiny_parameter("nms_thresh", sizeof(nms_thresh), &nms_thresh);
-    ret |= ivrt_set_odtiny_parameter("person_thresh", sizeof(person_thresh), &person_thresh);
-    ret |= ivrt_set_odtiny_parameter("face_thresh", sizeof(face_thresh), &face_thresh);
-
-    nms_thresh = 0;
-    ivrt_get_odtiny_parameter("nms_thresh", sizeof(nms_thresh), &nms_thresh);
-    printf("get nms threshold: %f\n", nms_thresh);
-
-    person_thresh = 0;
-    ivrt_get_odtiny_parameter("person_thresh", sizeof(person_thresh), &person_thresh);
-    printf("get person thresh: %f\n", person_thresh);
-
-    face_thresh = 0;
-    ivrt_get_odtiny_parameter("face_thresh", sizeof(face_thresh), &face_thresh);
-    printf("get face thresh: %f\n", face_thresh);
-
-    return ret;
 }
 
 static void __set_md2_ctrl(struct rts_md2_ctrl* pctrl, struct rts_md2_attr* attr)
@@ -346,7 +293,7 @@ s32 ipc_plat_alarm_init(IPC_PLAT_ALARM_TYPE* support_alarm_type)
     g_alarm.md_width_scale  = (float)g_alarm.sensor_width / 640;
     g_alarm.md_height_scale = (float)g_alarm.sensor_height / 360;
 
-    /* md2 parameters */
+    /* md2参数 */
     md_attr.sample.x       = 0;
     md_attr.sample.y       = 0;
     md_attr.sample.w       = g_alarm.sensor_width / g_alarm.md_width_scale;
@@ -355,11 +302,11 @@ s32 ipc_plat_alarm_init(IPC_PLAT_ALARM_TYPE* support_alarm_type)
     md_attr.sample.scale_y = g_alarm.md_height_scale;
 
     // coverity[MIXED_ENUM_TYPE :SUPPRESS]
-    md_attr.bin_bits       = 0;
+    md_attr.bin_bits = 0;
 
     // coverity[MIXED_ENUM_TYPE :SUPPRESS]
-    md_attr.nr_bins        = 0;
-    md_attr.skip_frames    = 1;
+    md_attr.nr_bins     = 0;
+    md_attr.skip_frames = 1;
 
     ret = rts_av_query_md2(&g_alarm.pmd2_ctrl, &md_attr);
     if (ret) {
@@ -369,7 +316,7 @@ s32 ipc_plat_alarm_init(IPC_PLAT_ALARM_TYPE* support_alarm_type)
 
     __set_md2_ctrl(g_alarm.pmd2_ctrl, &md_attr);
 
-    // coverity[UNUSED_VALUE :SUPPRESS] 
+    // coverity[UNUSED_VALUE :SUPPRESS]
     ret = rts_av_set_md2(g_alarm.pmd2_ctrl);
 
     struct rts_nn_cfg cfg = { 0 };
@@ -380,20 +327,16 @@ s32 ipc_plat_alarm_init(IPC_PLAT_ALARM_TYPE* support_alarm_type)
         return -1;
     }
 
-    /* 1. init network: model_name is "odtiny" */
+    /* 1. init network: model_name is "odnano" */
     // coverity[DC.STRING_BUFFER :SUPPRESS]
     // coverity[SECURE_CODING :SUPPRESS]
-    strcpy(cfg.model_name, "odtiny");
+    strcpy(cfg.model_name, "odnano");
 
-    // coverity[DC.STRING_BUFFER :SUPPRESS]
-    strcpy(cfg.model_path, "/app/rt/rtsnn/rtsnn_odtiny_mnn.data");
     ret = rts_nn_init(&g_alarm.nn_handle, &cfg);
     if (ret) {
         printf("init nn failed: %d\n", ret);
         return -1;
     }
-
-    set_odtiny_parameter_from_json(g_alarm.nn_handle);
 
     return 0;
 }
@@ -433,7 +376,7 @@ s32 ipc_plat_alarm_ctrl(IPC_PLAT_ALARM_CTRL_CMD cmd, vptr arg)
             g_alarm.alarm_sensitive = *(pf32)arg;
             break;
         case IPC_PLAT_ALARM_CTRL_CMD_NOTICE_IMAGE_CHANGING:
-            g_alarm.alarm_delay=2;
+            g_alarm.alarm_delay = 2;
             break;
         default:
             break;
@@ -444,8 +387,8 @@ err:
 
 s32 ipc_plat_alarm_recv_result(struct ipc_plat_alarm_result_s* result, s32 timeout_ms)
 {
-    int ret                      = 0;
-    struct rts_nn_image img      = { 0 };
+    int                   ret    = 0;
+    struct rts_nn_image   img    = { 0 };
     struct rts_nn_od_res* res    = NULL;
     struct rts_av_buffer* buffer = NULL;
 
@@ -504,7 +447,7 @@ s32 ipc_plat_alarm_recv_result(struct ipc_plat_alarm_result_s* result, s32 timeo
             printf("\nai cnt %d\n", res->num);
             set_rectangle_parameter(result, res);
         } else {
-             g_alarm.alarm_delay--;
+            g_alarm.alarm_delay--;
         }
     }
 

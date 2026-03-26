@@ -3,16 +3,6 @@
 #include "rts_nn_err.h"
 #include "rts_nn_types.h"
 
-#include "algs/rts_nn_od.h"
-#include "algs/rts_nn_lm.h"
-#include "algs/rts_nn_fr.h"
-#include "algs/rts_nn_hpe.h"
-#include "algs/rts_nn_pose.h"
-#include "algs/rts_nn_reid.h"
-#include "algs/rts_nn_lm68.h"
-#include "algs/rts_nn_blink.h"
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif

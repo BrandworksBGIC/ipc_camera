@@ -154,20 +154,6 @@ int MFG_VideoStreamInit_callback(int stream_index)
 
 int MFG_VideoStreamDeInit_callback(void)
 {
-    s32 ret = 0;
-
-    // Stop main video channel
-    ret = ipc_mpp_video_stop(IPC_VIDEO_CHN_MAIN);
-    if (ret < 0) {
-        printf("Failed to stop main video channel: %d\n", ret);
-    }
-
-    // Stop sub video channel
-    ret = ipc_mpp_video_stop(IPC_VIDEO_CHN_SUB);
-    if (ret < 0) {
-        printf("Failed to stop sub video channel: %d\n", ret);
-    }
-
     printf("Video channels stopped\n");
     return 0;
 }
@@ -1022,6 +1008,9 @@ int MFG_OtaStart_callback(char* firmware_path)
     ipc_swdg_unreg(_g_swdg_fd);
     printf("set ota firmware_path:%s\r\n", firmware_path);
     ipc_create_thread("ota_prepare", instaview_ota_prepare, NULL, 256 * 1024, 0);
+
+    sleep(8);
+
     return 0;
 }
 int MFG_FlashFirmware_callback(FirmwareFlashContext* firmware)

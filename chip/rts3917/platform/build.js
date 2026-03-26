@@ -27,7 +27,7 @@ platform.addIncludeDirs(
     sdk + '/platform/source/rtscore/rtstream/rts3917/rtstream/usr/include/isp-proto',
     sdk + '/platform/source/kernel/linux-6.6/drivers/media/platform/rts_camera/linux',
     sdk + '/platform/source/rtscore/librtsio/include',
-    '../AI/rtsnn_odtiny_v1.1_2022.10.07_mnn/include',
+    '../AI/rtsnn_v1.1_odnano_v1.0.2_2025.12.26/include',
     '../../../cam/driver/ipc_gpio_driver/',
     '../../../cam/driver/m433_driver/',
 );
@@ -35,7 +35,7 @@ platform.addIncludeDirs(
 // Add shared library link files
 platform.addLdfiles(
     sdk + '/platform/source/rtscore/rtstream/rts3917/rtstream/usr/lib/*.so',
-    '../AI/rtsnn_odtiny_v1.1_2022.10.07_mnn/lib/lib*.so',
+    '../AI/rtsnn_v1.1_odnano_v1.0.2_2025.12.26/lib/lib*.so',
     '../third_lib/*.so'
 );
 
