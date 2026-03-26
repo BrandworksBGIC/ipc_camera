@@ -205,7 +205,7 @@ int rtsx_icr_wait_cmd(struct rtsx_icr *icr, int timeout)
 	long timeleft;
 	int err = 0;
 
-	timeleft = wait_for_completion_interruptible_timeout(icr->done,
+	timeleft = wait_for_completion_timeout(icr->done,
 			msecs_to_jiffies(timeout));
 	if (timeleft <= 0) {
 		err = -ETIMEDOUT;
@@ -447,7 +447,7 @@ int rtsx_icr_transfer_data(struct rtsx_icr *icr, struct mmc_data *data)
 
 	rtsx_icr_unlock_irqrestore(icr);
 
-	timeleft = wait_for_completion_interruptible_timeout(icr->done,
+	timeleft = wait_for_completion_timeout(icr->done,
 			msecs_to_jiffies(timeout));
 	if (timeleft <= 0) {
 		err = -ETIMEDOUT;
