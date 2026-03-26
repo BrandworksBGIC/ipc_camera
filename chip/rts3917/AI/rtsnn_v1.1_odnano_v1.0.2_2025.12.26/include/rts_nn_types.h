@@ -103,6 +103,14 @@ enum RTS_NN_IMG_FMT {
 };
 
 /**
+ * @brief rtsnn audio format
+ */
+enum RTS_NN_AUDIO_FMT {
+	RTS_NN_PCM_S16LE_MONO =		1000,		/**< PCM signed short mono*/
+	RTS_NN_PCM_S16LE_STERO =	1001,		/**< PCM signed short stero*/
+};
+
+/**
  * @brief type of rtsnn shape
  */
 enum RTS_NN_SHAPE_TYPE {
@@ -269,6 +277,25 @@ struct rts_nn_image {
 	uint32_t phy[4]; /**< physical address of image */
 };
 
+/**
+ * @brief audio frame attribute
+ */
+struct rts_nn_audio_attr {
+	enum RTS_NN_AUDIO_FMT fmt; /**< format of audio data */
+	int samplerate; /**< sample rate of audio data */
+	int sample_cnt; /** < samples in buffer */
+};
+
+
+/**
+ * @brief rtsnn audio frame
+ */
+struct rts_nn_audio {
+	struct rts_nn_audio_attr attr; /**< attribute of audio */
+	int quantized; /**< audio data is already quantized or not */
+	void *virt[4]; /**< virtual address of audio frame */
+	uint32_t phy[4]; /**< physical address of audio frame */
+};
 
 /**
  * @brief rtsnn shape object
@@ -293,7 +320,8 @@ struct rts_nn_shapes {
  */
 struct rts_nn_tensor {
 	int32_t dtype;	/**< data type: enum RTS_NN_DTYPE */
-	void *data;         /**< tensor data */
+	void *data;	/**< tensor data */
+	uint32_t phy;	/**< physical address if needed */
 	int dim_num;	/**< tensor dimension number */
 	int dims[8];	/**< dimension size, support max 8 dims */
 };
@@ -338,7 +366,9 @@ struct rts_nn_version {
  * @brief rtsnn result type
  */
 enum RTS_NN_OBJ_TYPE {
-	RTS_NN_OBJ_TYPE_IMAGE		= 1,
+	RTS_NN_OBJ_TYPE_IMAGE		= 1, /**< image type */
+	RTS_NN_OBJ_TYPE_TENSOR		= 2, /**< tensor type*/
+	RTS_NN_OBJ_TYPE_AUDIO		= 3, /**< audio frame type*/
 
 	RTS_NN_OBJ_TYPE_RES_OD		= 10000,
 	RTS_NN_OBJ_TYPE_RES_POSE	= 11000,
@@ -368,14 +398,7 @@ struct rts_nn_object {
 		struct rts_nn_image *image;
 
 		/* res */
-		struct rts_nn_od_res *od;
-		struct rts_nn_lm_res *lm;
-		struct rts_nn_lm68_res *lm68;
-		struct rts_nn_blink_res *blink;
-		struct rts_nn_fr_res *fr;
-		struct rts_nn_pose_res *pose;
-		struct rts_nn_hpe_res *hpe;
-		struct rts_nn_reid_res *reid;
+		void *od;
 
 		/* general data */
 		void *data;

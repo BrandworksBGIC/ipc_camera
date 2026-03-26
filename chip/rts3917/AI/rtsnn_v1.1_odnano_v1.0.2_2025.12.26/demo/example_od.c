@@ -4,10 +4,9 @@
 #include <unistd.h>
 #include <signal.h>
 
-#include <rts_nn.h>
+#include <rts_nn_od.h>
 #include <rts_nn_types.h>
 #include <rts_nn_log.h>
-#include <rts_nn_utils.h>
 
 #include <rtsavapi.h>
 #include <rtscamkit.h>
@@ -20,8 +19,6 @@ static int log_level = 0;
 static int vin_id = 10;
 static int vin_chn = -1;
 static int vin_buf_num = 2;
-//static int frame_w = 192;
-//static int frame_h = 192;
 static int frame_w = 256;
 static int frame_h = 160;
 static int fps = 3;
@@ -34,8 +31,8 @@ static void print_usage(char *name)
 			name);
 
 	printf("\nExample:\n");
-	printf("%s od_tiny ./od_tiny.mnn\n", name);
-	printf("%s odlite ./rts_nn_odlite.data 416 416\n", name);
+	printf("%s odtiny ./rtsnn_odtiny.data\n", name);
+	printf("%s odlite ./rtsnn_odlite.data 416 416\n", name);
 }
 
 static int parse_args(int argc, char *argv[])

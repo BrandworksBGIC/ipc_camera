@@ -2386,7 +2386,6 @@ s32 ipc_plat_video_isp_image_mode_set(IPC_VIDEO_MODE mode, vptr arg)
     P_IPRT_VIDEO_CONTEXT_S sub_video_context  = &_gvrt_video_attr.video_context[IPRT_VIDEO_CHN_SUB];
     u8 main_fps                               = main_video_context->framerate;
     u8 sub_fps                                = sub_video_context->framerate;
-    float person_thresh                       = IPRT_ODTINY_PERSON_RGB_THRESH;
 
     switch (mode) {
         case IPC_VIDEO_MODE_DAY:
@@ -2419,12 +2418,6 @@ s32 ipc_plat_video_isp_image_mode_set(IPC_VIDEO_MODE mode, vptr arg)
     _gvrt_set_sensor_fps(IPRT_VIDEO_CHN_MAIN, main_fps);
     _gvrt_set_sensor_fps(IPRT_VIDEO_CHN_SUB, sub_fps);
 
-    person_thresh = value ? IPRT_ODTINY_PERSON_IR_THRESH : IPRT_ODTINY_PERSON_RGB_THRESH;
-    ivrt_set_odtiny_parameter("person_thresh", sizeof(person_thresh), &person_thresh);
-
-    person_thresh = 0;
-    ivrt_get_odtiny_parameter("person_thresh", sizeof(person_thresh), &person_thresh);
-    printf("get person thresh: %f\n", person_thresh);
 
     pthread_mutex_unlock(&_gvrt_video_ctrl_mutex);
 
