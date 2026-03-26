@@ -194,7 +194,7 @@ function buildFirmwarePackage() {
 
     // Copy AI plugin (local file, use shell.run)
     console.log("Copying AI plugin...");
-    if (!shell.run(`cp ../AI/rtsnn_odtiny_v1.1_2022.10.07_mnn/plugin/* ${tempAppDir}/rt/rtsnn/ -uv`)) {
+    if (!shell.run(`cp ../AI/rtsnn_v1.1_odnano_v1.0.2_2025.12.26/plugin/* ${tempAppDir}/rt/rtsnn/ -uv`)) {
         throw new Error("Failed to copy AI plugin");
     }
 

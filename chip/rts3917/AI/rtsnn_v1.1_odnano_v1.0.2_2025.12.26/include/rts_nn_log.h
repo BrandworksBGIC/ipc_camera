@@ -186,11 +186,6 @@ RTS_NN_API void rts_nn_dump_data(char *data, unsigned int len, unsigned int row)
 		__RTS_NN_LOG(RTS_NN_LOG_EMERG, __VA_ARGS__);\
 	} while (0)
 
-#define RTS_NN_OPT(...) \
-	do {\
-		fprintf(stdout, __VA_ARGS__);\
-	} while (0)
-
 #ifdef __cplusplus
 }
 #endif
