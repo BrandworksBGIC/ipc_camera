@@ -95,6 +95,7 @@ typedef enum {
     E_WIFI_CONNECTING = 0x0,
     E_WIFI_CONNECTED,
     E_WIFI_CONNECT_FAIL,
+    E_QRCODE_THREAD_EXIT,
     E_PAIR_SUCCESS,
     E_PAIR_FAIL,
 } E_PAIRING_STATUS;
@@ -580,6 +581,22 @@ typedef struct {
     */
     int (*MfgPlayAacAudiofile_Callback)(E_AUDIO_FILE_NAME);
 
+#ifdef ALARM_SOUND_ROUTINE
+
+    /* enable play aac audio file loop routine
+    * @param[in] E_AUDIO_FILE_NAME	   aac file
+    * @return    int                   0: success, -1: failed
+    */
+    int (*MfgEnablePlayAacAudiofileRoutine_Callback)(E_AUDIO_FILE_NAME);
+
+    /* disable play aac audio file loop routine
+    * @param[in] E_AUDIO_FILE_NAME	   aac file
+    * @return    int                   0: success, -1: failed
+    */
+    int (*MfgDisablePlayAacAudiofileRoutine_Callback)(E_AUDIO_FILE_NAME);
+
+#endif
+
     /* set speaker volume
     * @param[in] int	                  percentage
     * @return    int                   0: success, -1: failed
@@ -672,6 +689,10 @@ typedef struct {
     */
     int (*MFG_PtzSetPvcMode_Callback)(int); 
 
+	/* only for battery camera, when Enable/Disable Pvc Mode,notify you to handle low power task,such as pir disable
+    * @param[in] int   1 to enable, 0 to disable
+    */
+    int (*MFG_SetPvcModeNotify_Callback)(int); 
 
     /*
     * reset the camera
@@ -712,14 +733,65 @@ typedef struct {
     * @return       int           0: success, -1: failed
     */
     int (*MFG_SetPirSchedule_Callback)(IV_PIRConfig_t*);
-    
+
+#ifdef OEM_XMI
+    int (*MFG_ReadFrame_Callback)(MfgVideoFrame *);
+
+    /*
+    * Notification mcu sleep
+    * @return       int           0: success, -1: failed
+    */
+    int (*MFG_NotificationSleep_Callback)(void);
+
+    /*
+    * Notification mcu wakeup
+    * @return       int           0: success, -1: failed
+    */
+    int (*MFG_Wakeup_Callback)(void);
+
+    /*
+    * Enable Audio Video
+    @param[in] int   1 to enable, 0 to disable
+    * @return       int           0: success, -1: failed
+    */
+    int (*MFG_EnableAudioVideo_Callback)(int);
+
+    /*
+    * Enable Liveview
+    @param[in] int   1 to enable, 0 to disable
+    * @return       int           0: success, -1: failed
+    */
+    int (*MFG_EnableLiveview_Callback)(int);
+
+    /*
+    * set radar area
+    * @param[in] int zone count
+    * @param[in] int* zone array
+    * @return    int       0: success, -1: failed
+    */
+    int (*MFG_SetRadarZone_Callback)(int, int*);
+
+    /*
+    * set chime type
+    * @param[in]    (duration << 8) | E_CHIME_TYPE
+    * @return       int           0: success, -1: failed
+    */
+    int (*MFG_SetChimeType_Callback)(int);
+
+    /*
+    * get camera status
+    * @return    E_CAMERA_STATUS
+    */
+    E_CAMERA_STATUS (*MFG_GetCameraStatus_Callback)(void);
+#else
     /*
     * Notification mcu sleep
     * @param[in]    E_MODE_SLEEP  0:normal, 1:deep
     * @return       int           0: success, -1: failed
     */
     int (*MFG_NotificationSleep_Callback)(E_MODE_SLEEP);
-    
+#endif
+
     /*
     * get battery power
     * @param[out]   int           power percent
@@ -916,11 +988,18 @@ typedef struct {
 #endif
 
 	/* 
-    * notify oem network status:ping check and tcp check
+    * notify oem network status:ping check and tcp check,only for some battery camera, they need this before sleep
     * @param[in] E_NETWORK_STATUS
     * @return    int                   0: success, -1: failed
     */
     int (*MFG_network_check_Callback)(E_NETWORK_STATUS);
+
+	/* 
+    * when net not work，sdk will call this to restart net，this callback only for ac camera
+    * It is recommended that OEMs implement their own network monitoring and reconnection strategies.
+    * @return    int                   0: success, -1: failed
+    */
+    int (*MFG_wifi_restart_Callback)();
 
 } MFG_CALLBACK_FUNCTIONS;
 
