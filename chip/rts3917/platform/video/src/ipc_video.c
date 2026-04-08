@@ -303,6 +303,13 @@ static s32 _gvrt_get_sensor_info(P_IPRT_SENSOR_INFO_S sensor_info, pv8 sensor_di
           .main_width    = 1280,
           .main_height   = 720,
           .sub_width     = 640,
+          .sub_height    = 360 },
+        { .sensor_name   = "sc3336_mipi",
+          .sensor_width  = 2304,
+          .sensor_height = 1296,
+          .main_width    = 2304,
+          .main_height   = 1296,
+          .sub_width     = 640,
           .sub_height    = 360 }
     };
 
