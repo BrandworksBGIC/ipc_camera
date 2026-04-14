@@ -21,7 +21,7 @@
 #include <rtscamkit.h>
 #include <rtsvideo.h>
 
-#include "ipc_core.h"
+#include "ipc_decrypt.h"
 
 #define IPC_VIDEO_PRINT(fmt, ...) printf("[%s:%d]" fmt, __func__, __LINE__, ##__VA_ARGS__)
 
@@ -43,11 +43,7 @@
 
 #define IPRT_ISP_WDR_LEVEL_D 50
 
-    typedef enum {
-        IPRT_ENCODER_TYPE_H264,
-        IPRT_ENCODER_TYPE_H265,
-        IPRT_ENCODER_TYPE_ALL
-    } IPRT_ENCODER_TYPED_E;
+typedef enum { IPRT_ENCODER_TYPE_H264, IPRT_ENCODER_TYPE_H265, IPRT_ENCODER_TYPE_ALL } IPRT_ENCODER_TYPED_E;
 
 typedef enum {
     IPRT_VIDEO_CHN_MAIN = IPC_VIDEO_CHN_MAIN,
@@ -63,7 +59,7 @@ typedef struct video_sensor_info {
     s32 main_height;
     s32 sub_width;
     s32 sub_height;
-    v8 sensor_name[64];
+    v8  sensor_name[64];
 } IPRT_SENSOR_INFO_S, *P_IPRT_SENSOR_INFO_S;
 
 typedef struct video_encoder_attr {
@@ -96,30 +92,30 @@ typedef struct video_context {
     s32 isp_buf_num;
     s32 isp_mode; /* RTS_AV_VIN_MODE, specific value assignment will be parameter checked by relteck, and if erroneous,
                      will be forcibly modified; see _gvrt_create_stream for details */
-    s32 isp_ch;
-    s32 mjpeg_ch;
-    s32 width;
-    s32 height;
-    s32 framerate;
-    struct rts_osdi_attr* osd_attr;
+    s32                       isp_ch;
+    s32                       mjpeg_ch;
+    s32                       width;
+    s32                       height;
+    s32                       framerate;
+    struct rts_osdi_attr*     osd_attr;
     IPRT_VIDEO_ENCODER_ATTR_S video_encoder[IPRT_ENCODER_TYPE_ALL];
 } IPRT_VIDEO_CONTEXT_S, *P_IPRT_VIDEO_CONTEXT_S;
 
 typedef struct video_attr {
-    s32 init_ok;
-    s32 jpeg_res_chn;
+    s32                      init_ok;
+    s32                      jpeg_res_chn;
     struct rts_isp_awb_ctrl* isp_awb;
-    struct rts_isp_ae_ctrl* isp_ae;
-    IPRT_VIDEO_CONTEXT_S video_context[IPRT_VIDEO_CHN_NUM];
-    s32 sensor_width;
-    s32 sensor_height;
-    v8 sensor_name[64];
-    u64 image_change_time;
+    struct rts_isp_ae_ctrl*  isp_ae;
+    IPRT_VIDEO_CONTEXT_S     video_context[IPRT_VIDEO_CHN_NUM];
+    s32                      sensor_width;
+    s32                      sensor_height;
+    v8                       sensor_name[64];
+    u64                      image_change_time;
 } IPRT_VIDEO_ATTR_S, *P_IPRT_VIDEO_ATTR_S;
 
-static pthread_mutex_t _gvrt_video_ctrl_mutex   = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t _gvrt_video_ctrl_mutex           = PTHREAD_MUTEX_INITIALIZER;
 static u8              _g_yuv_buffer[640 * 368 * 3 / 2] = { 0 };
-static volatile u8     _g_in_process_yuv        = 0;
+static volatile u8     _g_in_process_yuv                = 0;
 
 static IPRT_VIDEO_ATTR_S _gvrt_video_attr = {
     .video_context = {
@@ -192,12 +188,28 @@ static void __scale_up_100w(ps32 w, ps32 h)
 }
 #endif
 
+static void _gvrt_tag_override_sensor(P_IPRT_SENSOR_INFO_S sensor_info, ipc_decrypt_tag_info_p tag_info)
+{
+    if (tag_info == NULL || tag_info->len == 0)
+        return;
+
+    const char* tag = (const char*)tag_info->info;
+
+    if (strstr(tag, "sr=1,vr=2") && strstr((char*)sensor_info->sensor_name, "sc3336_mipi")) {
+        strncpy((char*)sensor_info->sensor_name, "sc1b5ak_mipi", sizeof(sensor_info->sensor_name) - 1);
+        sensor_info->sensor_width  = 1280;
+        sensor_info->sensor_height = 720;
+        sensor_info->main_width    = 1280;
+        sensor_info->main_height   = 720;
+    }
+}
+
 static s32 _gvrt_get_sensor_info(P_IPRT_SENSOR_INFO_S sensor_info, pv8 sensor_dir)
 {
-    s32 ret          = 0;
-    s32 len          = 0;
-    v8 sensor_so[64] = { 0 };
-    len              = strlen(sensor_dir);
+    s32 ret           = 0;
+    s32 len           = 0;
+    v8  sensor_so[64] = { 0 };
+    len               = strlen(sensor_dir);
 
     /* Check the suffix (libsensor_xxx.so) */
     if (strncmp(sensor_dir + (len - 3), ".so", 3)) {
@@ -219,99 +231,92 @@ static s32 _gvrt_get_sensor_info(P_IPRT_SENSOR_INFO_S sensor_info, pv8 sensor_di
         return IPC_FAILED;
     }
 
-    IPRT_SENSOR_INFO_S sensor_table[] = {
-        { .sensor_name   = "jxk347p_mipi",
-          .sensor_width  = 2816,
-          .sensor_height = 1584,
-          .main_width    = 3840,
-          .main_height   = 2160,
-          .sub_width     = 640,
-          .sub_height    = 360 },
-        { .sensor_name   = "jxk306p_mipi",
-          .sensor_width  = 2560,
-          .sensor_height = 1440,
-          .main_width    = 2816,
-          .main_height   = 1584,
-          .sub_width     = 640,
-          .sub_height    = 360 },
-        { .sensor_name   = "jxq03p_mipi",
-          .sensor_width  = 2304,
-          .sensor_height = 1296,
-          .main_width    = 2304,
-          .main_height   = 1296,
-          .sub_width     = 640,
-          .sub_height    = 360 },
-        { .sensor_name   = "jxk06",
-          .sensor_width  = 2560,
-          .sensor_height = 1440,
-          .main_width    = 2560,
-          .main_height   = 1440,
-          .sub_width     = 640,
-          .sub_height    = 360 },
-        { .sensor_name   = "jxf38p_mipi",
-          .sensor_width  = 1920,
-          .sensor_height = 1080,
-          .main_width    = 1920,
-          .main_height   = 1080,
-          .sub_width     = 640,
-          .sub_height    = 360 },
-        { .sensor_name   = "sc3235",
-          .sensor_width  = 2304,
-          .sensor_height = 1296,
-          .main_width    = 2304,
-          .main_height   = 1296,
-          .sub_width     = 640,
-          .sub_height    = 360 },
-        { .sensor_name   = "sc401ai",
-          .sensor_width  = 2560,
-          .sensor_height = 1440,
-          .main_width    = 2560,
-          .main_height   = 1440,
-          .sub_width     = 640,
-          .sub_height    = 360 },
-        { .sensor_name   = "sc2336_mipi",
-          .sensor_width  = 1920,
-          .sensor_height = 1080,
-          .main_width    = 1920,
-          .main_height   = 1080,
-          .sub_width     = 640,
-          .sub_height    = 360 },
-        { .sensor_name   = "sc2336p_mipi",
-          .sensor_width  = 1920,
-          .sensor_height = 1080,
-          .main_width    = 1920,
-          .main_height   = 1080,
-          .sub_width     = 640,
-          .sub_height    = 360 },
-        { .sensor_name   = "sc3338_mipi",
-          .sensor_width  = 2304,
-          .sensor_height = 1296,
-          .main_width    = 2304,
-          .main_height   = 1296,
-          .sub_width     = 640,
-          .sub_height    = 360 },
-        { .sensor_name   = "sc5336",
-          .sensor_width  = 2816,
-          .sensor_height = 1584,
-          .main_width    = 2816,
-          .main_height   = 1584,
-          .sub_width     = 640,
-          .sub_height    = 360 },
-        { .sensor_name   = "sc1b5ak_mipi",
-          .sensor_width  = 1280,
-          .sensor_height = 720,
-          .main_width    = 1280,
-          .main_height   = 720,
-          .sub_width     = 640,
-          .sub_height    = 360 },
-        { .sensor_name   = "sc3336_mipi",
-          .sensor_width  = 2304,
-          .sensor_height = 1296,
-          .main_width    = 2304,
-          .main_height   = 1296,
-          .sub_width     = 640,
-          .sub_height    = 360 }
-    };
+    IPRT_SENSOR_INFO_S sensor_table[] = { { .sensor_name   = "jxk347p_mipi",
+                                            .sensor_width  = 2816,
+                                            .sensor_height = 1584,
+                                            .main_width    = 3840,
+                                            .main_height   = 2160,
+                                            .sub_width     = 640,
+                                            .sub_height    = 360 },
+                                          { .sensor_name   = "jxk306p_mipi",
+                                            .sensor_width  = 2560,
+                                            .sensor_height = 1440,
+                                            .main_width    = 2816,
+                                            .main_height   = 1584,
+                                            .sub_width     = 640,
+                                            .sub_height    = 360 },
+                                          { .sensor_name   = "jxq03p_mipi",
+                                            .sensor_width  = 2304,
+                                            .sensor_height = 1296,
+                                            .main_width    = 2304,
+                                            .main_height   = 1296,
+                                            .sub_width     = 640,
+                                            .sub_height    = 360 },
+                                          { .sensor_name   = "jxk06",
+                                            .sensor_width  = 2560,
+                                            .sensor_height = 1440,
+                                            .main_width    = 2560,
+                                            .main_height   = 1440,
+                                            .sub_width     = 640,
+                                            .sub_height    = 360 },
+                                          { .sensor_name   = "jxf38p_mipi",
+                                            .sensor_width  = 1920,
+                                            .sensor_height = 1080,
+                                            .main_width    = 1920,
+                                            .main_height   = 1080,
+                                            .sub_width     = 640,
+                                            .sub_height    = 360 },
+                                          { .sensor_name   = "sc3235",
+                                            .sensor_width  = 2304,
+                                            .sensor_height = 1296,
+                                            .main_width    = 2304,
+                                            .main_height   = 1296,
+                                            .sub_width     = 640,
+                                            .sub_height    = 360 },
+                                          { .sensor_name   = "sc401ai",
+                                            .sensor_width  = 2560,
+                                            .sensor_height = 1440,
+                                            .main_width    = 2560,
+                                            .main_height   = 1440,
+                                            .sub_width     = 640,
+                                            .sub_height    = 360 },
+                                          { .sensor_name   = "sc2336_mipi",
+                                            .sensor_width  = 1920,
+                                            .sensor_height = 1080,
+                                            .main_width    = 1920,
+                                            .main_height   = 1080,
+                                            .sub_width     = 640,
+                                            .sub_height    = 360 },
+                                          { .sensor_name   = "sc2336p_mipi",
+                                            .sensor_width  = 1920,
+                                            .sensor_height = 1080,
+                                            .main_width    = 1920,
+                                            .main_height   = 1080,
+                                            .sub_width     = 640,
+                                            .sub_height    = 360 },
+                                          { .sensor_name   = "sc3338_mipi",
+                                            .sensor_width  = 2304,
+                                            .sensor_height = 1296,
+                                            .main_width    = 2304,
+                                            .main_height   = 1296,
+                                            .sub_width     = 640,
+                                            .sub_height    = 360 },
+                                          { .sensor_name   = "sc5336",
+                                            .sensor_width  = 2816,
+                                            .sensor_height = 1584,
+                                            .main_width    = 2816,
+                                            .main_height   = 1584,
+                                            .sub_width     = 640,
+                                            .sub_height    = 360 },
+                                          { .sensor_name   = "sc3336_mipi",
+                                            .sensor_width  = 2304,
+                                            .sensor_height = 1296,
+                                            .main_width    = 2304,
+                                            .main_height   = 1296,
+                                            .sub_width     = 640,
+                                            .sub_height    = 360 } };
+
+    ipc_decrypt_tag_info_p tag_info = ipc_decrypt_tag_info();
 
     // IPC_VIDEO_PRINT("=== sensor so [%s] ===\n", sensor_so);
     for (s32 i = 0; i < sizeof(sensor_table) / sizeof(sensor_table[0]); i++) {
@@ -319,13 +324,17 @@ static s32 _gvrt_get_sensor_info(P_IPRT_SENSOR_INFO_S sensor_info, pv8 sensor_di
         if (strncmp(sensor_so, sensor_table[i].sensor_name, strlen(sensor_table[i].sensor_name)) == 0) {
             memcpy(sensor_info, &sensor_table[i], sizeof(IPRT_SENSOR_INFO_S));
 
+            _gvrt_tag_override_sensor(sensor_info, tag_info);
+
 #ifdef __SCALER_ENABLE__
             if (sensor_info->main_width == sensor_info->sensor_width) {
                 __scale_up_100w(&sensor_info->main_width, &sensor_info->main_height);
             }
 #endif
-            IPC_VIDEO_PRINT("match sensor [%s], resolution [%d x %d]\n", sensor_info->sensor_name,
-                           sensor_info->main_width, sensor_info->main_height);
+            IPC_VIDEO_PRINT("match sensor [%s], resolution [%d x %d]\n",
+                            sensor_info->sensor_name,
+                            sensor_info->main_width,
+                            sensor_info->main_height);
             return IPC_SUCCESS;
         }
     }
@@ -350,7 +359,7 @@ static int get_valid_value(int id, int value, struct rts_isp_control* ctrl)
 static int __gvrt_isp_set_attr(uint32_t id, int value)
 {
     struct rts_isp_control ctrl;
-    int ret;
+    int                    ret;
 
     ret = rts_av_get_isp_ctrl(id, &ctrl);
     if (ret) {
@@ -360,7 +369,13 @@ static int __gvrt_isp_set_attr(uint32_t id, int value)
     value = get_valid_value(id, value, &ctrl);
 
     IPC_VIDEO_PRINT("before settting [%s] min = %d, max = %d, step = %d, default = %d, cur = %d, to set vaule = %d\n",
-                   ctrl.name, ctrl.minimum, ctrl.maximum, ctrl.step, ctrl.default_value, ctrl.current_value, value);
+                    ctrl.name,
+                    ctrl.minimum,
+                    ctrl.maximum,
+                    ctrl.step,
+                    ctrl.default_value,
+                    ctrl.current_value,
+                    value);
 
     ctrl.current_value = value;
     ret                = rts_av_set_isp_ctrl(id, &ctrl);
@@ -387,7 +402,7 @@ static int __gvrt_isp_set_attr(uint32_t id, int value)
 static int __gvrt_isp_get_attr(uint32_t id)
 {
     struct rts_isp_control ctrl;
-    int ret;
+    int                    ret;
 
     ret = rts_av_get_isp_ctrl(id, &ctrl);
     if (ret) {
@@ -395,8 +410,13 @@ static int __gvrt_isp_get_attr(uint32_t id)
         return ret;
     }
     // IPC_VIDEO_PRINT("after setting : id:%d val:%d\n", id, ctrl.current_value);
-    IPC_VIDEO_PRINT("%s min = %d, max = %d, step = %d, default = %d, cur = %d\n", ctrl.name, ctrl.minimum, ctrl.maximum,
-                   ctrl.step, ctrl.default_value, ctrl.current_value);
+    IPC_VIDEO_PRINT("%s min = %d, max = %d, step = %d, default = %d, cur = %d\n",
+                    ctrl.name,
+                    ctrl.minimum,
+                    ctrl.maximum,
+                    ctrl.step,
+                    ctrl.default_value,
+                    ctrl.current_value);
 
     return ctrl.current_value;
 }
@@ -418,11 +438,11 @@ static void print_awb_ctrl(struct rts_isp_awb_ctrl* awb, struct ipc_plat_isp_exp
 {
 
     uint16_t* pdata;
-    int i;
-    int rsum = 0;
-    int gsum = 0;
-    int bsum = 0;
-    int ret  = 0;
+    int       i;
+    int       rsum = 0;
+    int       gsum = 0;
+    int       bsum = 0;
+    int       ret  = 0;
 
     pdata = awb->statis.r_means;
     for (i = 0; i < awb->window_num; i++) {
@@ -463,7 +483,7 @@ static void print_awb_ctrl(struct rts_isp_awb_ctrl* awb, struct ipc_plat_isp_exp
 
 static s32 _gvrt_set_sensor_fps(s32 chn, u8 fps)
 {
-    s32 ret;
+    s32                    ret;
     P_IPRT_VIDEO_CONTEXT_S p_video_context = &_gvrt_video_attr.video_context[chn];
 
 #if 1
@@ -533,7 +553,7 @@ static s32 _gvrt_set_sensor_fps(s32 chn, u8 fps)
 #endif
 
 #if 1
-    u8 tmpfps;
+    u8                    tmpfps;
     struct rts_av_profile profile;
 
     if (p_video_context->isp_ch < 0) {
@@ -574,9 +594,9 @@ static s32 _gvrt_set_sensor_fps(s32 chn, u8 fps)
 
 static s32 ___gvrt_register_sensor(uint32_t isp_id, P_IPRT_SENSOR_INFO_S sensor_info)
 {
-    s32 i;
-    s32 ret;
-    s32 id = -RTS_ISP_EINVAL;
+    s32    i;
+    s32    ret;
+    s32    id      = -RTS_ISP_EINVAL;
     glob_t globbuf = { 0 };
 
     // IPC_VIDEO_PRINT("=== ___gvrt_register_sensor ===\n");
@@ -619,7 +639,7 @@ static s32 ___gvrt_register_sensor(uint32_t isp_id, P_IPRT_SENSOR_INFO_S sensor_
 
 static s32 ___gvrt_register_algo(enum rts_isp_algo_id id, char* path)
 {
-    s32 ret;
+    s32                 ret;
     struct rts_isp_algo algo;
 
     if (!path)
@@ -654,7 +674,7 @@ static int __gvrt_register_sensor_iq(P_IPRT_SENSOR_INFO_S sensor_info)
 {
     s32 ret = RTS_ISP_OK;
     s32 sensor_id;
-    v8 iq_bin_path[128] = { 0 };
+    v8  iq_bin_path[128] = { 0 };
 
     // IPC_VIDEO_PRINT("=== __gvrt_register_sensor_iq ===\n");
 
@@ -751,7 +771,7 @@ static s32 _gvrt_isp_init(P_IPRT_SENSOR_INFO_S sensor_info)
         goto isp_init_err;
     }
 
-    pthread_t tid;
+    pthread_t      tid;
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     pthread_attr_setstacksize(&attr, 128 * 1024);
@@ -783,8 +803,8 @@ static void _gvrt_isp_uninit(void)
     rts_av_isp_cleanup();
 }
 
-static s32 _g_frame_cnt[4];
-static s32 _g_frame_size[4];
+static s32   _g_frame_cnt[4];
+static s32   _g_frame_size[4];
 static void* ___gvrt_thread_frame_rate(void* arg)
 {
     time_t cur_time_ts  = 0;
@@ -794,12 +814,18 @@ static void* ___gvrt_thread_frame_rate(void* arg)
         cur_time_ts = time(NULL);
 
         if (cur_time_ts - last_time_ts >= 5) {
-            IPC_VIDEO_PRINT("chn[%d], fps[%d], size[%dkB/s]\n", IPC_VIDEO_CHN_MAIN, _g_frame_cnt[IPC_VIDEO_CHN_MAIN] / 5,
-                           ((_g_frame_size[IPC_VIDEO_CHN_MAIN]) / 1024) / 5);
-            IPC_VIDEO_PRINT("chn[%d], fps[%d], size[%dkB/s]\n", IPC_VIDEO_CHN_SUB, _g_frame_cnt[IPC_VIDEO_CHN_SUB] / 5,
-                           ((_g_frame_size[IPC_VIDEO_CHN_SUB]) / 1024) / 5);
-            IPC_VIDEO_PRINT("chn[%d], fps[%d], size[%dkB/s]\n\n", IPC_VIDEO_CHN_YUV, _g_frame_cnt[IPC_VIDEO_CHN_YUV] / 5,
-                           ((_g_frame_size[IPC_VIDEO_CHN_YUV]) / 1024) / 5);
+            IPC_VIDEO_PRINT("chn[%d], fps[%d], size[%dkB/s]\n",
+                            IPC_VIDEO_CHN_MAIN,
+                            _g_frame_cnt[IPC_VIDEO_CHN_MAIN] / 5,
+                            ((_g_frame_size[IPC_VIDEO_CHN_MAIN]) / 1024) / 5);
+            IPC_VIDEO_PRINT("chn[%d], fps[%d], size[%dkB/s]\n",
+                            IPC_VIDEO_CHN_SUB,
+                            _g_frame_cnt[IPC_VIDEO_CHN_SUB] / 5,
+                            ((_g_frame_size[IPC_VIDEO_CHN_SUB]) / 1024) / 5);
+            IPC_VIDEO_PRINT("chn[%d], fps[%d], size[%dkB/s]\n\n",
+                            IPC_VIDEO_CHN_YUV,
+                            _g_frame_cnt[IPC_VIDEO_CHN_YUV] / 5,
+                            ((_g_frame_size[IPC_VIDEO_CHN_YUV]) / 1024) / 5);
 
             last_time_ts = cur_time_ts;
             memset(_g_frame_cnt, 0, sizeof(_g_frame_cnt));
@@ -814,7 +840,7 @@ static void* ___gvrt_thread_frame_rate(void* arg)
 
 static void _gvrt_frame_rate_statistics(void)
 {
-    pthread_t tid;
+    pthread_t      tid;
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     pthread_attr_setstacksize(&attr, 128 * 1024);
@@ -825,10 +851,10 @@ static void _gvrt_frame_rate_statistics(void)
 
 static s32 _gvrt_init_sys_vmem(int vin_mode_0, int vin_mode_1)
 {
-    s32 ret                     = 0;
-    struct rts_sys_vmem_cfg cfg = { 0 };
-    s32 share                   = 0;
-    s32 status                  = 0;
+    s32                     ret    = 0;
+    struct rts_sys_vmem_cfg cfg    = { 0 };
+    s32                     share  = 0;
+    s32                     status = 0;
 
     status = rts_av_sys_vmem_status();
 
@@ -903,7 +929,6 @@ static s32 _gvrt_init_sys_vmem(int vin_mode_0, int vin_mode_1)
         }
     }
 
-
     /* 4-channel */
     {
         cfg.stream[3].enable = 1;
@@ -965,7 +990,7 @@ static s32 __gvrt_check_isp_attr_cfg(struct rts_vin_attr* p_isp_attr)
 
 static s32 __gvrt_create_mjpeg_encoder(P_IPRT_VIDEO_CONTEXT_S p_video_context, s32 chn)
 {
-    s32 ret                         = 0;
+    s32                    ret      = 0;
     struct rts_jpgenc_attr jpg_attr = { 0 };
 
     jpg_attr.stream_mode      = RTS_AV_JPG_TRIGGER;
@@ -992,9 +1017,9 @@ mjpeg_encoder_err:
 
 static s32 __gvrt_create_h264_encoder(P_IPRT_VIDEO_CONTEXT_S p_video_context, s32 chn)
 {
-    s32 ret                        = 0;
-    struct rts_h264_attr h264_attr = { 0 };
-    struct rts_h264_ctrl* h264_ctl = NULL;
+    s32                   ret       = 0;
+    struct rts_h264_attr  h264_attr = { 0 };
+    struct rts_h264_ctrl* h264_ctl  = NULL;
 
     h264_attr.level    = p_video_context->video_encoder[IPRT_ENCODER_TYPE_H264].level;
     h264_attr.rotation = p_video_context->video_encoder[IPRT_ENCODER_TYPE_H264].rotation;
@@ -1051,22 +1076,29 @@ h264_encoder_err:
 
 static s32 __gvrt_create_h265_encoder(P_IPRT_VIDEO_CONTEXT_S p_video_context, s32 chn)
 {
-    s32 ret                        = 0;
-    struct rts_h265_attr h265_attr = { 0 };
-    struct rts_h265_ctrl* h265_ctl = NULL;
+    s32                   ret       = 0;
+    struct rts_h265_attr  h265_attr = { 0 };
+    struct rts_h265_ctrl* h265_ctl  = NULL;
 
     h265_attr.level    = p_video_context->video_encoder[IPRT_ENCODER_TYPE_H265].level;
     h265_attr.tier     = p_video_context->video_encoder[IPRT_ENCODER_TYPE_H265].tier;
     h265_attr.rotation = p_video_context->video_encoder[IPRT_ENCODER_TYPE_H265].rotation;
     h265_attr.mirror   = p_video_context->video_encoder[IPRT_ENCODER_TYPE_H265].mirror;
 
-    printf("[%s] === h265 attr level: %d, tier: %d, rotation: %d, mirror: %d ===\n", __func__, h265_attr.level,
-           h265_attr.tier, h265_attr.rotation, h265_attr.mirror);
+    printf("[%s] === h265 attr level: %d, tier: %d, rotation: %d, mirror: %d ===\n",
+           __func__,
+           h265_attr.level,
+           h265_attr.tier,
+           h265_attr.rotation,
+           h265_attr.mirror);
 
     p_video_context->video_encoder[IPRT_ENCODER_TYPE_H265].h265_ch = rts_av_create_h265_chn(&h265_attr);
     if (p_video_context->video_encoder[IPRT_ENCODER_TYPE_H265].h265_ch < 0) {
-        printf("[%s:%d] creat h265 channel error, ret:%d, chn: %d\n", __func__, __LINE__,
-               p_video_context->video_encoder[IPRT_ENCODER_TYPE_H265].h265_ch, chn);
+        printf("[%s:%d] creat h265 channel error, ret:%d, chn: %d\n",
+               __func__,
+               __LINE__,
+               p_video_context->video_encoder[IPRT_ENCODER_TYPE_H265].h265_ch,
+               chn);
         ret = IPC_FAILED;
         goto h265_encoder_err;
     }
@@ -1131,7 +1163,7 @@ static s32 _gvrt_create_stream(s32 chn, s32 encode_type)
     int ret = 0;
 
     struct rts_video_rect crop        = { 0 };
-    struct rts_vin_attr isp_attr      = { 0 };
+    struct rts_vin_attr   isp_attr    = { 0 };
     struct rts_av_profile isp_profile = { 0 };
 
     P_IPRT_VIDEO_CONTEXT_S p_video_context = &_gvrt_video_attr.video_context[chn];
@@ -1190,7 +1222,7 @@ static s32 _gvrt_create_stream(s32 chn, s32 encode_type)
 
     if (chn == IPRT_VIDEO_CHN_SUB) {
         struct rts_av_callback cb;
-    
+
         cb.func     = save_yuv;
         cb.start    = 0;
         cb.times    = -1;
@@ -1203,7 +1235,6 @@ static s32 _gvrt_create_stream(s32 chn, s32 encode_type)
             return IPC_FAILED;
         }
     }
-
 
     ret = rts_av_enable_chn(p_video_context->isp_ch);
     if (ret) {
@@ -1223,8 +1254,12 @@ static s32 _gvrt_create_stream(s32 chn, s32 encode_type)
         return IPC_FAILED;
     }
 
-    printf("[%d]isp crop:start_x = %d,start_y = %d,end_x = %d,end_y = %d\n", p_video_context->isp_ch, crop.start.x,
-           crop.start.y, crop.end.x, crop.end.y);
+    printf("[%d]isp crop:start_x = %d,start_y = %d,end_x = %d,end_y = %d\n",
+           p_video_context->isp_ch,
+           crop.start.x,
+           crop.start.y,
+           crop.end.x,
+           crop.end.y);
 
     return IPC_SUCCESS;
 
@@ -1258,14 +1293,14 @@ static s32 _gvrt_stream_uninit(s32 chn)
     P_IPRT_VIDEO_CONTEXT_S p_video_context = &_gvrt_video_attr.video_context[chn];
 
     IPC_VIDEO_PRINT("====== destory h264 chn[%d] ======\n",
-                   p_video_context->video_encoder[IPRT_ENCODER_TYPE_H264].h264_ch);
+                    p_video_context->video_encoder[IPRT_ENCODER_TYPE_H264].h264_ch);
     if (p_video_context->video_encoder[IPRT_ENCODER_TYPE_H264].h264_ch >= 0) {
         rts_av_destroy_chn(p_video_context->video_encoder[IPRT_ENCODER_TYPE_H264].h264_ch);
         p_video_context->video_encoder[IPRT_ENCODER_TYPE_H264].h264_ch = -1;
     }
 
     IPC_VIDEO_PRINT("====== destory h265 chn[%d] ======\n",
-                   p_video_context->video_encoder[IPRT_ENCODER_TYPE_H265].h265_ch);
+                    p_video_context->video_encoder[IPRT_ENCODER_TYPE_H265].h265_ch);
     if (p_video_context->video_encoder[IPRT_ENCODER_TYPE_H265].h265_ch >= 0) {
         rts_av_destroy_chn(p_video_context->video_encoder[IPRT_ENCODER_TYPE_H265].h265_ch);
         p_video_context->video_encoder[IPRT_ENCODER_TYPE_H265].h265_ch = -1;
@@ -1288,7 +1323,7 @@ static s32 _gvrt_stream_uninit(s32 chn)
 
 static s32 _gvrt_start_stream(s32 chn)
 {
-    s32 ret                                = 0;
+    s32                    ret             = 0;
     P_IPRT_VIDEO_CONTEXT_S p_video_context = NULL;
 
     if (IPRT_VIDEO_CHN_JPEG == chn) {
@@ -1305,7 +1340,6 @@ static s32 _gvrt_start_stream(s32 chn)
     }
 
     p_video_context = &_gvrt_video_attr.video_context[chn];
-
 
     if (p_video_context->encode_type & IPC_VIDEO_ENC_TYPE_H264) {
         rts_av_start_recv(p_video_context->video_encoder[IPRT_ENCODER_TYPE_H264].h264_ch);
@@ -1378,7 +1412,7 @@ static int _enc_qos_adjust(int channel, struct ipc_bitrate_adjust arg)
 
 static int _isp_mirror_filp(IPC_ISP_MIRRORFLIP_TYPE type)
 {
-    // coverity[UNUSED_VALUE :SUPPRESS] 
+    // coverity[UNUSED_VALUE :SUPPRESS]
     int ret = -1;
 
     // extern int ipc_sensor_flip_and_mirror(char* name, IPC_ISP_MIRRORFLIP_TYPE type);
@@ -1519,16 +1553,16 @@ static s32 _gvrt_zoom_in_out_chn(s32 isp_ch, struct rts_video_rect new_crop)
         IPC_VIDEO_PRINT("Error, zoom fail \n");
         return ret;
     }
-    IPC_VIDEO_PRINT("zoom %d crop[%d %d %d %d] \n", isp_ch, new_crop.left, new_crop.top, new_crop.right,
-                   new_crop.bottom);
+    IPC_VIDEO_PRINT(
+        "zoom %d crop[%d %d %d %d] \n", isp_ch, new_crop.left, new_crop.top, new_crop.right, new_crop.bottom);
     return ret;
 }
 
 static s32 __zoom_multiplier_check(double multiplier, double* min_mult, double* max_mult)
 {
     struct res_multiplier_limit {
-        s32 width;
-        s32 height;
+        s32    width;
+        s32    height;
         double min_multiplier;
         double max_multiplier;
     };
@@ -1554,7 +1588,7 @@ static s32 __zoom_multiplier_check(double multiplier, double* min_mult, double* 
         { 0, 0, 1.0, 2.5 },       /* Default, placed last */
     };
 
-    s32 idx                                   = 0;
+    s32                    idx                = 0;
     P_IPRT_VIDEO_CONTEXT_S main_video_context = &_gvrt_video_attr.video_context[IPRT_VIDEO_CHN_MAIN];
     s32 limit_map_size = (main_video_context->width != _gvrt_video_attr.sensor_width) ? RTS_ARRAY_SIZE(scal_limit_map)
                                                                                       : RTS_ARRAY_SIZE(nor_limit_map);
@@ -1582,7 +1616,9 @@ static s32 __zoom_multiplier_check(double multiplier, double* min_mult, double* 
     /* Floating-point numbers cannot be compared directly; compare after rounding to one decimal place */
     if ((((int)(multiplier * 10)) < ((int)(limit_map[idx].min_multiplier * 10)))
         || (((int)(multiplier * 10)) > ((int)(limit_map[idx].max_multiplier * 10)))) {
-        printf("Error, multiplier: %f, min: %f, max: %f\n", multiplier, limit_map[idx].min_multiplier,
+        printf("Error, multiplier: %f, min: %f, max: %f\n",
+               multiplier,
+               limit_map[idx].min_multiplier,
                limit_map[idx].max_multiplier);
         return IPC_FAILED;
     }
@@ -1592,11 +1628,11 @@ static s32 __zoom_multiplier_check(double multiplier, double* min_mult, double* 
 
 static s32 _gvrt_get_isp_crop(struct ipc_plat_video_isp_crop* isp_crop)
 {
-    // coverity[UNUSED_VALUE :SUPPRESS] 
-    s32 ret           = -1;
-    static s32 scal_w = 0;
-    static s32 scal_h = 0;
-    struct rts_video_rect rt_crop;
+    // coverity[UNUSED_VALUE :SUPPRESS]
+    s32                    ret    = -1;
+    static s32             scal_w = 0;
+    static s32             scal_h = 0;
+    struct rts_video_rect  rt_crop;
     P_IPRT_VIDEO_CONTEXT_S main_video_context = &_gvrt_video_attr.video_context[IPRT_VIDEO_CHN_MAIN];
 
     if (scal_w == 0 && scal_h == 0) {
@@ -1719,7 +1755,7 @@ void _gvrt_video_encode_param_init(void)
 
     P_IPRT_VIDEO_CONTEXT_S main_video_context = &_gvrt_video_attr.video_context[IPRT_VIDEO_CHN_MAIN];
     P_IPRT_VIDEO_CONTEXT_S sub_video_context  = &_gvrt_video_attr.video_context[IPRT_VIDEO_CHN_SUB];
-    s32 target_pixel                          = 0;
+    s32                    target_pixel       = 0;
 
     /* main channel */
     target_pixel = main_video_context->width * main_video_context->height;
@@ -1966,7 +2002,7 @@ static int _g_main_fd = -1;
 #endif
 s32 ipc_plat_sys_init(IPC_PRODUCT_TYPE type)
 {
-    s32 ret                        = 0;
+    s32                ret         = 0;
     IPRT_SENSOR_INFO_S sensor_info = { 0 };
 
     ret = _gvrt_isp_init(&sensor_info);
@@ -2026,7 +2062,6 @@ s32 ipc_plat_sys_init(IPC_PRODUCT_TYPE type)
         sub_video_context->isp_mode         = RTS_AV_VIN_FRAME_MODE; // 0;
     }
 
-
     _gvrt_video_encode_param_init();
 
     _gvrt_init_sys_vmem(main_video_context->isp_mode, sub_video_context->isp_mode);
@@ -2083,7 +2118,7 @@ s32 ipc_plat_sys_uninit(void)
 
     ipc_sleep(3);
     ipc_exec("lsof");
-    
+
     ipc_exec("rmmod rts_camera_jpgenc");
     ipc_exec("rmmod vpu_w521mp");
     ipc_exec("rmmod rts_cam_isp");
@@ -2120,7 +2155,6 @@ s32 ipc_plat_video_init(s32 arg)
     if (ret != IPC_SUCCESS) {
         return IPC_FAILED;
     }
-
 
     // return IPC_SUCCESS;
 
@@ -2219,7 +2253,7 @@ s32 ipc_plat_video_recv_frame(s32 channel, ipc_plat_recv_frame_cb_f cb, vptr __u
     // int ret = 0;
 
     P_IPRT_VIDEO_CONTEXT_S p_video_context = &_gvrt_video_attr.video_context[channel];
-    struct rts_av_buffer* buffer           = NULL;
+    struct rts_av_buffer*  buffer          = NULL;
 
     switch (channel) {
         case IPC_VIDEO_CHN_MAIN:
@@ -2241,11 +2275,11 @@ s32 ipc_plat_video_recv_frame(s32 channel, ipc_plat_recv_frame_cb_f cb, vptr __u
             }
 
             struct ipc_frame_data_s frame = { 0 };
-            frame.is_key                 = 0;
-            frame.pack_num               = 1;
-            frame.timestamp              = 0;
-            frame.pack[0].data           = _g_yuv_buffer;
-            frame.pack[0].data_len       = 640 * 360 * 3 / 2;
+            frame.is_key                  = 0;
+            frame.pack_num                = 1;
+            frame.timestamp               = 0;
+            frame.pack[0].data            = _g_yuv_buffer;
+            frame.pack[0].data_len        = 640 * 360 * 3 / 2;
 
             _g_in_process_yuv = 1;
 
@@ -2271,12 +2305,12 @@ s32 ipc_plat_video_recv_frame(s32 channel, ipc_plat_recv_frame_cb_f cb, vptr __u
     }
 
     if ((IPC_VIDEO_CHN_MAIN == channel) && (buffer->flags & RTSTREAM_PKT_FLAG_KEY)) {
-        IPC_VIDEO_PRINT("[%ld]main channel I Frame size: %d, frame_idx: %d\n", time(NULL), buffer->bytesused,
-                       buffer->frame_idx);
+        IPC_VIDEO_PRINT(
+            "[%ld]main channel I Frame size: %d, frame_idx: %d\n", time(NULL), buffer->bytesused, buffer->frame_idx);
         // hex_dump(buffer->vm_addr, 300, "IFrame");
     } else if ((IPC_VIDEO_CHN_SUB == channel) && (buffer->flags & RTSTREAM_PKT_FLAG_KEY)) {
-        IPC_VIDEO_PRINT("[%ld]sub channel I Frame size: %d, frame_idx: %d\n", time(NULL), buffer->bytesused,
-                       buffer->frame_idx);
+        IPC_VIDEO_PRINT(
+            "[%ld]sub channel I Frame size: %d, frame_idx: %d\n", time(NULL), buffer->bytesused, buffer->frame_idx);
         // hex_dump(buffer->vm_addr, 300, "IFrame");
     }
 
@@ -2284,11 +2318,11 @@ s32 ipc_plat_video_recv_frame(s32 channel, ipc_plat_recv_frame_cb_f cb, vptr __u
     _g_frame_size[channel] += buffer->bytesused;
 
     struct ipc_frame_data_s frame = { 0 };
-    frame.is_key                 = (buffer->flags & RTSTREAM_PKT_FLAG_KEY) ? 1 : 0;
-    frame.pack_num               = 1;
-    frame.timestamp              = buffer->timestamp / 1000;
-    frame.pack[0].data           = buffer->vm_addr;
-    frame.pack[0].data_len       = buffer->bytesused;
+    frame.is_key                  = (buffer->flags & RTSTREAM_PKT_FLAG_KEY) ? 1 : 0;
+    frame.pack_num                = 1;
+    frame.timestamp               = buffer->timestamp / 1000;
+    frame.pack[0].data            = buffer->vm_addr;
+    frame.pack[0].data_len        = buffer->bytesused;
 
     cb(&frame, __user);
 
@@ -2388,11 +2422,11 @@ s32 ipc_plat_video_isp_image_mode_set(IPC_VIDEO_MODE mode, vptr arg)
     }
     last_mode = mode;
 
-    s32 value                                 = 0;
+    s32                    value              = 0;
     P_IPRT_VIDEO_CONTEXT_S main_video_context = &_gvrt_video_attr.video_context[IPRT_VIDEO_CHN_MAIN];
     P_IPRT_VIDEO_CONTEXT_S sub_video_context  = &_gvrt_video_attr.video_context[IPRT_VIDEO_CHN_SUB];
-    u8 main_fps                               = main_video_context->framerate;
-    u8 sub_fps                                = sub_video_context->framerate;
+    u8                     main_fps           = main_video_context->framerate;
+    u8                     sub_fps            = sub_video_context->framerate;
 
     switch (mode) {
         case IPC_VIDEO_MODE_DAY:
@@ -2424,7 +2458,6 @@ s32 ipc_plat_video_isp_image_mode_set(IPC_VIDEO_MODE mode, vptr arg)
 
     _gvrt_set_sensor_fps(IPRT_VIDEO_CHN_MAIN, main_fps);
     _gvrt_set_sensor_fps(IPRT_VIDEO_CHN_SUB, sub_fps);
-
 
     pthread_mutex_unlock(&_gvrt_video_ctrl_mutex);
 
@@ -2492,7 +2525,7 @@ s32 ipc_plat_video_osd_set(s32 channel, s32 rgn_num, s32 is_show, void* data, s3
     // IPC_VIDEO_PRINT("channel: %d, rgn_num: %d, is_show: %d, data_len: %d\n",
     //     channel, rgn_num, is_show, data_len);
 
-    s32 ret                                = 0;
+    s32                    ret             = 0;
     P_IPRT_VIDEO_CONTEXT_S p_video_context = &_gvrt_video_attr.video_context[channel];
 
     if (NULL == p_video_context->osd_attr) {
@@ -2512,8 +2545,8 @@ s32 ipc_plat_video_osd_set(s32 channel, s32 rgn_num, s32 is_show, void* data, s3
     } else {
         ret = rts_av_pause_osdi_single(p_video_context->osd_attr, rgn_num);
         if (ret) {
-            IPC_VIDEO_PRINT("Error, pause osdi single faile, isp_chn: %d, osd_chn: %d, ret: %d\n", channel, rgn_num,
-                           ret);
+            IPC_VIDEO_PRINT(
+                "Error, pause osdi single faile, isp_chn: %d, osd_chn: %d, ret: %d\n", channel, rgn_num, ret);
             return IPC_FAILED;
         }
     }

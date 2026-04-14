@@ -1,5 +1,5 @@
 // Create platform static library target
-const platform = createTarget('ipc_platform','../../../cam/ipc_core/');
+const platform = createTarget('ipc_platform','../../../cam/ipc_core/', '../../../cam/ipc_middleware/');
 
 // Add source files
 platform.addFiles('*/src/*.c');
