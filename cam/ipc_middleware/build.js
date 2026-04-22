@@ -38,6 +38,8 @@ ipc.addFiles2Hex('script/*');
 // Generate configuration file before build
 generateConfigHeader();
 
+ipc.addInstallFiles("bin", "apns/ipc_apns.bin")
+
 // Build IPC library
 if (ipc.build()) {
     console.log('ipc_middleware build successful');
