@@ -188,158 +188,179 @@ static void __scale_up_100w(ps32 w, ps32 h)
 }
 #endif
 
-static void _gvrt_tag_override_sensor(P_IPRT_SENSOR_INFO_S sensor_info, ipc_decrypt_tag_info_p tag_info)
+static s32 _gvrt_extract_sensor_name(const char *sensor_dir, char *sensor_so, s32 sensor_so_len)
 {
-    if (tag_info == NULL || tag_info->len == 0)
-        return;
+    s32 ret = 0;
+    s32 len = strlen(sensor_dir);
 
-    const char* tag = (const char*)tag_info->info;
-
-    if (strstr(tag, "sr=1,vr=2") && strstr((char*)sensor_info->sensor_name, "sc3336_mipi")) {
-        strncpy((char*)sensor_info->sensor_name, "sc1b5ak_mipi", sizeof(sensor_info->sensor_name) - 1);
-        sensor_info->sensor_width  = 1280;
-        sensor_info->sensor_height = 720;
-        sensor_info->main_width    = 1280;
-        sensor_info->main_height   = 720;
-    }
-}
-
-static s32 _gvrt_get_sensor_info(P_IPRT_SENSOR_INFO_S sensor_info, pv8 sensor_dir)
-{
-    s32 ret           = 0;
-    s32 len           = 0;
-    v8  sensor_so[64] = { 0 };
-    len               = strlen(sensor_dir);
-
-    /* Check the suffix (libsensor_xxx.so) */
-    if (strncmp(sensor_dir + (len - 3), ".so", 3)) {
-        IPC_VIDEO_PRINT("Error, sensor so [%s] suffix error\n", sensor_dir);
-        return IPC_FAILED;
-    }
+    if (len < 7 || strncmp(sensor_dir + (len - 3), ".so", 3))
+        return -1;
 
     for (s32 p = 0; p < len; p++) {
         if (sensor_dir[p] == '_') {
-            memcpy(sensor_so, sensor_dir + (p + 1), (len - 1) - p - 3);
+            s32 copy_len = (len - 1) - p - 3;
+            if (copy_len <= 0 || copy_len >= sensor_so_len)
+                return -1;
+            memcpy(sensor_so, sensor_dir + (p + 1), copy_len);
+            sensor_so[copy_len] = '\0';
             ret = 1;
             break;
         }
     }
 
-    /* format error (xxx_xxx.so) */
-    if (!ret) {
+    return ret ? 0 : -1;
+}
+
+static IPRT_SENSOR_INFO_S _g_sensor_table[] = {
+    { .sensor_name   = "jxk347p_mipi",
+      .sensor_width  = 2816,
+      .sensor_height = 1584,
+      .main_width    = 3840,
+      .main_height   = 2160,
+      .sub_width     = 640,
+      .sub_height    = 360 },
+    { .sensor_name   = "jxk306p_mipi",
+      .sensor_width  = 2560,
+      .sensor_height = 1440,
+      .main_width    = 2816,
+      .main_height   = 1584,
+      .sub_width     = 640,
+      .sub_height    = 360 },
+    { .sensor_name   = "jxq03p_mipi",
+      .sensor_width  = 2304,
+      .sensor_height = 1296,
+      .main_width    = 2304,
+      .main_height   = 1296,
+      .sub_width     = 640,
+      .sub_height    = 360 },
+    { .sensor_name   = "jxk06",
+      .sensor_width  = 2560,
+      .sensor_height = 1440,
+      .main_width    = 2560,
+      .main_height   = 1440,
+      .sub_width     = 640,
+      .sub_height    = 360 },
+    { .sensor_name   = "jxf38p_mipi",
+      .sensor_width  = 1920,
+      .sensor_height = 1080,
+      .main_width    = 1920,
+      .main_height   = 1080,
+      .sub_width     = 640,
+      .sub_height    = 360 },
+    { .sensor_name   = "sc3235",
+      .sensor_width  = 2304,
+      .sensor_height = 1296,
+      .main_width    = 2304,
+      .main_height   = 1296,
+      .sub_width     = 640,
+      .sub_height    = 360 },
+    { .sensor_name   = "sc401ai",
+      .sensor_width  = 2560,
+      .sensor_height = 1440,
+      .main_width    = 2560,
+      .main_height   = 1440,
+      .sub_width     = 640,
+      .sub_height    = 360 },
+    { .sensor_name   = "sc2336_mipi",
+      .sensor_width  = 1920,
+      .sensor_height = 1080,
+      .main_width    = 1920,
+      .main_height   = 1080,
+      .sub_width     = 640,
+      .sub_height    = 360 },
+    { .sensor_name   = "sc2336p_mipi",
+      .sensor_width  = 1920,
+      .sensor_height = 1080,
+      .main_width    = 1920,
+      .main_height   = 1080,
+      .sub_width     = 640,
+      .sub_height    = 360 },
+    { .sensor_name   = "sc3338_mipi",
+      .sensor_width  = 2304,
+      .sensor_height = 1296,
+      .main_width    = 2304,
+      .main_height   = 1296,
+      .sub_width     = 640,
+      .sub_height    = 360 },
+    { .sensor_name   = "sc5336",
+      .sensor_width  = 2816,
+      .sensor_height = 1584,
+      .main_width    = 2816,
+      .main_height   = 1584,
+      .sub_width     = 640,
+      .sub_height    = 360 },
+    { .sensor_name   = "sc3336_mipi",
+      .sensor_width  = 2304,
+      .sensor_height = 1296,
+      .main_width    = 2304,
+      .main_height   = 1296,
+      .sub_width     = 640,
+      .sub_height    = 360 },
+};
+
+static const s32 _g_sensor_table_count = sizeof(_g_sensor_table) / sizeof(_g_sensor_table[0]);
+
+static s32 _gvrt_find_sensor_in_table(const char *sensor_name)
+{
+    for (s32 i = 0; i < _g_sensor_table_count; i++) {
+        if (strncmp(sensor_name, _g_sensor_table[i].sensor_name,
+                    strlen(_g_sensor_table[i].sensor_name)) == 0)
+            return i;
+    }
+    return -1;
+}
+
+static void _gvrt_tag_override_sensor(void)
+{
+    ipc_decrypt_tag_info_p tag_info = ipc_decrypt_tag_info();
+
+    if (tag_info == NULL || tag_info->len == 0)
+        return;
+
+    const char *tag = (const char *)tag_info->info;
+
+    if (strstr(tag, "sr=1,vr=2")) {
+        s32 idx = _gvrt_find_sensor_in_table("sc3336_mipi");
+        if (idx >= 0) {
+            strncpy((char *)_g_sensor_table[idx].sensor_name,
+                    "sc1b5ak_mipi", sizeof(_g_sensor_table[idx].sensor_name) - 1);
+            _g_sensor_table[idx].sensor_width  = 1280;
+            _g_sensor_table[idx].sensor_height = 720;
+            _g_sensor_table[idx].main_width    = 1280;
+            _g_sensor_table[idx].main_height   = 720;
+        }
+    }
+}
+
+static s32 _gvrt_get_sensor_info(P_IPRT_SENSOR_INFO_S sensor_info, pv8 sensor_dir)
+{
+    v8  sensor_so[64] = { 0 };
+
+    if (_gvrt_extract_sensor_name((const char *)sensor_dir, (char *)sensor_so, sizeof(sensor_so)) < 0) {
         IPC_VIDEO_PRINT("Error, sensor so [%s] format error\n", sensor_dir);
         return IPC_FAILED;
     }
 
-    IPRT_SENSOR_INFO_S sensor_table[] = { { .sensor_name   = "jxk347p_mipi",
-                                            .sensor_width  = 2816,
-                                            .sensor_height = 1584,
-                                            .main_width    = 3840,
-                                            .main_height   = 2160,
-                                            .sub_width     = 640,
-                                            .sub_height    = 360 },
-                                          { .sensor_name   = "jxk306p_mipi",
-                                            .sensor_width  = 2560,
-                                            .sensor_height = 1440,
-                                            .main_width    = 2816,
-                                            .main_height   = 1584,
-                                            .sub_width     = 640,
-                                            .sub_height    = 360 },
-                                          { .sensor_name   = "jxq03p_mipi",
-                                            .sensor_width  = 2304,
-                                            .sensor_height = 1296,
-                                            .main_width    = 2304,
-                                            .main_height   = 1296,
-                                            .sub_width     = 640,
-                                            .sub_height    = 360 },
-                                          { .sensor_name   = "jxk06",
-                                            .sensor_width  = 2560,
-                                            .sensor_height = 1440,
-                                            .main_width    = 2560,
-                                            .main_height   = 1440,
-                                            .sub_width     = 640,
-                                            .sub_height    = 360 },
-                                          { .sensor_name   = "jxf38p_mipi",
-                                            .sensor_width  = 1920,
-                                            .sensor_height = 1080,
-                                            .main_width    = 1920,
-                                            .main_height   = 1080,
-                                            .sub_width     = 640,
-                                            .sub_height    = 360 },
-                                          { .sensor_name   = "sc3235",
-                                            .sensor_width  = 2304,
-                                            .sensor_height = 1296,
-                                            .main_width    = 2304,
-                                            .main_height   = 1296,
-                                            .sub_width     = 640,
-                                            .sub_height    = 360 },
-                                          { .sensor_name   = "sc401ai",
-                                            .sensor_width  = 2560,
-                                            .sensor_height = 1440,
-                                            .main_width    = 2560,
-                                            .main_height   = 1440,
-                                            .sub_width     = 640,
-                                            .sub_height    = 360 },
-                                          { .sensor_name   = "sc2336_mipi",
-                                            .sensor_width  = 1920,
-                                            .sensor_height = 1080,
-                                            .main_width    = 1920,
-                                            .main_height   = 1080,
-                                            .sub_width     = 640,
-                                            .sub_height    = 360 },
-                                          { .sensor_name   = "sc2336p_mipi",
-                                            .sensor_width  = 1920,
-                                            .sensor_height = 1080,
-                                            .main_width    = 1920,
-                                            .main_height   = 1080,
-                                            .sub_width     = 640,
-                                            .sub_height    = 360 },
-                                          { .sensor_name   = "sc3338_mipi",
-                                            .sensor_width  = 2304,
-                                            .sensor_height = 1296,
-                                            .main_width    = 2304,
-                                            .main_height   = 1296,
-                                            .sub_width     = 640,
-                                            .sub_height    = 360 },
-                                          { .sensor_name   = "sc5336",
-                                            .sensor_width  = 2816,
-                                            .sensor_height = 1584,
-                                            .main_width    = 2816,
-                                            .main_height   = 1584,
-                                            .sub_width     = 640,
-                                            .sub_height    = 360 },
-                                          { .sensor_name   = "sc3336_mipi",
-                                            .sensor_width  = 2304,
-                                            .sensor_height = 1296,
-                                            .main_width    = 2304,
-                                            .main_height   = 1296,
-                                            .sub_width     = 640,
-                                            .sub_height    = 360 } };
-
-    ipc_decrypt_tag_info_p tag_info = ipc_decrypt_tag_info();
-
-    // IPC_VIDEO_PRINT("=== sensor so [%s] ===\n", sensor_so);
-    for (s32 i = 0; i < sizeof(sensor_table) / sizeof(sensor_table[0]); i++) {
-        // IPC_VIDEO_PRINT("sensor so: %s, sensor_table: %s\n", sensor_so, sensor_table[i].sensor_name);
-        if (strncmp(sensor_so, sensor_table[i].sensor_name, strlen(sensor_table[i].sensor_name)) == 0) {
-            memcpy(sensor_info, &sensor_table[i], sizeof(IPRT_SENSOR_INFO_S));
-
-            _gvrt_tag_override_sensor(sensor_info, tag_info);
-
-#ifdef __SCALER_ENABLE__
-            if (sensor_info->main_width == sensor_info->sensor_width) {
-                __scale_up_100w(&sensor_info->main_width, &sensor_info->main_height);
-            }
-#endif
-            IPC_VIDEO_PRINT("match sensor [%s], resolution [%d x %d]\n",
-                            sensor_info->sensor_name,
-                            sensor_info->main_width,
-                            sensor_info->main_height);
-            return IPC_SUCCESS;
-        }
+    printf("=== sensor so [%s] ===\n", sensor_so);
+    s32 idx = _gvrt_find_sensor_in_table((const char *)sensor_so);
+    if (idx < 0) {
+        printf("sensor so: %s not found in table\n", sensor_so);
+        return IPC_FAILED;
     }
 
-    return IPC_FAILED;
+    printf("sensor so: %s, sensor_table: %s (matched)\n", sensor_so, _g_sensor_table[idx].sensor_name);
+    memcpy(sensor_info, &_g_sensor_table[idx], sizeof(IPRT_SENSOR_INFO_S));
+
+#ifdef __SCALER_ENABLE__
+    if (sensor_info->main_width == sensor_info->sensor_width) {
+        __scale_up_100w(&sensor_info->main_width, &sensor_info->main_height);
+    }
+#endif
+    IPC_VIDEO_PRINT("match sensor [%s], resolution [%d x %d]\n",
+                    sensor_info->sensor_name,
+                    sensor_info->main_width,
+                    sensor_info->main_height);
+    return IPC_SUCCESS;
 }
 
 static int get_valid_value(int id, int value, struct rts_isp_control* ctrl)
@@ -613,8 +634,13 @@ static s32 ___gvrt_register_sensor(uint32_t isp_id, P_IPRT_SENSOR_INFO_S sensor_
 
     for (i = 0; i < globbuf.gl_pathc; i++) {
         struct rts_isp_sensor sensor;
+        v8 sensor_so[64] = { 0 };
 
-        // IPC_VIDEO_PRINT("gl_pathv: %s\n", globbuf.gl_pathv[i]);
+        if (_gvrt_extract_sensor_name(globbuf.gl_pathv[i], (char *)sensor_so, sizeof(sensor_so)) < 0 ||
+            _gvrt_find_sensor_in_table((const char *)sensor_so) < 0)
+            continue;
+
+        // printf("gl_pathv: %s\n", globbuf.gl_pathv[i]);
         sensor.path = globbuf.gl_pathv[i];
         id          = rts_av_isp_register_sensor(&sensor);
         if (id < 0)
@@ -677,6 +703,8 @@ static int __gvrt_register_sensor_iq(P_IPRT_SENSOR_INFO_S sensor_info)
     v8  iq_bin_path[128] = { 0 };
 
     // IPC_VIDEO_PRINT("=== __gvrt_register_sensor_iq ===\n");
+
+    _gvrt_tag_override_sensor();
 
     sensor_id = ___gvrt_register_sensor(ISP0, sensor_info);
     if (sensor_id < 0) {
