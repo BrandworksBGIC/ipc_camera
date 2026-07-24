@@ -1,23 +1,19 @@
 #!/bin/bash
 
-# Check if virtual environment exists, create if not
-if [ ! -d "$HOME/.rts3917_build" ]; then
-    echo "Creating virtual environment..."
-    sudo apt install make autoconf libtool bzip2 g++ unzip  autopoint automake pkg-config automake pkg-config autoconf m4 bison flex device-tree-compiler python3-venv
-    python3 -m venv $HOME/.rts3917_build
-    echo "Virtual environment created at $HOME/.rts3917_build"
-else
-    echo "Virtual environment already exists at $HOME/.rts3917_build"
+ACCOUNT_HOME="$(getent passwd "$(id -un)" | cut -d: -f6)"
+VENV_DIR="$ACCOUNT_HOME/.rts3917_build"
+
+if [ ! -f "$VENV_DIR/bin/activate" ]; then
+    echo "Creating virtual environment at $VENV_DIR..."
+    python3 -m venv "$VENV_DIR" || return 1
 fi
 
-# Activate virtual environment
-source $HOME/.rts3917_build/bin/activate
+source "$VENV_DIR/bin/activate"
 
-# Install required packages
-pip install pycryptodome
-pip install requests
-pip install cryptography
+echo "Virtual environment: $VIRTUAL_ENV"
+echo "Python executable: $(command -v python3)"
 
+python3 -m pip install pycryptodome requests cryptography
 
 
 # Setup script for IPC Camera project
@@ -47,7 +43,7 @@ export IPC_CAM_ROOT="$PROJECT_DIR"
 export JMAKE_CFLAGS="-I$(pwd)/cam/include/"
 
 export HSM_SERVER_IP='127.0.0.1'
-export HSM_TOKEN='3bf1a8f69584ca8cf900eb2217813fa3eea1d3a56345ff60431cf78fc6e7b099'
+export HSM_TOKEN='dc2bb143a28832603da0f176aba237f94698d656f3c43525cff186b2de947166'
 
 echo "IPC Camera development environment configured"
 echo "Project root: $PROJECT_DIR"
