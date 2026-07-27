@@ -612,6 +612,7 @@ s32 ipc_middleware_main_process(pv8 ipc_version)
     iv_sdk_set_substream(1);
 
     iv_sdk_init();
+    iv_sdk_set_logLevel(IVLOG_LEVEL_ERROR);
     ipc_timer_start(ipc_global_timer_pool(), 40 * 1000, init_env_set_mode, NULL);
     while (g_exit == false)
     {

@@ -1357,10 +1357,28 @@ static s32 _gvrt_start_stream(s32 chn)
     if (IPRT_VIDEO_CHN_JPEG == chn) {
         // IPC_VIDEO_PRINT("### To get picture ###\n");
         p_video_context = &_gvrt_video_attr.video_context[_gvrt_video_attr.jpeg_res_chn];
-        rts_av_start_recv(p_video_context->mjpeg_ch);
         ret = rts_av_enable_chn(p_video_context->mjpeg_ch);
         if (ret) {
-            printf("[%s:%d] enable mjpeg ch error, chn:%d, ret:%d\n", __func__, __LINE__, chn, ret);
+            printf("[%s:%d] enable mjpeg ch error, chn:%d, rts_chn:%d, ret:%d(%s)\n",
+                   __func__,
+                   __LINE__,
+                   chn,
+                   p_video_context->mjpeg_ch,
+                   ret,
+                   rts_strerrno(ret));
+            return IPC_FAILED;
+        }
+
+        ret = rts_av_start_recv(p_video_context->mjpeg_ch);
+        if (ret) {
+            printf("[%s:%d] start recv mjpeg ch error, chn:%d, rts_chn:%d, ret:%d(%s)\n",
+                   __func__,
+                   __LINE__,
+                   chn,
+                   p_video_context->mjpeg_ch,
+                   ret,
+                   rts_strerrno(ret));
+            rts_av_disable_chn(p_video_context->mjpeg_ch);
             return IPC_FAILED;
         }
 
@@ -1370,19 +1388,55 @@ static s32 _gvrt_start_stream(s32 chn)
     p_video_context = &_gvrt_video_attr.video_context[chn];
 
     if (p_video_context->encode_type & IPC_VIDEO_ENC_TYPE_H264) {
-        rts_av_start_recv(p_video_context->video_encoder[IPRT_ENCODER_TYPE_H264].h264_ch);
         ret = rts_av_enable_chn(p_video_context->video_encoder[IPRT_ENCODER_TYPE_H264].h264_ch);
         if (ret) {
-            printf("[%s:%d] enable h264 ch error, chn:%d, ret:%d\n", __func__, __LINE__, chn, ret);
+            printf("[%s:%d] enable h264 ch error, chn:%d, rts_chn:%d, ret:%d(%s)\n",
+                   __func__,
+                   __LINE__,
+                   chn,
+                   p_video_context->video_encoder[IPRT_ENCODER_TYPE_H264].h264_ch,
+                   ret,
+                   rts_strerrno(ret));
+            return IPC_FAILED;
+        }
+
+        ret = rts_av_start_recv(p_video_context->video_encoder[IPRT_ENCODER_TYPE_H264].h264_ch);
+        if (ret) {
+            printf("[%s:%d] start recv h264 ch error, chn:%d, rts_chn:%d, ret:%d(%s)\n",
+                   __func__,
+                   __LINE__,
+                   chn,
+                   p_video_context->video_encoder[IPRT_ENCODER_TYPE_H264].h264_ch,
+                   ret,
+                   rts_strerrno(ret));
+            rts_av_disable_chn(p_video_context->video_encoder[IPRT_ENCODER_TYPE_H264].h264_ch);
             return IPC_FAILED;
         }
     }
 
     if (p_video_context->encode_type & IPC_VIDEO_ENC_TYPE_H265) {
-        rts_av_start_recv(p_video_context->video_encoder[IPRT_ENCODER_TYPE_H265].h265_ch);
         ret = rts_av_enable_chn(p_video_context->video_encoder[IPRT_ENCODER_TYPE_H265].h265_ch);
         if (ret) {
-            printf("[%s:%d] enable h265 ch error, chn:%d, ret:%d\n", __func__, __LINE__, chn, ret);
+            printf("[%s:%d] enable h265 ch error, chn:%d, rts_chn:%d, ret:%d(%s)\n",
+                   __func__,
+                   __LINE__,
+                   chn,
+                   p_video_context->video_encoder[IPRT_ENCODER_TYPE_H265].h265_ch,
+                   ret,
+                   rts_strerrno(ret));
+            return IPC_FAILED;
+        }
+
+        ret = rts_av_start_recv(p_video_context->video_encoder[IPRT_ENCODER_TYPE_H265].h265_ch);
+        if (ret) {
+            printf("[%s:%d] start recv h265 ch error, chn:%d, rts_chn:%d, ret:%d(%s)\n",
+                   __func__,
+                   __LINE__,
+                   chn,
+                   p_video_context->video_encoder[IPRT_ENCODER_TYPE_H265].h265_ch,
+                   ret,
+                   rts_strerrno(ret));
+            rts_av_disable_chn(p_video_context->video_encoder[IPRT_ENCODER_TYPE_H265].h265_ch);
             return IPC_FAILED;
         }
     }
@@ -2278,7 +2332,7 @@ static void hex_dump(char *buff, int len, char *frame_type)
 s32 ipc_plat_video_recv_frame(s32 channel, ipc_plat_recv_frame_cb_f cb, vptr __user, s32 ms)
 {
     s32 chn_num = 0;
-    // int ret = 0;
+    s32 ret     = 0;
 
     P_IPRT_VIDEO_CONTEXT_S p_video_context = &_gvrt_video_attr.video_context[channel];
     struct rts_av_buffer*  buffer          = NULL;
@@ -2327,8 +2381,10 @@ s32 ipc_plat_video_recv_frame(s32 channel, ipc_plat_recv_frame_cb_f cb, vptr __u
             break;
     }
 
-    if (rts_av_recv_block(chn_num, &buffer, ms)) {
-        IPC_VIDEO_PRINT("###### Error, rts_av_recv_block channel[%d] failed ##########\n", channel);
+    ret = rts_av_recv_block(chn_num, &buffer, ms);
+    if (ret) {
+        IPC_VIDEO_PRINT("###### Error, rts_av_recv_block channel[%d] rts_chn[%d] failed, ret:%d(%s) ##########\n",
+                        channel, chn_num, ret, rts_strerrno(ret));
         return -2;
     }
 

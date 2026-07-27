@@ -745,11 +745,12 @@ static f32 _get_pcm_db(s32 mplitude)
     return 20 * log10f(mplitude);
 }
 
-static f32 _get_sound_frame_max_db(f32 fix_80db, ps16 pcm, s32 data_len, ipc_log_p __IPC_LOG__)
+static f32 _get_sound_frame_max_db(f32 fix_80db, ps16 pcm, s32 data_bytes, ipc_log_p __IPC_LOG__)
 {
     s32 max_mplitude = 0;
+    s32 sample_count = data_bytes / (s32)sizeof(*pcm);
 
-    for (s32 i = 0; i < data_len; i++) {
+    for (s32 i = 0; i < sample_count; i++) {
         s32 mplitude = abs(pcm[i]);
         max_mplitude = max_mplitude > mplitude ? max_mplitude : mplitude;
     }

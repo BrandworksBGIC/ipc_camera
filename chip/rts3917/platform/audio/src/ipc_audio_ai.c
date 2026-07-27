@@ -151,7 +151,17 @@ s32 ipc_plat_audio_start_ai(void)
         goto exit;
     }
 
-    rts_av_start_recv(_g_ai_chn.recv_chn);
+    ret = rts_av_start_recv(_g_ai_chn.recv_chn);
+    if (RTS_IS_ERR(ret)) {
+        printf("Error, start audio recv failed, chn:%d, ret:%d(%s)\n",
+               _g_ai_chn.recv_chn,
+               ret,
+               rts_strerrno(ret));
+        if (_g_ai_chn.resample_chn >= 0)
+            rts_av_disable_chn(_g_ai_chn.resample_chn);
+        if (_g_ai_chn.capture_chn >= 0)
+            rts_av_disable_chn(_g_ai_chn.capture_chn);
+    }
 exit:
     return ret;
 }
@@ -177,10 +187,15 @@ s32 ipc_plat_audio_ai_recv_frame(ipc_plat_recv_frame_cb_f cb, vptr __user, s32 m
     int ret                             = 0;
     struct rts_av_buffer* buffer = NULL;
 
-    ret = rts_av_recv_block(_g_ai_chn.recv_chn, &buffer, 100);
-    if (ret /*RTS_IS_ERR(rts_av_recv_block(_g_ai_chn.recv_chn, &buffer, 100))*/) {
-        printf("[%s:%d]Error, rts_av_recv_block failed, chn: %d, ret:%d\n", __func__, __LINE__, _g_ai_chn.recv_chn,
-               ret);
+    ret = rts_av_recv_block(_g_ai_chn.recv_chn, &buffer, ms);
+    if (ret) {
+        printf("[%s:%d]Error, rts_av_recv_block failed, chn:%d, timeout_ms:%d, ret:%d(%s)\n",
+               __func__,
+               __LINE__,
+               _g_ai_chn.recv_chn,
+               ms,
+               ret,
+               rts_strerrno(ret));
         return -1;
     }
 
