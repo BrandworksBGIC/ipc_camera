@@ -49,7 +49,7 @@ console.log(`Building for chip: ${buildConfig.mainChip}, wifi: ${buildConfig.wif
 
 // Version and timestamp
 function generateVersion() {
-    const baseVersion = "01.00.002";
+    const baseVersion = "01.00.003";
     const now = new Date();
     const timestamp = now.getFullYear().toString() +
                       (now.getMonth() + 1).toString().padStart(2, '0') +
@@ -201,6 +201,10 @@ function buildFirmwarePackage() {
 
     // Create squashfs
     console.log("Creating squashfs image...");
+    if (!shell.run(`mkdir -p images`)) {
+        throw new Error("Failed to create images directory");
+    }
+
     if (!shell.run(`mksquashfs ${tempAppDir} images/app.bin -b 64K -comp xz -fstime 1640995200 -all-root -noappend`)) {
         throw new Error("Failed to create squashfs");
     }
