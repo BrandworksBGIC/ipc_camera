@@ -783,6 +783,12 @@ typedef struct {
     * @return    E_CAMERA_STATUS
     */
     E_CAMERA_STATUS (*MFG_GetCameraStatus_Callback)(void);
+
+    /*
+    * soft reboot
+    * @return          int  0: success, -1: failed
+    */
+    int (*MFG_SoftReboot_Callback)();
 #else
     /*
     * Notification mcu sleep

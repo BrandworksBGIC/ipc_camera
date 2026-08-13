@@ -256,6 +256,12 @@ extern "C" {
 	* Returns: The number of seconds of local time, of type uint64_t
 	*/
 	uint64_t iv_sdk_get_local_time(void);
+
+	/*
+    * @param[in]  char*        remote wakeup reason from mqtt client
+    * @return     int          0:success, -1:failed
+    */
+	int iv_sdk_set_remote_wakeup_reason(char *reason);
 #ifdef __cplusplus
 }
 #endif
