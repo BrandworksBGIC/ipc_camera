@@ -26,8 +26,10 @@ function parseArgs() {
     const args = config.get('cli.args') || [];
 
     const result = {
-        wifi: '8188fu',      // default wifi chip
-        mainChip: 'rts3917n' // default main chip
+        wifi: '8188fu',                         // default wifi chip
+        mainChip: 'rts3917n',                   // default main chip
+        // Enable with: jmake -mode debug -- --instaview-abort-diagnostics
+        instaviewAbortDiagnostics: false        // opt-in abort/assert diagnostics
     };
 
     for (let arg of args) {
@@ -37,6 +39,10 @@ function parseArgs() {
             result.mainChip = arg.split('=')[1];
         } else if (arg.startsWith('chip=')) {
             result.mainChip = arg.split('=')[1];
+        } else if (arg === '--instaview-abort-diagnostics'
+                   || arg === 'instaview_abort_diagnostics=1'
+                   || arg === 'instaview_abort_diagnostics=true') {
+            result.instaviewAbortDiagnostics = true;
         }
     }
 
@@ -68,6 +74,7 @@ const cloud = 'instaview'
 config.set('cloud', cloud);
 config.set('platform','rts3917');
 config.set('ipc_version', version);
+config.set('instaview_abort_diagnostics', buildConfig.instaviewAbortDiagnostics);
 
 
 // Create temporary directory path
@@ -199,6 +206,14 @@ function buildFirmwarePackage() {
         throw new Error("Failed to copy AI plugin");
     }
 
+    // Obfuscate ELF magic bytes before packaging. The SquashFS read path
+    // restores the standard 0x7fELF magic in memory at runtime.
+    console.log("Patching ELF magic bytes in app...");
+    const appPatchCount = elf.patch(`${tempAppDir}/**/*`, {
+        magic: "deadbeef"
+    });
+    console.log(`Patched ${appPatchCount} ELF files in app`);
+
     // Create squashfs
     console.log("Creating squashfs image...");
     if (!shell.run(`mkdir -p images`)) {
@@ -223,10 +238,33 @@ nor\t/dev/mtdblock6\t/conf\tjffs2\trw\tdefaults
 
     fs.writeFileSync("rootfs/rootfs_ipcrt/etc/fstab.user", fstabContent);
 
-    // Build rootfs
-    console.log("Building rootfs...");
-    if (!shell.run("./mkrootfs.sh")) {
-        throw new Error("Failed to build rootfs");
+    // Build from a temporary rootfs copy so source files keep their original
+    // ELF headers and only the packaged image is obfuscated.
+    const tmpRootfsDir = "/dev/shm/rootfs";
+
+    console.log("Preparing rootfs...");
+    if (!shell.run("rm -f images/rootfs.bin")) {
+        throw new Error("Failed to remove previous rootfs image");
+    }
+    if (!shell.run(`rm -rf ${tmpRootfsDir}`)) {
+        throw new Error("Failed to remove temporary rootfs directory");
+    }
+    if (!shell.run(`cp rootfs/rootfs_ipcrt ${tmpRootfsDir} -R -P`)) {
+        throw new Error("Failed to copy rootfs");
+    }
+    if (!shell.run(`touch -ht 202201010800.00 $(find ${tmpRootfsDir})`)) {
+        throw new Error("Failed to normalize rootfs timestamps");
+    }
+
+    console.log("Patching ELF magic bytes in rootfs...");
+    const rootfsPatchCount = elf.patch(`${tmpRootfsDir}/**/*`, {
+        magic: "deadbeef"
+    });
+    console.log(`Patched ${rootfsPatchCount} ELF files in rootfs`);
+
+    console.log("Creating rootfs squashfs image...");
+    if (!shell.run(`mksquashfs ${tmpRootfsDir} images/rootfs.bin -b 64K -comp xz -fstime 1640995200 -all-root`)) {
+        throw new Error("Failed to create rootfs squashfs");
     }
 
     // Encrypt squashfs
