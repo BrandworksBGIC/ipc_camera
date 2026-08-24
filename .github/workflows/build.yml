@@ -6,15 +6,16 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 jobs:
-  - name: Install build dependencies
-    run: sudo apt-get update && sudo apt-get install -y gettext autoconf automake libtool
   build:
     name: Analyze
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+          fetch-depth: 0
+
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install -y gettext autoconf automake libtool
 
       - name: Install build-wrapper
         uses: SonarSource/sonarqube-scan-action/install-build-wrapper@7006c4492b2e0ee0f816d36501671557c97f5995 # v8.1.0
@@ -23,21 +24,15 @@ jobs:
         run: |
           set -e
           source setup.sh
-
           cd third
           ./jmake_git_all.sh
           cd -
-
           cd tools
           ./prepare_jmake_dirs.sh
           cd -
-
           cd chip/rts3917/sdk/rts39xx_sdk_v5.3/
-          # Answers piped to the interactive menu: "3" for rts3917n_base_defconfig,
-          # then blank line to accept the default path prompt.
           printf '3\n\n' | ./launch.sh
           cd -
-
           cd chip/rts3917/sdk/rts39xx_sdk_v5.3/out/rts3917n_base/
           build-wrapper-linux-x86-64 --out-dir "${GITHUB_WORKSPACE}/bw-output" make secure_boot M=1
 
@@ -48,4 +43,5 @@ jobs:
         with:
           args: >
             -Dsonar.cfamily.build-wrapper-output=${{ github.workspace }}/bw-output
-            -Dsonar.sources=ipc_camera
+            -Dsonar.sources=.
+            -Dsonar.exclusions=third/**,chip/rts3917/sdk/**/out/**
