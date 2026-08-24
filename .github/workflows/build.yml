@@ -6,6 +6,8 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 jobs:
+  - name: Install build dependencies
+    run: sudo apt-get update && sudo apt-get install -y gettext autoconf automake libtool
   build:
     name: Analyze
     runs-on: ubuntu-latest
