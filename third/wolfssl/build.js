@@ -21,7 +21,7 @@ if (fs.existsSync(configFile)) {
 }
 
 // Build configuration command
-const configureArgs = `cd ${baseDir}; ./autogen.sh; ./configure --prefix=${installDir} --host=${config.get('compiler.host') || 'arm-linux-gnueabi'} --enable-shared=no --enable-static=yes --enable-md4 --enable-md5 --enable-cmac --enable-aes --enable-aeskeywrap `;
+const configureArgs = `cd ${baseDir}; ./autogen.sh; ./configure --prefix=${installDir} --host=${config.get('compiler.host') || 'arm-linux-gnueabi'} --enable-shared=no --enable-static=yes --enable-md4 --enable-md5 --enable-cmac --enable-aes --enable-aeskeywrap --disable-asm`;
 
 // If architecture changes, clean and reconfigure
 if (perArch !== curArch) {
