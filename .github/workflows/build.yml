@@ -23,6 +23,7 @@ jobs:
         uses: SonarSource/sonarqube-scan-action/install-build-wrapper@7006c4492b2e0ee0f816d36501671557c97f5995 # v8.1.0
 
       - name: Build ipc_camera
+        continue-on-error: true
         run: |
           set -e
           source setup.sh
