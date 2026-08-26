@@ -24,6 +24,9 @@ typedef enum {
     KEY_TYPE_NUM,        // Total count of key types (automatic counter)
 } KEY_TYPE;
 
+#define IPC_CONF_KEY_1_PATH_PREFIX "/conf/ipc/"
+#define NEW_LEN(buf_len, align) ((buf_len) - (buf_len) % (align))
+
 /* Global storage for encryption secrets */
 static struct {
     u8 key[32];         // 256-bit encryption key storage
@@ -215,31 +218,29 @@ static void try_create_root_key(void)
 }
 
 /* Data transformation handler */
-static void run_decrypt_encrypt_data(KEY_TYPE key_type, u8 reverse, vptr buff, s32 len)
+static s32 run_decrypt_encrypt_data(KEY_TYPE key_type, u8 reverse, vptr buff, s32 len)
 {
     // Function pointer for choosing encryption/decryption mode
     typedef int (*AES_CBC_x_buffer_t)(struct ipc_aes_ctx*, uint8_t*, int);
 
-    AES_CBC_x_buffer_t aes_x = ipc_aes_cbc_encrypt_buffer;
-    if (reverse) {
-        aes_x = ipc_aes_cbc_decrypt_buffer;
+    if ((u32)key_type >= KEY_TYPE_NUM || !buff || len < 0) {
+        return IPC_INVALID_ARGS;
     }
 
-    // Ensure data length matches encryption block requirements
-#define NEW_LEN(buf_len, align) (buf_len - buf_len % align)
+    AES_CBC_x_buffer_t aes_x = reverse ? ipc_aes_cbc_decrypt_buffer : ipc_aes_cbc_encrypt_buffer;
+    s32 aligned_len = NEW_LEN(len, 16);
+    if (aligned_len == 0) {
+        return IPC_SUCCESS;
+    }
 
     struct ipc_aes_ctx ctx;
 
-    // Initialize encryption engine with stored secrets
-    ipc_aes_init_ctx_iv(&ctx, _g_key[key_type].key, _g_key[key_type].iv);
-
-    // kernel max data size only support 180224
-    if (len > 180000) {
-        len = 180000;
+    // A single AF_ALG request on this platform must stay below 180224 bytes.
+    if (aligned_len > 180000) {
+        aligned_len = 180000;
     }
-
-    // Perform cryptographic operation
-    aes_x(&ctx, buff, NEW_LEN(len, 16));
+    ipc_aes_init_ctx_iv(&ctx, _g_key[key_type].key, _g_key[key_type].iv);
+    return aes_x(&ctx, buff, aligned_len) < 0 ? IPC_FAILED : IPC_SUCCESS;
 }
 
 /* Initialize key management system */
@@ -278,32 +279,27 @@ s32 key_manage_delete_conf_key_1(void)
 s32 key_manage_decrypt_with_conf_key_1(pv8 path, pv8 data, s32 len)
 {
     // Only process specific system paths
-    if (path && strncmp(path, "/conf/ipc/", 13)) {
+    if (!path
+        || strncmp(path, IPC_CONF_KEY_1_PATH_PREFIX, sizeof(IPC_CONF_KEY_1_PATH_PREFIX) - 1) != 0) {
         return 0;
     }
 
     // Perform decryption
-    run_decrypt_encrypt_data(KEY_TYPE_CONF_KEY_1, 1, data, len);
-
-    return 0;
+    return run_decrypt_encrypt_data(KEY_TYPE_CONF_KEY_1, 1, data, len);
 }
 
 /* Conditional data encryption */
 s32 key_manage_encrypt_with_conf_key_1(pv8 path, pv8 data, s32 len)
 {
     // Path validation check
-    if (path && strncmp(path, "/conf/ipc/", 13)) {
+    if (!path
+        || strncmp(path, IPC_CONF_KEY_1_PATH_PREFIX, sizeof(IPC_CONF_KEY_1_PATH_PREFIX) - 1) != 0) {
         return 0;
     }
 
     // Perform encryption
-    run_decrypt_encrypt_data(KEY_TYPE_CONF_KEY_1, 0, data, len);
-
-    return 0;
+    return run_decrypt_encrypt_data(KEY_TYPE_CONF_KEY_1, 0, data, len);
 }
-
-// Ensure data length matches encryption block requirements
-#define NEW_LEN(buf_len, align) (buf_len - buf_len % align)
 
 s32 key_manage_decrypt_with_root_key(pu8 data, s32 len)
 {
@@ -320,9 +316,7 @@ s32 key_manage_encrypt_with_root_key(pu8 data, s32 len)
 }
 s32 key_manage_encrypt_with_conf_key_2(pu8 data, s32 len)
 {
-
     run_decrypt_encrypt_data(KEY_TYPE_CONF_KEY_2, 0, data, len);
-
     return 0;
 }
 

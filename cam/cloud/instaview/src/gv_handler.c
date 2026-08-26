@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -19,63 +20,68 @@
 
 #include "ipc_handler.h"
 
-#define SESSION "instaview"
-
 static ipc_dev_info_t g_dev_info;
 
 void ipc_handler_read_int(pv8 key, ps32 value)
 {
     ipc_json_t json[] = {json_int(key, *value)};
-    ipc_json_rdconf(SESSION, json, ARRSIZE(json));
+    ipc_json_rdconf(IPC_IV_CONFIG_SESSION, json, ARRSIZE(json));
 }
+
 void ipc_handler_write_int(pv8 key, s32 value)
 {
     ipc_json_t json[] = {json_int(key, value)};
-    ipc_json_wrconf(SESSION, json, ARRSIZE(json));
+    ipc_json_wrconf(IPC_IV_CONFIG_SESSION, json, ARRSIZE(json));
 }
-
 
 int MFG_GetWifiIPAddress(char* ip_addr, const int ip_addr_size)
 {
-    s32 ret = -1;
-    if (ip_addr == NULL) {
+    s32 ret = IPC_FAILED;
+    if (ip_addr == NULL || ip_addr_size <= 0) {
+        return IPC_INVALID_ARGS;
+    }
+    ip_addr[0] = '\0';
+
+    s32 sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sockfd < 0) {
         goto _exit;
     }
 
-    s32 i = 0;
-    s32 sockfd;
-
-    struct ifconf ifconf;
+    struct ifconf ifconf = {0};
     u8 buf[512] = {0};
-    struct ifreq *ifreq;
-    struct sockaddr_in *sin = NULL;
-
-    ifconf.ifc_len = 512;
+    ifconf.ifc_len = sizeof(buf);
     ifconf.ifc_buf = (caddr_t)buf;
 
-    u8 *addr = NULL;
-    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+    if (ioctl(sockfd, SIOCGIFCONF, &ifconf) < 0) {
+        ret = IPC_IOCTL_ERROR;
+        goto _exit;
+    }
+    if (ifconf.ifc_len < 0 || ifconf.ifc_len > (s32)sizeof(buf)) {
+        ret = IPC_OUT_OF_RANGE;
         goto _exit;
     }
 
-    ioctl(sockfd, SIOCGIFCONF, &ifconf);
-
-    ifreq = (struct ifreq *)buf;
-    for (i = (ifconf.ifc_len / sizeof(struct ifreq)); i > 0; i--)
-    {
-        if (strcmp(ifreq->ifr_name, "lo") != 0)
-        {
-            sin = ((struct sockaddr_in *)&(ifreq->ifr_addr));
-            addr = (u8 *)&(sin->sin_addr.s_addr);
-            sprintf(ip_addr, "%u.%u.%u.%u", addr[0], addr[1], addr[2], addr[3]);
+    struct ifreq* ifreq = (struct ifreq*)buf;
+    s32 interface_count = ifconf.ifc_len / (s32)sizeof(*ifreq);
+    for (s32 i = 0; i < interface_count; i++, ifreq++) {
+        if (strncmp(ifreq->ifr_name, "lo", IFNAMSIZ) == 0
+            || ifreq->ifr_addr.sa_family != AF_INET) {
+            continue;
         }
-        ifreq++;
+
+        struct sockaddr_in* sin = (struct sockaddr_in*)&ifreq->ifr_addr;
+        if (!inet_ntop(AF_INET, &sin->sin_addr, ip_addr, (socklen_t)ip_addr_size)) {
+            ret = errno == ENOSPC ? IPC_NOBUF : IPC_FAILED;
+        } else {
+            ret = IPC_SUCCESS;
+            break;
+        }
     }
 
-    close(sockfd);
-
-    ret = 0;
 _exit:
+    if (sockfd >= 0) {
+        close(sockfd);
+    }
     return ret;
 }
 

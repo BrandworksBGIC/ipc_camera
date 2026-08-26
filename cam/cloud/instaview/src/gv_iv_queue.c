@@ -1,4 +1,6 @@
 #include <errno.h>
+#include <limits.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,6 +20,17 @@
 
 static u8 g_is_init = 0;
 static vptr _gh_aac = NULL;
+static pthread_mutex_t _g_aac_mutex = PTHREAD_MUTEX_INITIALIZER;
+static struct ipc_plat_video_capability _g_video_cap;
+static pthread_once_t _g_video_cap_once = PTHREAD_ONCE_INIT;
+
+static void _query_video_capability(void)
+{
+    struct ipc_api_s* platform = ipc_plat_api(0);
+    if (platform && platform->video_query_capability) {
+        platform->video_query_capability(&_g_video_cap);
+    }
+}
 
 // Context structure for passing frame data between callback and main function
 typedef struct {
@@ -27,6 +40,7 @@ typedef struct {
     E_VIDEO_STREAM_INDEX stream_index;
     int iter_index;
     int frame_len;
+    int error;
 } mfg_frame_context_t;
 
 // Context structure for passing audio data between callback and main function
@@ -42,41 +56,47 @@ typedef struct {
 // Static callback function that fills MfgVideoFrame structure
 static void mfg_video_frame_callback(struct ipc_frame_data_s* received_frame, void* user_data)
 {
-    static IVUCHAR _first                             = 0;
-    static IVUINT32 video_frame_index[2]              = { 0 };
-    static struct ipc_plat_video_capability video_cap = { 0 };
+    static IVUINT32 video_frame_index[2] = { 0 };
 
     mfg_frame_context_t* ctx = (mfg_frame_context_t*)user_data;
-    if (received_frame == NULL || ctx == NULL || ctx->pframeInfo == NULL) {
+    if (received_frame == NULL || received_frame->pack_num <= 0 || ctx == NULL
+        || ctx->pframeInfo == NULL || ctx->frame_data == NULL
+        || ctx->frame_buffer_len == NULL) {
         return;
     }
 
-    if (!_first) {
-        _first = 1;
-        ipc_plat_api(0)->video_query_capability(&video_cap);
-        printf("main width: %d, main height: %d\n", video_cap.res[0].width, video_cap.res[0].height);
-    }
+    pthread_once(&_g_video_cap_once, _query_video_capability);
 
     // Get frame data from received frame
     s32 frame_len = received_frame->pack[0].data_len;
+    if (frame_len <= 0 || received_frame->pack[0].data == NULL) {
+        ctx->error = IPC_NOT_DATA;
+        return;
+    }
+
+    size_t frame_header_len = ctx->pframeInfo->frame_header_len;
+    if (frame_header_len > (size_t)INT_MAX
+        || (size_t)frame_len > (size_t)INT_MAX - frame_header_len) {
+        ctx->error = IPC_OUT_OF_RANGE;
+        return;
+    }
+    size_t required_size = frame_header_len + (size_t)frame_len;
 
     // Check if we need to allocate/reallocate frame buffer
-    if (frame_len > *(ctx->frame_buffer_len)) {
-        if (*(ctx->frame_data) != NULL) {
-            free(*(ctx->frame_data));
-            *(ctx->frame_data) = NULL;
-        }
-
-        *(ctx->frame_data) = (unsigned char*)calloc(frame_len + ctx->pframeInfo->frame_header_len, 1);
-        if (*(ctx->frame_data) == NULL) {
-            *(ctx->frame_buffer_len) = 0;
+    if (*(ctx->frame_data) == NULL || *(ctx->frame_buffer_len) < 0
+        || (size_t)*(ctx->frame_buffer_len) < required_size) {
+        unsigned char* new_frame_data = (unsigned char*)calloc(required_size, 1);
+        if (new_frame_data == NULL) {
+            ctx->error = IPC_NOMEM;
             return;
         }
-        *(ctx->frame_buffer_len) = frame_len;
+        free(*(ctx->frame_data));
+        *(ctx->frame_data) = new_frame_data;
+        *(ctx->frame_buffer_len) = (int)required_size;
     }
 
     // Fill MfgVideoFrame structure
-    ctx->pframeInfo->video_data   = *(ctx->frame_data) + ctx->pframeInfo->frame_header_len;
+    ctx->pframeInfo->video_data   = *(ctx->frame_data) + frame_header_len;
     ctx->pframeInfo->stream_index = ctx->stream_index;
     ctx->pframeInfo->time_stamp   = received_frame->timestamp;
     ctx->pframeInfo->data_len     = frame_len;
@@ -84,21 +104,21 @@ static void mfg_video_frame_callback(struct ipc_frame_data_s* received_frame, vo
 
     // Set encoding type based on platform capability
     if (ctx->iter_index == 0) {
-        ctx->pframeInfo->enc_type = (video_cap.type[0] == IPC_VIDEO_ENC_TYPE_H265) ? E_VIDEO_H265_A : E_VIDEO_H264_HP;
+        ctx->pframeInfo->enc_type = (_g_video_cap.type[0] == IPC_VIDEO_ENC_TYPE_H265) ? E_VIDEO_H265_A : E_VIDEO_H264_HP;
     } else {
-        ctx->pframeInfo->enc_type = (video_cap.type[1] == IPC_VIDEO_ENC_TYPE_H265) ? E_VIDEO_H265_A : E_VIDEO_H264_HP;
+        ctx->pframeInfo->enc_type = (_g_video_cap.type[1] == IPC_VIDEO_ENC_TYPE_H265) ? E_VIDEO_H265_A : E_VIDEO_H264_HP;
     }
 
     // Set resolution
-    ctx->pframeInfo->width            = video_cap.res[ctx->iter_index].width;
-    ctx->pframeInfo->height           = video_cap.res[ctx->iter_index].height;
-    ctx->pframeInfo->frame_index      = video_frame_index[ctx->iter_index]++;
+    ctx->pframeInfo->width            = _g_video_cap.res[ctx->iter_index].width;
+    ctx->pframeInfo->height           = _g_video_cap.res[ctx->iter_index].height;
+    ctx->pframeInfo->frame_index      = __sync_fetch_and_add(&video_frame_index[ctx->iter_index], 1);
     ctx->pframeInfo->ext_data_len     = 0;
     ctx->pframeInfo->frame_buffer_len = *(ctx->frame_buffer_len);
 
     // Copy frame data
     if (frame_len > 0) {
-        memcpy(ctx->pframeInfo->video_data, received_frame->pack[0].data, frame_len);
+        memcpy(ctx->pframeInfo->video_data, received_frame->pack[0].data, (size_t)frame_len);
     }
 
     ctx->frame_len = frame_len; // Store result in context
@@ -110,7 +130,10 @@ int MFG_ReadVideoFrame_callback(E_VIDEO_STREAM_INDEX stream_index, MfgVideoFrame
     s32 ret = 0;
 
     if (pframeInfo == NULL || frame_data == NULL || frame_buffer_len == NULL) {
-        return 0;
+        return IPC_INVALID_ARGS;
+    }
+    if (stream_index != E_VIDEO_MAIN_STREAM && stream_index != E_VIDEO_SECOND_STREAM) {
+        return IPC_INVALID_ARGS;
     }
 
     // Create context for callback
@@ -119,7 +142,8 @@ int MFG_ReadVideoFrame_callback(E_VIDEO_STREAM_INDEX stream_index, MfgVideoFrame
                                 .frame_buffer_len = frame_buffer_len,
                                 .stream_index     = stream_index,
                                 .iter_index       = (stream_index == E_VIDEO_MAIN_STREAM) ? 0 : 1,
-                                .frame_len        = 0 };
+                                .frame_len        = 0,
+                                .error            = IPC_SUCCESS };
 
     // Map stream index to IPC channel
     IPC_VIDEO_CHN_TYPE ipc_chn = (stream_index == E_VIDEO_MAIN_STREAM) ? IPC_VIDEO_CHN_MAIN : IPC_VIDEO_CHN_SUB;
@@ -132,6 +156,10 @@ int MFG_ReadVideoFrame_callback(E_VIDEO_STREAM_INDEX stream_index, MfgVideoFrame
         return ctx.frame_len;
     }
 
+    if (ctx.error < 0) {
+        return ctx.error;
+    }
+
     return ret;
 }
 
@@ -141,7 +169,9 @@ static void mfg_audio_frame_callback(struct ipc_frame_data_s* received_frame, vo
     static int64_t audio_frame_index_counter = 0;
 
     mfg_audio_context_t* ctx = (mfg_audio_context_t*)user_data;
-    if (received_frame == NULL || ctx == NULL || ctx->buffer == NULL) {
+    if (received_frame == NULL || received_frame->pack_num <= 0
+        || received_frame->pack[0].data == NULL || ctx == NULL
+        || ctx->buffer == NULL || ctx->len <= 0) {
         return;
     }
 
@@ -149,6 +179,9 @@ static void mfg_audio_frame_callback(struct ipc_frame_data_s* received_frame, vo
     int32_t audio_len = received_frame->pack[0].data_len;
 
     // Check if buffer is large enough
+    if (audio_len <= 0) {
+        return;
+    }
     if (audio_len > ctx->len) {
         // Buffer too small, truncate or return error
         audio_len = ctx->len;
@@ -158,9 +191,7 @@ static void mfg_audio_frame_callback(struct ipc_frame_data_s* received_frame, vo
     }
 
     // Copy audio data to buffer
-    if (audio_len > 0 && received_frame->pack[0].data != NULL) {
-        memcpy(ctx->buffer, received_frame->pack[0].data, audio_len);
-    }
+    memcpy(ctx->buffer, received_frame->pack[0].data, (size_t)audio_len);
 
     // Set timestamp and frame index
     if (ctx->time_stamp != NULL) {
@@ -222,16 +253,27 @@ int MFG_EncodeAACAudio(char* pcm_data, int32_t pcm_len, char* encoded_data, int3
 {
 
 #if 1
-    if (!g_is_init) {
+    if (!pcm_data || pcm_len <= 0 || !encoded_data || encoded_len <= 0) {
         return -1;
     }
+
+    pthread_mutex_lock(&_g_aac_mutex);
+    if (!g_is_init || !_gh_aac) {
+        pthread_mutex_unlock(&_g_aac_mutex);
+        return -1;
+    }
+
     ipc_aac_data_p _aac_data = ipc_aac_encode_iter(_gh_aac, pcm_data, pcm_len);
-    if (_aac_data) {
-        memcpy(encoded_data, _aac_data->buf, _aac_data->len);
-        return _aac_data->len;
-    } else {
+    if (!_aac_data || !_aac_data->buf || _aac_data->len <= 0
+        || _aac_data->len > encoded_len) {
+        pthread_mutex_unlock(&_g_aac_mutex);
         return -1;
     }
+
+    memcpy(encoded_data, _aac_data->buf, _aac_data->len);
+    s32 encoded_size = _aac_data->len;
+    pthread_mutex_unlock(&_g_aac_mutex);
+    return encoded_size;
 #else
     int ret     = -1;
     int aac_len = 0;
@@ -266,11 +308,18 @@ s32 ipc_iv_queue_init_aac_encode(void)
     s32 ret = -1;
 
 #if 1
+    pthread_mutex_lock(&_g_aac_mutex);
+    if (g_is_init && _gh_aac) {
+        pthread_mutex_unlock(&_g_aac_mutex);
+        return IPC_SUCCESS;
+    }
     _gh_aac = ipc_aac_encode_open(16, 8000, 1);
     if (_gh_aac == NULL) {
+        pthread_mutex_unlock(&_g_aac_mutex);
         goto _exit;
     }
     g_is_init = 1;
+    pthread_mutex_unlock(&_g_aac_mutex);
 #else
     _gh_aac = ipc_aac_encode_open(16, 16000, 1);
     if (_gh_aac == NULL) {
@@ -285,6 +334,11 @@ _exit:
 
 void ipc_iv_queue_uninit_aac_encode(void)
 {
+    pthread_mutex_lock(&_g_aac_mutex);
     g_is_init = 0;
-    ipc_aac_encode_close(_gh_aac);
+    if (_gh_aac) {
+        ipc_aac_encode_close(_gh_aac);
+        _gh_aac = NULL;
+    }
+    pthread_mutex_unlock(&_g_aac_mutex);
 }

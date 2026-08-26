@@ -21,8 +21,6 @@
 
 #include "ipc_middleware_sal.h"
 
-#define SESSION "instaview"
-
 // Helper function to extract version part before '-' character
 static void extract_version(const char *full_version, char *version_only, size_t buffer_size)
 {
@@ -250,8 +248,9 @@ int MFG_SystemReboot_callback()
     if(frame_upgrade_falg == 0)
     {
         printf("system reboot!!\r\n");
-        ipc_rm("/conf/gv.json");
-        ipc_rm("/conf/instaview.json");
+        ipc_handler_storage_shutdown();
+        ipc_rm(IPC_IV_CONFIG_FILE);
+        ipc_rm(IPC_IV_LEGACY_CONFIG_FILE);
         ipc_exec("reboot");
         return 0;
     }
@@ -497,9 +496,20 @@ s32 init_env_set_mode(vptr usr_arg, pu8 tmp_mem, s32 tmp_mem_size)
 
 s32 ipc_middleware_main_process(pv8 ipc_version)
 {
+    s32 ret = key_manage_init();
+    if (ret < 0) {
+        printf("Error, key management initialization failed: %d\n", ret);
+        return ret;
+    }
+
+    ret = ipc_handler_storage_init();
+    if (ret < 0) {
+        printf("Error, Instaview storage initialization failed: %d\n", ret);
+        return ret;
+    }
+
     _gh_timer_pool = ipc_timer_init(10, 0);
     /* signal handling */
-    s32 ret = 0;
     signal(SIGPIPE, SIG_IGN);
     clog_init("main", "instaview main process");
     atexit(exitHandler);
@@ -598,7 +608,7 @@ s32 ipc_middleware_main_process(pv8 ipc_version)
     init_callback_functions();
     /* This function is used to register callback functions. You need to provide a MFG_CALL_BACK_FUNCTIONS structure pointer, which contains a set of callback function pointers */
     iv_sdk_register_callback_functions(&callback_functions);
-    iv_sdk_set_cfg_path("/conf");
+    iv_sdk_set_cfg_path(IPC_IV_RUNTIME_PATH);
     iv_sdk_set_sdcard_mount_path("/mnt/sdcard");
     /* This function is used to initialize the SDK */
     // Extract version part before '-' character
@@ -613,6 +623,7 @@ s32 ipc_middleware_main_process(pv8 ipc_version)
 
     iv_sdk_init();
     iv_sdk_set_logLevel(IVLOG_LEVEL_ERROR);
+    ipc_timer_start(ipc_global_timer_pool(), 1000, ipc_handler_storage_sync, NULL);
     ipc_timer_start(ipc_global_timer_pool(), 40 * 1000, init_env_set_mode, NULL);
     while (g_exit == false)
     {
@@ -620,5 +631,6 @@ s32 ipc_middleware_main_process(pv8 ipc_version)
     }
     /* This function is used to deinitialize the SDK */
     iv_sdk_deinit();
+    ipc_handler_storage_shutdown();
     return 0;
 }

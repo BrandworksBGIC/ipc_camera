@@ -20,8 +20,6 @@
 #include <ipc_core.h>
 #include "ipc_iv_alarm.h"
 
-#define SESSION "instaview"
-
 static ipc_alarm_rect_t _g_alarm_rect_info[MAX_NUM_MD_AREA];
 static s32 _g_alarm_ignore_count = 0;
 static u8 _g_md_signal = 0;  // signal to indicate motion detection

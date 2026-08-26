@@ -5,6 +5,7 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #include "iv_types.h"
 #include "iv_callback_type.h"
@@ -20,8 +21,6 @@
 #include <fcntl.h>
 #include <ipc_core.h>
 #include "ipc_iv_ble.h"
-
-#define SESSION "instaview"
 
 extern u8 _g_net_conn_status;
 static struct {
@@ -41,16 +40,51 @@ static struct ipc_bitrate_adjust adjust = {
 int MFG_GetPrebultInfo(char* device_id, const int device_id_max_size, char* access_key,
                        const int access_key_max_size) // get basic parameters, mainly fps and resolution, others seem unused
 {
+    if (!device_id || device_id_max_size <= 0 || !access_key || access_key_max_size <= 0) {
+        return IPC_INVALID_ARGS;
+    }
+
+    device_id[0] = '\0';
+    access_key[0] = '\0';
+
     ipc_decrypt_exinfo_p cloud_info = ipc_decrypt_exinfo();
-    if (cloud_info == NULL) {
+    if (cloud_info == NULL || cloud_info->info_len == 0) {
         return IPC_VERIFY_FAILED;
     }
+
     printf("====GetPrebultInfo====\r\n");
-    pv8 model     = (pv8)cloud_info->info_ctx;
-    pv8 did       = model + strlen(model) + 1;
-    pv8 accessKey = did + strlen(did) + 1;
-    strcpy(device_id, did);
-    strcpy(access_key, accessKey);
+
+    pv8 info_begin = (pv8)cloud_info->info_ctx;
+    /* ipc_decrypt allocates one zero-filled sentinel byte after info_len. */
+    pv8 info_end = info_begin + cloud_info->info_len + 1;
+    pv8 model_end = memchr(info_begin, '\0', (size_t)(info_end - info_begin));
+    if (!model_end || model_end + 1 >= info_end) {
+        return IPC_VERIFY_FAILED;
+    }
+
+    pv8 did = model_end + 1;
+    pv8 did_end = memchr(did, '\0', (size_t)(info_end - did));
+    if (!did_end || did_end == did || did_end + 1 >= info_end) {
+        return IPC_VERIFY_FAILED;
+    }
+
+    pv8 access_key_src = did_end + 1;
+    pv8 access_key_end = memchr(access_key_src, '\0', (size_t)(info_end - access_key_src));
+    if (!access_key_end || access_key_end == access_key_src) {
+        return IPC_VERIFY_FAILED;
+    }
+
+    size_t did_len = (size_t)(did_end - did);
+    size_t access_key_len = (size_t)(access_key_end - access_key_src);
+    if (did_len >= (size_t)device_id_max_size
+        || access_key_len >= (size_t)access_key_max_size) {
+        return IPC_NOBUF;
+    }
+
+    memcpy(device_id, did, did_len);
+    device_id[did_len] = '\0';
+    memcpy(access_key, access_key_src, access_key_len);
+    access_key[access_key_len] = '\0';
     return 0;
 }
 
@@ -89,12 +123,16 @@ int MfgVideoParamGet(E_VIDEO_STREAM_INDEX stream_index, HalVideoEncodeParam* par
 // reset handling
 void ipc_iv_device_reset_process(void)
 {
-    ipc_rm("/conf/ipc.json");
-    ipc_rm("/conf/iv_key.pem");
-    ipc_rm("/conf/iv_cert.pem");
-    ipc_rm("/conf/iv.cfg");
-    ipc_rm("/conf/instaview.json");
+    /* Keep configuration writers alive until the reset prompt has finished. */
     ipc_mpp_play("reset", 1);
+
+    s32 ret = ipc_handler_storage_reset();
+    if (ret < 0) {
+        printf("Error, reset Instaview storage failed: %d\n", ret);
+        return;
+    }
+    ipc_rm("/conf/ipc.json");
+    sync();
     ipc_exec("reboot");
 }
 
@@ -194,12 +232,17 @@ typedef struct {
 static void mfg_raw_video_frame_callback(struct ipc_frame_data_s* received_frame, void* user_data)
 {
     mfg_raw_video_context_t* ctx = (mfg_raw_video_context_t*)user_data;
-    if (received_frame == NULL || ctx == NULL || ctx->raw_data == NULL) {
+    if (received_frame == NULL || received_frame->pack_num <= 0
+        || received_frame->pack[0].data == NULL || ctx == NULL
+        || ctx->raw_data == NULL || ctx->raw_data_length <= 0) {
         return;
     }
 
     // Get frame data from received frame
     s32 frame_len = received_frame->pack[0].data_len;
+    if (frame_len <= 0) {
+        return;
+    }
 
     // Check if buffer is large enough
     if (frame_len > ctx->raw_data_length) {
@@ -210,9 +253,7 @@ static void mfg_raw_video_frame_callback(struct ipc_frame_data_s* received_frame
     }
 
     // Copy raw video data to buffer
-    if (frame_len > 0 && received_frame->pack[0].data != NULL) {
-        memcpy(ctx->raw_data, received_frame->pack[0].data, frame_len);
-    }
+    memcpy(ctx->raw_data, received_frame->pack[0].data, (size_t)frame_len);
 
     // Set width and height from video capability
     if (ctx->width != NULL) {
@@ -321,19 +362,21 @@ int MFG_WifiLink_Callback(const char* ssid, const char* password)
 
 E_WIFI_STATUS MFG_GetWifiLinkStatus() // get wifi status, obtained based on previous callbacks
 {
+    static volatile s32 _last_status = -1;
+    E_WIFI_STATUS status = WIFI_NOTCONFIG;
+
     if (_g_net_conn_status == 1) {
-        printf("wifi status:connect success!!!\r\n");
-        // ipc_iv_ble_uninit();
-        return WIFI_LINKED;
+        status = WIFI_LINKED;
     } else if (_g_net_conn_status == 0) {
-        printf("wifi status:connect failed!!!\r\n");
-        return WIFI_UNLINKED;
+        status = WIFI_UNLINKED;
     }
-    // else if (_g_net_wating == 1)
-    // {
-    //     return WIFI_LINKING;
-    // }
-    return WIFI_NOTCONFIG;
+
+    s32 previous_status = __sync_lock_test_and_set(&_last_status, (s32)status);
+    if (previous_status != (s32)status) {
+        printf("wifi status changed: %d -> %d\r\n", previous_status, (s32)status);
+    }
+
+    return status;
 }
 
 #define WLAN_DEV "wlan0"
@@ -548,7 +591,7 @@ static s32 _record_ptz_position(vptr usr_arg, pu8 tmp_mem, s32 tmp_mem_size)
         ipc_ptz_set_init_angle(IPC_PTZ_V, _g_ptz_abs.v);
         ipc_ptz_set_init_angle(IPC_PTZ_H, _g_ptz_abs.h);
 
-        ipc_json_wrconf(SESSION, _g_ptz_reset_postion_json, ARRSIZE(_g_ptz_reset_postion_json));
+        ipc_json_wrconf(IPC_IV_CONFIG_SESSION, _g_ptz_reset_postion_json, ARRSIZE(_g_ptz_reset_postion_json));
         return -1; // stop timer
     }
     return 500;
@@ -556,7 +599,7 @@ static s32 _record_ptz_position(vptr usr_arg, pu8 tmp_mem, s32 tmp_mem_size)
 
 void ipc_iv_ptz_set_init()
 {
-    ipc_json_rdconf(SESSION, _g_ptz_reset_postion_json, ARRSIZE(_g_ptz_reset_postion_json));
+    ipc_json_rdconf(IPC_IV_CONFIG_SESSION, _g_ptz_reset_postion_json, ARRSIZE(_g_ptz_reset_postion_json));
     ipc_ptz_set_init_angle(IPC_PTZ_V, _g_ptz_abs.v);
     ipc_ptz_set_init_angle(IPC_PTZ_H, _g_ptz_abs.h);
 }
@@ -639,7 +682,7 @@ int MFG_PtzReset()
         ipc_ptz_set_init_angle(IPC_PTZ_H, -1);
         _g_ptz_abs.h = -1;
         _g_ptz_abs.v = -1;
-        ipc_json_wrconf(SESSION, _g_ptz_reset_postion_json, ARRSIZE(_g_ptz_reset_postion_json));
+        ipc_json_wrconf(IPC_IV_CONFIG_SESSION, _g_ptz_reset_postion_json, ARRSIZE(_g_ptz_reset_postion_json));
         ipc_ptz_recheck();
     }
     is_first = 1;
