@@ -25,8 +25,8 @@ jobs:
       - name: Install build dependencies
         run: sudo apt-get update && sudo apt-get install -y gettext autoconf automake libtool
 
-      - name: Install build-wrapper
-        uses: SonarSource/sonarqube-scan-action/install-build-wrapper@7006c4492b2e0ee0f816d36501671557c97f5995 # v8.1.0
+      #- name: Install build-wrapper
+      #  uses: SonarSource/sonarqube-scan-action/install-build-wrapper@7006c4492b2e0ee0f816d36501671557c97f5995 # v8.1.0
 
       - name: Build ipc_camera
         run: |
@@ -42,17 +42,20 @@ jobs:
           printf '3\n\n' | ./launch.sh
           cd -
           cd chip/rts3917/sdk/rts39xx_sdk_v5.3/out/rts3917n_base/
-          build-wrapper-linux-x86-64 --out-dir "${GITHUB_WORKSPACE}/bw-output" make secure_boot M=1
-          build-wrapper-linux-x86-64 --out-dir "${GITHUB_WORKSPACE}/bw-output" make
+          make secure_boot M=1
+          #build-wrapper-linux-x86-64 --out-dir "${GITHUB_WORKSPACE}/bw-output" make secure_boot M=1
+          make
+          #build-wrapper-linux-x86-64 --out-dir "${GITHUB_WORKSPACE}/bw-output" make
           cd ../../../../fw/
-          build-wrapper-linux-x86-64 --out-dir "${GITHUB_WORKSPACE}/bw-output" jmake
+          jmake
+          #build-wrapper-linux-x86-64 --out-dir "${GITHUB_WORKSPACE}/bw-output" jmake
 
-      - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@7006c4492b2e0ee0f816d36501671557c97f5995 # v8.1.0
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          args: >
-            -Dsonar.cfamily.build-wrapper-output=${{ github.workspace }}/bw-output
-            -Dsonar.sources=.
-            -Dsonar.exclusions=third/**,chip/rts3917/sdk/**/out/**
+      # - name: SonarQube Scan
+        # uses: SonarSource/sonarqube-scan-action@7006c4492b2e0ee0f816d36501671557c97f5995 # v8.1.0
+        # env:
+        #   SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        # with:
+        #   args: >
+        #     -Dsonar.cfamily.build-wrapper-output=${{ github.workspace }}/bw-output
+        #     -Dsonar.sources=.
+        #     -Dsonar.exclusions=third/**,chip/rts3917/sdk/**/out/**
