@@ -56,7 +56,7 @@ static long gpio_ioctl(struct file* file, unsigned int cmd, unsigned long arg)
         case IOCTL_IO_INIT: {
             char name[8];
             unsigned long flags = GPIOF_EXPORT_DEPRECATED;
-            sprintf(name, "gpio%d", attr.gpio_num);
+            snprintf(name, sizeof(name), "gpio%d", attr.gpio_num);
             if (attr.gpio_dir == 0) {
                 flags |= GPIOF_DIR_IN;
             } else {

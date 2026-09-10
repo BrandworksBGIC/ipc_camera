@@ -127,7 +127,7 @@ int ipc_motor_gpio_init(int ptz_product_type, char* motor_gpioV_seq, char* motor
         for (j = 0; j < IPC_MOTOR_PIN_NUM; j++) {
             if (motor_gpio[i].gpio_num[j] >= 0) {
                 char pin_name[30];
-                sprintf(pin_name, "motor_%d%d", i, j);
+                snprintf(pin_name, sizeof(pin_name), "motor_%d%d", i, j);
                 printk("%s:%d\n", pin_name, motor_gpio[i].gpio_num[j]);
                 gpio_request(motor_gpio[i].gpio_num[j], pin_name);
                 gpio_direction_output(motor_gpio[i].gpio_num[j], 0);
