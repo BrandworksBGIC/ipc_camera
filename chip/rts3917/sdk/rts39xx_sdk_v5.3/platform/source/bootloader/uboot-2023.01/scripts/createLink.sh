@@ -3,6 +3,7 @@ rm -rf ./board/realtek/rlxboard
 rm -rf ./ram_init/*
 rm -f ./include/configs/rlxboard.h
 rm -f ./include/configs/bspchip.h
+mkdir -p ./ram_init
 
 ln -s -r ./board/realtek/rts3917 ./board/realtek/rlxboard
 
