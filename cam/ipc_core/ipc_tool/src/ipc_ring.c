@@ -240,17 +240,15 @@ static s32 _get_data_idx(ring_p h_ring, ipc_ring_cmd_e cmd, index_p p_idx)
                 _jump_ring(h_ring, &addr, -(sizeof(len) * 2 + 1));
                 _read_ring(h_ring, &addr, sizeof(len), &len);
                 _jump_ring(h_ring, &addr, -(sizeof(len) + len));
-                break;
-            }
-            if (cmd == IPC_RING_NEXT) {
+            } else {
                 _jump_ring(h_ring, &addr, len + sizeof(len));
                 _read_ring(h_ring, &addr, sizeof(nflag), &nflag);
                 if (!nflag)
                     return IPC_NOT_READY;
                 _read_ring(h_ring, &addr, sizeof(len), &len);
                 seq++;
-                break;
             }
+            break;
         default:
             return IPC_INVALID_ARGS;
     }

@@ -92,7 +92,7 @@ static int read_update_pack_file_head(int fd)
     }
 
     if (strncmp(IPC_FIRMWARE_FLAG, firmware_flag, 4) != 0) {
-        printf("firmware flag error[%s]\n", firmware_flag);
+        printf("firmware flag error\n");
         return -2;
     }
 
@@ -264,6 +264,7 @@ struct update_pack_image_desc* update_pack_decode(char* pack_name, int* image_nu
     return part_list;
 
 err_exit:
+    free(part_list);
     ipc_close(fd);
     return NULL;
 }

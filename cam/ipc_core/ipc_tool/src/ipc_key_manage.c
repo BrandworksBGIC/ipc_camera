@@ -141,7 +141,6 @@ static s32 create_conf_key_1(void)
     if (ret < 0) {
         printf("Error get_random_bytes for conf_key_1\n");
         exit(-1);
-        return -1;
     }
 
     memcpy(_g_key[KEY_TYPE_CONF_KEY_1].key, conf_key_1, 32);

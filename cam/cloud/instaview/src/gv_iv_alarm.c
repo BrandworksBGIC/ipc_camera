@@ -236,6 +236,7 @@ int MFG_InitMD(IV_MDConfig_t MDconfig)
     case E_MD_SEN_LOW:
         sensitivity_level = 0;
         printf("set senstivi:low\r\n");
+        break;
     default:
         sensitivity_level = 1;
         printf("set senstivi:middle\r\n");

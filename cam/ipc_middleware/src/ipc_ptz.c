@@ -318,7 +318,7 @@ static void _ptz_turn(ipc_ptz_dir_e dir, f32 angle)
     struct ipc_motor_step motor = {
         .motor_index = act == IPC_PTZ_H ? IPC_MOTOR_INDEX_0 : IPC_MOTOR_INDEX_1,
         .direction = turn == IPC_PTZ_ANTICLKWISE ? IPC_MOTOR_DIR_COUNTERCLOCKWISE : IPC_MOTOR_DIR_CLOCKWISE,
-        .step = (s32)(angle * _g_ptz.circle_step[motor.motor_index] / 360)
+        .step = (s32)(angle * _g_ptz.circle_step[act] / 360)
     };
 
     s32 ret = ioctl(_g_ptz.fd, IPC_IOCTL_MOTOR_RUN_STEPS, (word)&motor);

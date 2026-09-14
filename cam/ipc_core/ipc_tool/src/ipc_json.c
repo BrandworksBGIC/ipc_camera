@@ -661,9 +661,9 @@ s32 ipc_json_wrconf(pv8 session, ipc_json_t h_jsons[], s32 num)
 
     // Read existing encrypted config content
     s32 len = ipc_file_read(h_file, buff, sizeof(buff) - 1);
-    if (len < 0) {
+    if (len < 0 || len >= (s32)sizeof(buff)) {
         ipc_file_close(h_file);
-        return len;
+        return len < 0 ? len : IPC_OUT_OF_RANGE;
     }
     buff[len] = '\0'; // Mark end of text
 

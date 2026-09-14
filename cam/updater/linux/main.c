@@ -17,8 +17,14 @@ static void _update_mtd_parts(int fd, struct update_pack_image_desc* desc, int i
 {
     int i = 0;
     for (i = 0; i < image_num; i++) {
+        char partition_name[sizeof(desc[i].partition_name) + 1] = { 0 };
+        memcpy(partition_name, desc[i].partition_name, sizeof(desc[i].partition_name));
+        for (size_t j = 0; j < sizeof(desc[i].partition_name); j++) {
+            if ((unsigned char)partition_name[j] < 0x20 || (unsigned char)partition_name[j] == 0x7f)
+                partition_name[j] = '.';
+        }
         printf("mtd_number:%d\n", desc[i].mtd_number);
-        printf("partition_name:%s\n", desc[i].partition_name);
+        printf("partition_name:%s\n", partition_name);
         printf("image_start_addr_at_pack:%d\n", desc[i].image_start_addr_at_pack);
         printf("image_len:%d\n", desc[i].image_len);
         printf("partition_size:%d\n", desc[i].partition_size);

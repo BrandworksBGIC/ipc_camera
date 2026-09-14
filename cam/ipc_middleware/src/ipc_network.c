@@ -2,9 +2,11 @@
 #include <net/if.h>
 #include <netinet/if_ether.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -32,7 +34,7 @@
 #define WPA_CONF_FILE "/tmp/wpa_supplicant.conf"
 #define WPA_CONF_FILE_HEAD "ctrl_interface=/var/run/wpa_supplicant\n\n"
 
-#define UDHCPC_SCRIPT "/tmp/udhcpc.script"
+#define UDHCPC_SCRIPT "/var/run/udhcpc.script"
 
 #define STATIC_IP_CONF "/conf/static_ip.conf"
 
@@ -183,14 +185,13 @@ static s32 _lock_net_device_mac(pv8 net_dev)
     strncpy(req.ifr_name, net_dev, sizeof(req.ifr_name) - 1);
     req.ifr_hwaddr.sa_family = ARPHRD_ETHER;
 
-retry:
-    try_count++;
-    ret = ioctl(fd, SIOCGIFHWADDR, &req);
-    if (ret != 0) {
-        if (try_count < 3) {
+    do {
+        try_count++;
+        ret = ioctl(fd, SIOCGIFHWADDR, &req);
+        if (ret != 0 && try_count < 3)
             ipc_msleep(500);
-            goto retry;
-        }
+    } while (ret != 0 && try_count < 3);
+    if (ret != 0) {
         ipcerror("%s %s Ioctl SIOCGIFHWADDR failed!", __func__, net_dev);
         close(fd);
         return IPC_IOCTL_ERROR;
@@ -348,6 +349,9 @@ static s32 _check_usb_module_type(void)
 
 static s32 _insmod_wifi(s32 num)
 {
+    if (num < 0 || num >= WIFI_MODULE_MAX)
+        return IPC_INVALID_ARGS;
+
     _wireless_module_reboot();
 
     s32 ret = ipc_exec("insmod %s/%s.ko %s", WIFI_DRIVERS_PATH, _g_wifi_map[num].driver_name, _g_wifi_map[num].expand_args);
@@ -375,6 +379,9 @@ static s32 _insmod_wifi(s32 num)
 
 static s32 _insmod_4G(s32 num)
 {
+    if (num < 0 || num >= WIFI_MODULE_MAX)
+        return IPC_INVALID_ARGS;
+
     // coverity[UNUSED_VALUE:SUPPRESS] - ret is reassigned later
     s32 ret;
     // coverity[UNUSED_VALUE:SUPPRESS] - ret is reassigned later
@@ -387,10 +394,17 @@ static s32 _insmod_4G(s32 num)
         return IPC_NOT_NEED;
     }
 
-    sscanf(_g_wifi_map[num].usb_enum, "%[^:] : %[^:]", vid, pid);
+    if (sscanf(_g_wifi_map[num].usb_enum, "%4[^:] : %4[^:]", vid, pid) != 2) {
+        return IPC_INVALID_ARGS;
+    }
 
-    ret = ipc_exec("echo %s %s > /sys/bus/usb-serial/drivers/option1/new_id", vid, pid);
-    if (ret != 0) {
+    v8 usb_id[16];
+    s32 usb_id_len = snprintf(usb_id, sizeof(usb_id), "%s %s\n", vid, pid);
+    if (usb_id_len <= 0 || usb_id_len >= (s32)sizeof(usb_id)) {
+        return IPC_INVALID_ARGS;
+    }
+    ret = ipc_file_write_once("/sys/bus/usb-serial/drivers/option1/new_id", usb_id, usb_id_len, __IPC_LOG__);
+    if (ret < 0) {
         ipcwarn("insmod %s failed!", _g_wifi_map[num].driver_name);
         return IPC_FAILED;
     }
@@ -449,8 +463,9 @@ static s32 _read_static_ip_address(pv8 dev)
 {
     FILE* fp;
     v8 str[60];
+    pcv8 allowed_keys[] = { "ip", "broadcast", "subnet", "router", "dns" };
 
-    if (strstr(dev, WLAN_DEV) == NULL && strstr(dev, WIRED_DEV) == NULL) {
+    if (strcmp(dev, WLAN_DEV) != 0 && strcmp(dev, WIRED_DEV) != 0) {
         return IPC_NOT_SUPPORT;
     }
 
@@ -469,11 +484,12 @@ static s32 _read_static_ip_address(pv8 dev)
         st = strchr(str, '=');
         if (st) {
             *st = '\0';
-            // coverity[SECURE_CODING:SUPPRESS] - Using setenv with validated configuration data
-            // This is safe because str is read from a controlled configuration file
-            // and contains only valid network configuration parameters
-            // coverity[TAINTED_STRING:SUPPRESS] - Configuration file data is trusted and controlled
-            setenv(str, st + 1, 1);
+            for (s32 idx = 0; idx < ARRSIZE(allowed_keys); idx++) {
+                if (strcmp(str, allowed_keys[idx]) == 0) {
+                    setenv(allowed_keys[idx], st + 1, 1);
+                    break;
+                }
+            }
         }
     }
 
@@ -784,6 +800,10 @@ static s32 __check_is_wpa1(vptr h_sock)
             }
             continue;
         }
+        if (ret >= (s32)sizeof(recv)) {
+            ipcerror("Recv data too long! len=[%d]", ret);
+            return IPC_OUT_OF_RANGE;
+        }
 
         if (ret > 0) {
             recv[ret] = '\0';
@@ -825,6 +845,10 @@ static s32 _wpa_wait_connected(vptr h_sock, u32 timeout)
             ipcerror("Recv error! retcode=[%d]", ret);
             // return the error code
             return ret;
+        }
+        if (len >= (s32)sizeof(recv)) {
+            ipcerror("Recv data too long! len=[%d]", len);
+            return IPC_OUT_OF_RANGE;
         }
 
         // If data is received, set the last byte of the received data to the null terminator
@@ -911,7 +935,7 @@ static vptr _pth_sta_listen(vptr h_sock)
 
         do {
             ret = ipc_unix_socket_recv(h_sock, recv, sizeof(recv) - 1, 1 * 1000);
-            if (ret <= 0) {
+            if (ret <= 0 || ret >= (s32)sizeof(recv)) {
                 ipcdebug("Error receiving WPA status! Return code=[%d]", ret);
                 // Detected timeout, check if wpa_supplicant is still running
                 unix_timeout_count++;
@@ -1480,15 +1504,14 @@ static s32 _4g_read_apns(pv8 sim_mncmcc, s32 uart_fd, s32 (*apn_cb)(s32 uart_fd,
         if (size == 0) {
             break;
         }
-        // coverity[STRING_NULL:SUPPRESS] - Buffer is size+1 and null-terminated
-        u8 buffer[size + 1];
-        // coverity[TAINTED_SCALAR:SUPPRESS] - Validate buffer size before use
-        if (size > 255) { // Reasonable limit for APN data
+        s32 data_size = size;
+        u8 buffer[256];
+        if (data_size <= 0 || data_size >= (s32)sizeof(buffer)) {
             ret = IPC_FAILED;
             break;
         }
         // coverity[CHECKED_RETURN:SUPPRESS] - Check fread return value for data read
-        if (fread(buffer, size, 1, fp) <= 0) {
+        if (fread(buffer, data_size, 1, fp) <= 0) {
             ret = IPC_FAILED;
             break;
         }
@@ -1497,7 +1520,7 @@ static s32 _4g_read_apns(pv8 sim_mncmcc, s32 uart_fd, s32 (*apn_cb)(s32 uart_fd,
         s32 mncmcc_len            = 0;
         info.mncmcc               = (pv8)buffer;
         // coverity[STRING_NULL:SUPPRESS] - Ensure buffer is null-terminated
-        buffer[size] = '\0';
+        buffer[data_size] = '\0';
         mncmcc_len   = strlen(info.mncmcc);
 
         if (strncmp(sim_mncmcc, info.mncmcc, mncmcc_len)) {
@@ -1895,7 +1918,6 @@ static s32 _4G_network_register()
         }
         default: {
             goto REGISTER_FAILED;
-            break;
         }
     }
 
@@ -2256,7 +2278,9 @@ static void _udhcpc_init(void)
         return;
     }
 
-    ipc_exec("chmod +x " UDHCPC_SCRIPT);
+    if (chmod(UDHCPC_SCRIPT, 0700) != 0) {
+        ipcerror("Set udhcpc script permissions failed! errmsg=[%s]", strerror(errno));
+    }
 }
 
 s32 ipc_net_init(u8 smart_switch, ipc_net_event_f f_event)
@@ -2458,7 +2482,7 @@ static s32 _parse_LE370_ATI_response(pv8 response, pv8 version_buf, s32 buf_size
 
     // Parse response line by line
     while ((line_end = strchr(line_start, '\n')) != NULL) {
-        *line_end = '\0'; // Temporarily null-terminate the line
+        *line_end = '\0'; // Null-terminate the line
         line_count++;
 
         // Trim leading whitespace
@@ -2468,18 +2492,22 @@ static s32 _parse_LE370_ATI_response(pv8 response, pv8 version_buf, s32 buf_size
 
         // Skip empty lines
         if (strlen(line_start) == 0) {
-            *line_end  = '\n'; // Restore newline
             line_start = line_end + 1;
             continue;
         }
 
         // Store lines 2, 3, 4
         if (line_count >= 2 && line_count <= 4) {
+            if (line_end > line_start && *(line_end - 1) == '\r')
+                *(line_end - 1) = '\0';
+            for (pv8 ch = line_start; *ch; ch++) {
+                if ((u8)*ch < 0x20 || (u8)*ch == 0x7f)
+                    *ch = ' ';
+            }
             lines[line_count - 2] = line_start;
             valid_lines++;
         }
 
-        *line_end  = '\n'; // Restore newline
         line_start = line_end + 1;
 
         // Stop after collecting 3 lines
@@ -2665,7 +2693,24 @@ void ipc_net_enable_ipv6(void)
 void ipc_net_save_static_ip(void)
 {
     if (access(STATIC_IP_CONF, F_OK) != 0) {
-        ipc_file_copy("/tmp/static_ip.conf", STATIC_IP_CONF, __IPC_LOG__);
+        v8 temp_dir[] = "/tmp/ipc-static-ip-XXXXXX";
+        v8 temp_path[64];
+        struct stat stat_info;
+
+        if (mkdtemp(temp_dir) == NULL
+            || snprintf(temp_path, sizeof(temp_path), "%s/static_ip.conf", temp_dir) >= (s32)sizeof(temp_path)) {
+            return;
+        }
+        if (rename("/tmp/static_ip.conf", temp_path) == 0
+            && lstat(temp_path, &stat_info) == 0 && S_ISREG(stat_info.st_mode) && stat_info.st_nlink == 1
+            && stat_info.st_uid == geteuid() && !(stat_info.st_mode & (S_IWGRP | S_IWOTH))) {
+            if (ipc_file_copy(temp_path, STATIC_IP_CONF, __IPC_LOG__) != IPC_SUCCESS
+                || chmod(STATIC_IP_CONF, 0600) != 0) {
+                unlink(STATIC_IP_CONF);
+            }
+        }
+        unlink(temp_path);
+        rmdir(temp_dir);
     }
 }
 

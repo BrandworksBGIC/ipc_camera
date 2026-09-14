@@ -70,10 +70,8 @@ s32 ipc_voice_read(voice_p h_voice, pv8 buf, s32 max)
                 len = wave_read(h_voice->h_fp, buf, max / block_size);
                 return len < 0 ? IPC_READ_ERROR : len * block_size;
         }
-        break;
         case IPC_VOICE_PCM: 
             return ipc_file_read(h_voice->h_file, buf, max);
-        break;
         case IPC_VOICE_G711U:
             len = ipc_file_read(h_voice->h_file, encode_buff, encode_max);
             return len == 0 ? 0 : ipc_g711u_decode(buf, encode_buff, len);

@@ -166,7 +166,6 @@ s32 ipc_sensor_light_det_process(s32 sensor_det_mode, struct ipc_plat_isp_exp_st
             // cur_mode = sensor_det_mode;
             ADD_IGNORE_TIME_S(5); // manually switch to automatic mode, with a 5-second delay to avoid abnormal switching.
             return 0;
-            break;
         default: {
             static u32 exp_value_sum            = 0;
             static u32 total_color_diff_sum     = 0;

@@ -16,55 +16,55 @@ s32 ipc_getopt_iter(ipc_iter_p h_iter, s32 argc, pcv8 argv[], ipc_opt_attr_p p_a
     if (!h_opt->idx && !h_opt->sub)
         h_opt->nattr = *attr_num;
 
-RERUN:
-    if (h_opt->idx >= argc)
-        return IPC_ITER_BREAK; /* Parse complete */
-
-    if (h_opt->sub == 0) { /* At the beginning of each parameter parsing */
-        while (argv[h_opt->idx][h_opt->sub] == '-')
-            h_opt->sub++;      /* Calculate the number of '-' */
-        if (h_opt->sub == 0) { /* No '-' */
-            h_opt->idx++;
-            goto RERUN;
+    while (h_opt->idx < argc) {
+        if (h_opt->sub == 0) { /* At the beginning of each parameter parsing */
+            while (argv[h_opt->idx][h_opt->sub] == '-')
+                h_opt->sub++;      /* Calculate the number of '-' */
+            if (h_opt->sub == 0) { /* No '-' */
+                h_opt->idx++;
+                continue;
+            }
+            h_opt->is_tag = h_opt->sub == 1;
         }
-        h_opt->is_tag = h_opt->sub == 1;
-    }
 
-    s32 idx = 0;
-    if (h_opt->is_tag) { /* Short match */
-        for (idx = 0; idx < h_opt->nattr; idx++) {
-            if (!p_attr[idx].tag)
-                continue; /* Skip */
-            if (p_attr[idx].ignore_case ? toupper(argv[h_opt->idx][h_opt->sub]) == toupper(p_attr[idx].tag)
-                                        : argv[h_opt->idx][h_opt->sub] == p_attr[idx].tag) {
+        s32 idx = 0;
+        if (h_opt->is_tag) { /* Short match */
+            for (idx = 0; idx < h_opt->nattr; idx++) {
+                if (!p_attr[idx].tag)
+                    continue; /* Skip */
+                if (p_attr[idx].ignore_case ? toupper(argv[h_opt->idx][h_opt->sub]) == toupper(p_attr[idx].tag)
+                                            : argv[h_opt->idx][h_opt->sub] == p_attr[idx].tag) {
+                    *attr_num = idx;
+                    break;
+                }
+            }
+            h_opt->sub++;                               /* Will parse the next sub */
+            if (argv[h_opt->idx][h_opt->sub] == '\0') { /* No next sub, point to the next idx */
+                h_opt->idx++;
+                h_opt->sub = 0;
+            }
+            if (idx >= h_opt->nattr)
+                continue; /* Not found */
+            return IPC_ITER_CONTINUE;
+        }
+
+        for (idx = 0; idx < h_opt->nattr; idx++) { /* Long match */
+            if (!p_attr[idx].name)
+                continue; /* Empty, skip mismatch */
+            if (p_attr[idx].ignore_case ? !strcasecmp(&argv[h_opt->idx][h_opt->sub], p_attr[idx].name)
+                                        : !strcmp(&argv[h_opt->idx][h_opt->sub], p_attr[idx].name)) {
                 *attr_num = idx;
                 break;
             }
         }
-        h_opt->sub++;                               /* Will parse the next sub */
-        if (argv[h_opt->idx][h_opt->sub] == '\0') { /* No next sub, point to the next idx */
-            h_opt->idx++;
-            h_opt->sub = 0;
-        }
+        h_opt->idx++;
+        h_opt->sub = 0;
         if (idx >= h_opt->nattr)
-            goto RERUN; /* Not found */
+            continue; /* Not found */
         return IPC_ITER_CONTINUE;
     }
 
-    for (idx = 0; idx < h_opt->nattr; idx++) { /* Long match */
-        if (!p_attr[idx].name)
-            continue; /* Empty, skip mismatch */
-        if (p_attr[idx].ignore_case ? !strcasecmp(&argv[h_opt->idx][h_opt->sub], p_attr[idx].name)
-                                    : !strcmp(&argv[h_opt->idx][h_opt->sub], p_attr[idx].name)) {
-            *attr_num = idx;
-            break;
-        }
-    }
-    h_opt->idx++;
-    h_opt->sub = 0;
-    if (idx >= h_opt->nattr)
-        goto RERUN; /* Not found */
-    return IPC_ITER_CONTINUE;
+    return IPC_ITER_BREAK; /* Parse complete */
 }
 
 #ifdef GETOPT

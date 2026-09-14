@@ -1012,6 +1012,7 @@ int MFG_OsdSetLogo(MfgOsdLogo* logo)
 }
 
 static s32 _g_swdg_fd;
+static v8 _g_instaview_ota_path[35];
 int MFG_EnableWatchdog(int enabledog)
 {
     _g_swdg_fd = ipc_swdg_reg(1);
@@ -1043,11 +1044,17 @@ static vptr instaview_ota_upgrade()
 }
 static vptr instaview_ota_prepare()
 {
-    ipc_ota_prepare("/tmp/ota.bin", -1, 0);
+    ipc_ota_prepare(_g_instaview_ota_path, -1, 0);
     return NULL;
 }
 int MFG_OtaStart_callback(char* firmware_path)
 {
+    v8 ota_dir[] = "/tmp/instaview-ota-XXXXXX";
+
+    if (mkdtemp(ota_dir) == NULL
+        || snprintf(_g_instaview_ota_path, sizeof(_g_instaview_ota_path), "%s/ota.bin", ota_dir) >= (s32)sizeof(_g_instaview_ota_path)) {
+        return -1;
+    }
     ipc_swdg_unreg(_g_swdg_fd);
     printf("set ota firmware_path:%s\r\n", firmware_path);
     ipc_create_thread("ota_prepare", instaview_ota_prepare, NULL, 256 * 1024, 0);
@@ -1058,10 +1065,18 @@ int MFG_OtaStart_callback(char* firmware_path)
 }
 int MFG_FlashFirmware_callback(FirmwareFlashContext* firmware)
 {
+    struct stat stat_info;
+
+    if (firmware == NULL || firmware->firmwarePath == NULL || _g_instaview_ota_path[0] == '\0'
+        || rename(firmware->firmwarePath, _g_instaview_ota_path) != 0
+        || lstat(_g_instaview_ota_path, &stat_info) != 0 || !S_ISREG(stat_info.st_mode) || stat_info.st_nlink != 1
+        || stat_info.st_uid != geteuid() || (stat_info.st_mode & (S_IWGRP | S_IWOTH))
+        || chmod(_g_instaview_ota_path, 0600) != 0) {
+        unlink(_g_instaview_ota_path);
+        return -1;
+    }
     extern s32 frame_upgrade_falg;
     frame_upgrade_falg = 1;
-    ipc_exec("chmod 777 /tmp/firmware.bin");
-    ipc_exec("mv /tmp/firmware.bin /tmp/ota.bin");
     ipc_create_thread("ota_upgrade", instaview_ota_upgrade, NULL, 256 * 1024, 0);
     return 0;
 }

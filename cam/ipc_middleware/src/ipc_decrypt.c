@@ -117,8 +117,10 @@ static s32 _decrypt(void)
 
     s32 timeout_cnt = 0;
     do {
-        if (((msg = _read_and_decrypt(dev_node, f_decrypt, buff, 256, 1)) == NULL)
-            && ((msg = _read_and_decrypt(dev_node, f_decrypt, buff, 4096, 2)) == NULL)) {
+        msg = _read_and_decrypt(dev_node, f_decrypt, buff, 256, 1);
+        if (msg == NULL)
+            msg = _read_and_decrypt(dev_node, f_decrypt, buff, 4096, 2);
+        if (msg == NULL) {
             timeout_cnt++;
             ipcerror("Read and decrypt failed! retry times: %d\n", timeout_cnt);
         }

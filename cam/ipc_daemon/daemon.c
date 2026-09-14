@@ -23,32 +23,46 @@ static void _exec_app(pcv8 app_info, u8 is_first)
     v8 args[16][16] = { { 0 } };
     pv8 pvargs[16]  = { NULL };
 
-    s32 num = 0, off = 0, tmp = 0;
+    if (!app_info || !app_info[0])
+        return;
+
+    s32 num = 0, tmp = 0;
+    size_t off = 0;
+    size_t app_len = strlen(app_info);
 
     if (app_info[0] == '@')
         off++;                                        /* Skip the restart flag */
-    sscanf(app_info + off, "%[^=]%n", args[0], &tmp); /* Get the app name */
-    off = tmp;
+    if (off >= app_len || sscanf(app_info + off, "%15[^=]%n", args[0], &tmp) != 1 || tmp <= 0
+        || (size_t)tmp > app_len - off)
+        return;
+    off += (size_t)tmp;
     num = 1;
 
-    if (app_info[off] == '=') {
+    if (off < app_len && app_info[off] != '=')
+        return;
+
+    if (off < app_len && app_info[off] == '=') {
         if (!is_first) {
             pv8 str = strchr(app_info + off, '|');
             if (str != NULL)
-                off = str - app_info;
+                off = (size_t)(str - app_info);
         }
         off++;
-        while (1) { /* Pick up parameters separated by, before = and after | */
+        while (off < app_len && app_info[off] != '|') { /* Pick up parameters separated by, before = and after | */
+            if (num >= ARRSIZE(pvargs) - 1)
+                return;
             tmp = 0;
-            sscanf(app_info + off, "%[^,|]%n", args[num], &tmp);
-            off += tmp;
+            if (sscanf(app_info + off, "%15[^,|]%n", args[num], &tmp) != 1 || tmp <= 0
+                || (size_t)tmp > app_len - off)
+                return;
+            off += (size_t)tmp;
             num++;
-            if (app_info[off] != ',')
+            if (off >= app_len || app_info[off] == '|')
                 break;
+            if (app_info[off] != ',')
+                return;
             off++;
         }
-        if (num == 2 && args[1][0] == '\0')
-            num--; /* If there is only one parameter and nothing is passed, then this parameter is meaningless */
     }
 
     for (s32 idx = 0; idx < num; idx++) {
@@ -169,8 +183,9 @@ static void _daemon(void)
     if (fork() != 0)
         exit(0);
     setsid();
-    chdir("/");
-    umask(0);
+    if (chdir("/") != 0)
+        exit(IPC_FAILED);
+    umask(0022);
     close(0);
     // close(1);
     // close(2);

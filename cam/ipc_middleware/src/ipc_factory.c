@@ -163,6 +163,7 @@ s32 ipc_factory_param_update(pv8 src_file)
 }
 
 #define IPC_FACTORY_TEST_BIN_PATH "/mnt/sdcard/ipc_factory_test.bin"
+#define IPC_FACTORY_TEST_MOUNT_PATH "/var/run/factoryapp"
 
 static s32 _check_factory_test_bin_sign(void)
 {
@@ -257,7 +258,7 @@ static void _run_factory_test_library(pv8 args, ipc_factory_misc_cb_f f_misc_cb)
 
     typedef s32 (*factory_test_api_t)(ipc_plat_api_t api, pv8 args, ipc_factory_misc_cb_f f_misc_cb);
 
-    void* handle = dlopen("/tmp/factoryapp/" __IPC_ARCH__ "/lib/libfactory_test.so", RTLD_LAZY);
+    void* handle = dlopen(IPC_FACTORY_TEST_MOUNT_PATH "/" __IPC_ARCH__ "/lib/libfactory_test.so", RTLD_LAZY);
     if (!handle) {
         fprintf(stderr, "[%s](%d) dlopen get error: %s\n", __FILE__, __LINE__, dlerror());
         return;
@@ -277,13 +278,13 @@ static void _factory_test_run_bin(pv8 args, ipc_factory_misc_cb_f f_misc_cb)
 {
     s32 ret = 0;
     if ((access(IPC_FACTORY_TEST_BIN_PATH, F_OK) == 0) && (_check_factory_test_bin_sign() == 0)) {
-        ret = mkdir("/tmp/factoryapp", 666);
+        ret = mkdir(IPC_FACTORY_TEST_MOUNT_PATH, 0700);
         if (ret < 0) {
             return;
         }
-        ipc_exec("mount " IPC_FACTORY_TEST_BIN_PATH " /tmp/factoryapp");
-        ipc_exec("/tmp/factoryapp/block_init.sh %s", __IPC_ARCH__);
-        ipc_exec("/tmp/factoryapp/init.sh %s &", __IPC_ARCH__);
+        ipc_exec("mount " IPC_FACTORY_TEST_BIN_PATH " " IPC_FACTORY_TEST_MOUNT_PATH);
+        ipc_exec(IPC_FACTORY_TEST_MOUNT_PATH "/block_init.sh %s", __IPC_ARCH__);
+        ipc_exec(IPC_FACTORY_TEST_MOUNT_PATH "/init.sh %s &", __IPC_ARCH__);
         _run_factory_test_library(args, f_misc_cb);
     }
 }

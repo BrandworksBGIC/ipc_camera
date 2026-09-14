@@ -7,10 +7,9 @@
 static s32 ipc_tty_redirect(void)
 {
     s32 tty  = -1;
-    pv8 name = NULL;
+    v8 name[128] = { 0 };
 
-    name = ttyname(STDOUT_FILENO);
-    if (name == NULL) {
+    if (ttyname_r(STDOUT_FILENO, name, sizeof(name)) != 0) {
         printf("Error, get tty name failed\n");
         return IPC_FAILED;
     }

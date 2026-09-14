@@ -49,7 +49,7 @@ s32 ipc_file_open(ipc_file_p h_file, pv8 path, ipc_file_mode_e mode, ipc_log_p f
         [IPC_FILE_APPEND] = O_WRONLY | O_CREAT | O_APPEND,
     };
     
-    h_file->fd = open(path, mode_map[mode], 0777);
+    h_file->fd = open(path, mode_map[mode], 0666);
     if (h_file->fd < 0) {
         ipcwarn("Open file:[%s] failed! errmsg=[%s]", path, strerror(errno));
         return IPC_OPEN_ERROR;
@@ -101,7 +101,7 @@ s32 ipc_file_read(ipc_file_p h_file, pv8 buff, s32 max)
 		recv_all += recv_len;
 	}
 
-    ipctrace(buff, recv_all);
+    iphtrace(buff, recv_all);
 
     return recv_all;
 }
@@ -280,7 +280,7 @@ s32 ipc_mkdirs(pv8 path)
         if (path[src_idx] == '\0') {
             // CID 21739: Replace access+mkdir with single mkdir call
             // coverity[TOCTOU : SUPPRESS]
-            ret = mkdir(dest_path, 0777);
+            ret = mkdir(dest_path, 0755);
             // Check if directory already exists (EEXIST) or was successfully created
             if (ret != 0 && errno != EEXIST) return IPC_WRITE_ERROR;
             break;
@@ -289,7 +289,7 @@ s32 ipc_mkdirs(pv8 path)
         if (path[src_idx] == '/') {
             // CID 21739: Replace access+mkdir with single mkdir call
             // coverity[TOCTOU : SUPPRESS]
-            ret = mkdir(dest_path, 0777);
+            ret = mkdir(dest_path, 0755);
             // Check if directory already exists (EEXIST) or was successfully created
             if (ret != 0 && errno != EEXIST) return IPC_WRITE_ERROR;
             while(path[src_idx] == '/') src_idx++;

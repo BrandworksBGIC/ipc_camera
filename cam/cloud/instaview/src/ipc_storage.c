@@ -204,7 +204,7 @@ static s32 _encrypt_file(pcv8 persistent_path, pcu8 plain, size_t plain_len, mod
     key_manage_encrypt_with_conf_key_1((pv8)persistent_path, (pv8)cipher, (s32)cipher_len);
 
     s32 ret = _write_file_atomic(persistent_path, storage, storage_len, file_mode);
-    memset(storage, 0, storage_len);
+    explicit_bzero(storage, storage_len);
     free(storage);
     return ret;
 }
@@ -242,26 +242,26 @@ static s32 _decrypt_file(pcv8 persistent_path, pu8* plain, size_t* plain_len, mo
     u8 padding = cipher[cipher_len - 1];
     if (padding == 0 || padding > IPC_IV_CIPHER_BLOCK_SIZE
         || (size_t)header->plain_len + padding != cipher_len) {
-        memset(storage, 0, storage_len);
+        explicit_bzero(storage, storage_len);
         free(storage);
         return IPC_VERIFY_FAILED;
     }
     for (size_t i = cipher_len - padding; i < cipher_len; i++) {
         if (cipher[i] != padding) {
-            memset(storage, 0, storage_len);
+            explicit_bzero(storage, storage_len);
             free(storage);
             return IPC_VERIFY_FAILED;
         }
     }
     if (_storage_checksum(cipher, header->plain_len) != header->checksum) {
-        memset(storage, 0, storage_len);
+        explicit_bzero(storage, storage_len);
         free(storage);
         return IPC_VERIFY_FAILED;
     }
 
     pu8 output = malloc((size_t)header->plain_len + 1);
     if (!output) {
-        memset(storage, 0, storage_len);
+        explicit_bzero(storage, storage_len);
         free(storage);
         return IPC_NOMEM;
     }
@@ -273,7 +273,7 @@ static s32 _decrypt_file(pcv8 persistent_path, pu8* plain, size_t* plain_len, mo
         *file_mode = mode;
     }
 
-    memset(storage, 0, storage_len);
+    explicit_bzero(storage, storage_len);
     free(storage);
     return IPC_SUCCESS;
 }
@@ -308,7 +308,7 @@ static s32 _validate_business_config(pcu8 expected, size_t expected_len)
         && (encrypted_len != expected_len || memcmp(encrypted, expected, expected_len) != 0)) {
         ret = IPC_NOT_MATCH;
     }
-    memset(encrypted, 0, encrypted_len);
+    explicit_bzero(encrypted, encrypted_len);
     free(encrypted);
     return ret;
 }
@@ -323,7 +323,7 @@ static s32 _encrypt_business_config(pcu8 plain, size_t plain_len, mode_t file_mo
     encrypted[plain_len] = '\0';
     key_manage_encrypt_with_conf_key_1(IPC_IV_CONFIG_FILE, (pv8)encrypted, (s32)plain_len);
     s32 ret = _write_file_atomic(IPC_IV_CONFIG_FILE, encrypted, plain_len, file_mode);
-    memset(encrypted, 0, plain_len);
+    explicit_bzero(encrypted, plain_len);
     free(encrypted);
     return ret;
 }
@@ -344,7 +344,7 @@ static s32 _migrate_business_config(void)
         if (ret == IPC_SUCCESS) {
             ret = _validate_business_config(current_plain, current_plain_len);
         }
-        memset(current_plain, 0, current_plain_len);
+        explicit_bzero(current_plain, current_plain_len);
         free(current_plain);
         if (ret == IPC_SUCCESS) {
             return _remove_if_exists(IPC_IV_LEGACY_CONFIG_FILE);
@@ -372,7 +372,7 @@ static s32 _migrate_business_config(void)
     if (ret == IPC_SUCCESS) {
         ret = _remove_if_exists(IPC_IV_LEGACY_CONFIG_FILE);
     }
-    memset(legacy, 0, legacy_len);
+    explicit_bzero(legacy, legacy_len);
     free(legacy);
     return ret;
 }
@@ -412,7 +412,7 @@ static s32 _migrate_plain_file(pcv8 legacy_path, pcv8 persistent_path)
     if (ret == IPC_SUCCESS) {
         ret = _remove_if_exists(legacy_path);
     }
-    memset(legacy, 0, legacy_len);
+    explicit_bzero(legacy, legacy_len);
     free(legacy);
     return ret;
 }
@@ -476,7 +476,7 @@ static s32 _restore_file(pcv8 persistent_path, pcv8 runtime_path)
         ret = _write_file_atomic(runtime_path, plain, plain_len, file_mode);
     }
     if (plain) {
-        memset(plain, 0, plain_len);
+        explicit_bzero(plain, plain_len);
         free(plain);
     }
     return ret;
@@ -550,10 +550,10 @@ static s32 _sync_file(pcv8 runtime_path, pcv8 persistent_path)
     }
 
     if (persistent) {
-        memset(persistent, 0, persistent_len);
+        explicit_bzero(persistent, persistent_len);
         free(persistent);
     }
-    memset(runtime, 0, runtime_len);
+    explicit_bzero(runtime, runtime_len);
     free(runtime);
     return ret;
 }
@@ -730,7 +730,13 @@ static u8 _consume_inotify_events(void)
 
         size_t offset = 0;
         while (offset < (size_t)read_len) {
+            if ((size_t)read_len - offset < sizeof(struct inotify_event)) {
+                return need_sync;
+            }
             struct inotify_event* event = (struct inotify_event*)(event_buff + offset);
+            if ((size_t)event->len > (size_t)read_len - offset - sizeof(*event)) {
+                return need_sync;
+            }
             pcv8 parent = _watch_path(event->wd);
 
             if (event->mask & IN_IGNORED) {

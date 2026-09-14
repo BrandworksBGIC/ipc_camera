@@ -30,16 +30,20 @@ static s32 _dns_resolver(const char *domain, char* ipaddr, struct in_addr *inadd
 {
     if (!domain || !ipaddr) return -1;
 
-    struct hostent* host=gethostbyname(domain);
-    if (!host) {
+    struct hostent host_buf;
+    struct hostent* host = NULL;
+    v8 buffer[1024] = { 0 };
+    s32 h_err = 0;
+    s32 ret = gethostbyname_r(domain, &host_buf, buffer, sizeof(buffer), &host, &h_err);
+    if (ret != 0 || !host || !host->h_addr_list[0]) {
         return -1;
     }
 
-    if (NULL != ipaddr)
-        strncpy(ipaddr, inet_ntoa(*(struct in_addr*)host->h_addr), 16);
+    if (inet_ntop(AF_INET, host->h_addr_list[0], ipaddr, INET_ADDRSTRLEN) == NULL)
+        return -1;
 
     if (NULL != inaddr)
-        memcpy(inaddr, host->h_addr, sizeof(struct in_addr));
+        memcpy(inaddr, host->h_addr_list[0], sizeof(struct in_addr));
 
     return 0;
 }

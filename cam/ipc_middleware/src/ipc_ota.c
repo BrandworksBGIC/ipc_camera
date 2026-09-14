@@ -13,6 +13,7 @@
 #include "ipc_status_led.h"
 #include "ipc_tfcard_monitor.h"
 
+#define IPC_OTA_UPDATER_PATH "/var/run/updater"
 
 struct mtd_dev_s {
     v8 mtd_size[32];
@@ -61,9 +62,6 @@ static s32 _ota_write_backup_head(s32 pack_size)
         return ret;
 
     ret = ipc_file_seek(_g_ota->file, 32, IPC_SEEK_HEAD);
-    if (ret < 0)
-        return ret;
-
     return ret;
 }
 
@@ -226,10 +224,16 @@ void ipc_ota_upgrade(void (*f_before_exit)(s32 ret))
 
         exit(-1);
     } else { // Normal upgrade
-        ipc_file_copy("/app/bin/updater", "/tmp/updater", __IPC_LOG__);
-        ipc_exec("chmod 777 /tmp/updater");
+        unlink(IPC_OTA_UPDATER_PATH);
+        ret = ipc_file_copy("/app/bin/updater", IPC_OTA_UPDATER_PATH, __IPC_LOG__);
+        if (ret == IPC_SUCCESS && chmod(IPC_OTA_UPDATER_PATH, 0700) != 0) {
+            ret = IPC_FAILED;
+        }
         f_before_exit(ret);
-        ipc_exec("/tmp/updater %s &", _g_ota->ota_file); // Here, the updater program is rebooted, so the following exit(0) exits normally
+        if (ret != IPC_SUCCESS) {
+            return;
+        }
+        ipc_exec(IPC_OTA_UPDATER_PATH " %s &", _g_ota->ota_file); // Here, the updater program is rebooted, so the following exit(0) exits normally
         _exit(0);
     }
 }

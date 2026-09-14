@@ -271,50 +271,52 @@ static s32 _try_play(ps32 p_idx, void* buf, s32 max)
     u8 need_free = 0;
     u32 now_ts   = ipc_mono_ts();
 
-RECHECK:
-    ipc_lock(_gh_speaker.mutex);
-    s32 ret          = _check_need_play(p_idx, now_ts, &need_free);
-    play_plan_p plan = &_gh_speaker.plan[*p_idx];
-    s8 vol           = plan->play.vol;
-    s8 gain          = plan->play.gain;
-    u16 ratio        = plan->play.ratio;
-    ipc_unlock(_gh_speaker.mutex);
-    if (need_free) {
-        _clear_plan(plan);
-        goto RECHECK;
-    }
-    if (ret < 0)
-        return ret;
-
-    if (!plan->has_voice) {
-        ret = ipc_voice_open(&plan->h_voice, plan->path, plan->type);
-        if (ret < 0) {
-            _clear_plan(plan);
-            goto RECHECK;
-        }
-        plan->has_voice = 1;
-    }
-
-    ret = ipc_voice_read(&plan->h_voice, buf, max);
-    if (ret < 0) {
-        _clear_plan(plan);
-        goto RECHECK;
-    } else if (ret == 0) {
+    while (1) {
         ipc_lock(_gh_speaker.mutex);
-        need_free = _check_need_free(plan, now_ts);
+        s32 ret          = _check_need_play(p_idx, now_ts, &need_free);
+        play_plan_p plan = &_gh_speaker.plan[*p_idx];
+        s8 vol           = plan->play.vol;
+        s8 gain          = plan->play.gain;
+        u16 ratio        = plan->play.ratio;
         ipc_unlock(_gh_speaker.mutex);
         if (need_free) {
-            ipc_plat_api(0)->audio_ao_flush_buffer(); // If not blocked here, it could cause `ipc_mpp_play_voice` to exit prematurely
             _clear_plan(plan);
-        } else {
-            ipc_voice_reset(&plan->h_voice);
+            continue;
         }
-        goto RECHECK;
+        if (ret < 0) {
+            return ret;
+        }
+
+        if (!plan->has_voice) {
+            ret = ipc_voice_open(&plan->h_voice, plan->path, plan->type);
+            if (ret < 0) {
+                _clear_plan(plan);
+                continue;
+            }
+            plan->has_voice = 1;
+        }
+
+        ret = ipc_voice_read(&plan->h_voice, buf, max);
+        if (ret < 0) {
+            _clear_plan(plan);
+            continue;
+        } else if (ret == 0) {
+            ipc_lock(_gh_speaker.mutex);
+            need_free = _check_need_free(plan, now_ts);
+            ipc_unlock(_gh_speaker.mutex);
+            if (need_free) {
+                ipc_plat_api(0)->audio_ao_flush_buffer(); // If not blocked here, it could cause `ipc_mpp_play_voice` to exit prematurely
+                _clear_plan(plan);
+            } else {
+                ipc_voice_reset(&plan->h_voice);
+            }
+            continue;
+        }
+
+        _set_speaker_vol(vol, gain, ratio);
+
+        return ret;
     }
-
-    _set_speaker_vol(vol, gain, ratio);
-
-    return ret;
 }
 
 static vptr _pth_speaker(vptr arg)

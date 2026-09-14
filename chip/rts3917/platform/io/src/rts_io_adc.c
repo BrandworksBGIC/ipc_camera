@@ -16,7 +16,7 @@
 #define PATH_MAX 256
 #endif
 
-int __io_adc_find_dir(const char* basepath, const char* partname, char* fullname, int depth)
+int __io_adc_find_dir(const char* basepath, const char* partname, char* fullname, size_t fullname_size, int depth)
 {
     DIR* dir;
     struct dirent* dp;
@@ -38,19 +38,23 @@ int __io_adc_find_dir(const char* basepath, const char* partname, char* fullname
             continue;
 
         if (strstr(dp->d_name, partname)) {
-            // coverity[DC.STRING_BUFFER :SUPPRESS]
-            // coverity[SECURE_CODING :SUPPRESS]
-            sprintf(fullname, "%s/%s", basepath, dp->d_name);
+            int len = snprintf(fullname, fullname_size, "%s/%s", basepath, dp->d_name);
+            if (len < 0 || (size_t)len >= fullname_size) {
+                ret = -ERR_IO_ADC_NOT_MATCH;
+                continue;
+            }
             ret = 0;
             break;
         }
 
         if (depth > 0) {
             char subpath[PATH_MAX];
-            // coverity[DC.STRING_BUFFER :SUPPRESS]
-            // coverity[SECURE_CODING :SUPPRESS]
-            sprintf(subpath, "%s/%s", basepath, dp->d_name);
-            ret = __io_adc_find_dir(subpath, partname, fullname, depth);
+            int len = snprintf(subpath, sizeof(subpath), "%s/%s", basepath, dp->d_name);
+            if (len < 0 || (size_t)len >= sizeof(subpath)) {
+                ret = -ERR_IO_ADC_NOT_MATCH;
+                continue;
+            }
+            ret = __io_adc_find_dir(subpath, partname, fullname, fullname_size, depth);
             if (!ret)
                 break;
         }
@@ -93,7 +97,7 @@ int rts_io_adc_get_value(int adc_channel)
     char dev[PATH_MAX];
     int remain;
 
-    ret = __io_adc_find_dir("/sys/devices/platform/", "saradc", dev, 2);
+    ret = __io_adc_find_dir("/sys/devices/platform/", "saradc", dev, sizeof(dev), 2);
     if (ret < 0) {
         printf("Can't find dir:\"saradc\"\n");
         return ret;

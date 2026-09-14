@@ -314,7 +314,7 @@ static u8 _update_io_status(u64 now_tms, s32 is_use_sendet)
     /* Default parameters */
     u8 ignore_flag = 0;
     u8 rled        = _gh_status->env == IPC_ENV_DAY ? IPC_IO_VALUE_IS_INACTIVE : IPC_IO_VALUE_IS_ACTIVE;
-    u8 bled        = _gh_status->env == IPC_ENV_DAY ? IPC_IO_VALUE_IS_INACTIVE : IPC_IO_VALUE_IS_INACTIVE;
+    u8 bled        = IPC_IO_VALUE_IS_INACTIVE;
     u8 color       = _gh_status->env == IPC_ENV_DAY ? IPC_VIDEO_MODE_DAY : IPC_VIDEO_MODE_NIGHT;
 
     if ((ipc_factory(light_ctrl_mode) == IPC_DUAL_LIGHT) || _gh_status->force_in_dual_light) { /* Dual light source */

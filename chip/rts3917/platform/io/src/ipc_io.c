@@ -578,7 +578,6 @@ s32 ipc_plat_io_init(struct ipc_io_active_level_flip* flip_table, int num)
             default:
                 ret = -1;
                 goto product_type_err;
-                break;
         }
 
         if (ret < 0) {

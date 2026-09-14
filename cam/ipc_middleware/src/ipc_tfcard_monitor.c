@@ -39,12 +39,26 @@ static pcv8 _get_dev_node(void)
     while ((cur = fgets(buffer, sizeof(buffer), fp))) {
         // coverity[SECURE_CODING :SUPPRESS]
         // coverity[DC.STRING_BUFFER :SUPPRESS]
-        ret = sscanf(cur, "%d%d%llu%s", &major, &minor, &blocks, name);
+        ret = sscanf(cur, "%d%d%llu%63s", &major, &minor, &blocks, name);
         if (ret != 4)
             continue; // Exclude the first few lines of the header
         ipcdebug("major=[%d], minor=[%d], blocks=[%llu], name=[%s]", major, minor, blocks, name);
         if (strncmp(name, "mmcblk", sizeof("mmcblk") - 1))
             continue; // Filter out non-mmcblk beginnings
+        pv8 suffix = name + sizeof("mmcblk") - 1;
+        if (*suffix < '0' || *suffix > '9')
+            continue;
+        while (*suffix >= '0' && *suffix <= '9')
+            suffix++;
+        if (*suffix == 'p') {
+            suffix++;
+            if (*suffix < '0' || *suffix > '9')
+                continue;
+            while (*suffix >= '0' && *suffix <= '9')
+                suffix++;
+        }
+        if (*suffix)
+            continue;
         if (blocks < 10)
             continue;                     // Memory is too small, filtering
         if (strcmp(max_name, name) < 0) { // Select the largest and longest node
