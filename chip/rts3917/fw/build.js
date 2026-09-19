@@ -93,6 +93,11 @@ buildTarget.setTargetType("void");
 
 // Build function - main build logic
 function buildFirmwarePackage() {
+    if (process.env.STATIC_ANALYSIS_ONLY === '1') {
+        console.log("Static analysis build: skipping firmware packaging and signing");
+        return;
+    }
+
     console.log("=== Building Instaview Firmware Package ===");
     console.log(`Version: ${version}`);
     console.log(`Chip: ${chipName}`);
