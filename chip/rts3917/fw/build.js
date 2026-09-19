@@ -55,7 +55,7 @@ console.log(`Building for chip: ${buildConfig.mainChip}, wifi: ${buildConfig.wif
 
 // Version and timestamp
 function generateVersion() {
-    const baseVersion = "01.00.003";
+    const baseVersion = "01.00.004";
     const now = new Date();
     const timestamp = now.getFullYear().toString() +
                       (now.getMonth() + 1).toString().padStart(2, '0') +

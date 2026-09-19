@@ -241,7 +241,11 @@ s32 frame_upgrade_falg = 0;
 int MFG_SystemReset_callback()
 {
     ipc_timer_uninit(_gh_timer_pool, 1);
-    return 0;
+    s32 ret = ipc_handler_storage_reset();
+    if (ret < 0) {
+        printf("Error, reset Instaview storage failed: %d\n", ret);
+    }
+    return ret;
 }
 int MFG_SystemReboot_callback()
 {

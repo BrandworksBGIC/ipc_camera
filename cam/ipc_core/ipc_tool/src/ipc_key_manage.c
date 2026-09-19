@@ -1,4 +1,5 @@
 /* Include system library for file access functions */
+#include <errno.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -114,18 +115,63 @@ static s32 decrypt_data_with_otp_key(pu8 data, s32 data_len)
     return ipc_aes_cbc_decrypt_buffer(&ctx, data, data_len);
 }
 
+static s32 write_conf_key_1_atomic(pcu8 conf_key_1)
+{
+    pcv8 tmp_path = "/conf/conf_key_1.tmp";
+    s32 fd = open(tmp_path, O_WRONLY | O_CREAT | O_TRUNC, 0600);
+    if (fd < 0) {
+        return IPC_OPEN_ERROR;
+    }
+
+    s32 offset = 0;
+    s32 ret = IPC_SUCCESS;
+    while (offset < 64) {
+        ssize_t write_len = write(fd, conf_key_1 + offset, 64 - offset);
+        if (write_len < 0 && errno == EINTR) {
+            continue;
+        }
+        if (write_len <= 0) {
+            ret = IPC_WRITE_ERROR;
+            break;
+        }
+        offset += (s32)write_len;
+    }
+
+    if (ret == IPC_SUCCESS && (fchmod(fd, 0600) != 0 || fsync(fd) != 0)) {
+        ret = IPC_WRITE_ERROR;
+    }
+    if (close(fd) != 0 && ret == IPC_SUCCESS) {
+        ret = IPC_WRITE_ERROR;
+    }
+    if (ret == IPC_SUCCESS && rename(tmp_path, "/conf/conf_key_1") != 0) {
+        ret = IPC_WRITE_ERROR;
+    }
+    if (ret < 0) {
+        unlink(tmp_path);
+        return ret;
+    }
+
+    fd = open("/conf", O_RDONLY);
+    if (fd < 0) {
+        return IPC_OPEN_ERROR;
+    }
+    ret = fsync(fd) == 0 ? IPC_SUCCESS : IPC_WRITE_ERROR;
+    close(fd);
+    return ret;
+}
+
 /* Manage configuration key lifecycle */
 static s32 create_conf_key_1(void)
 {
     // Check for existing encrypted key file
 
-    u8 conf_key_1[64];
+    u8 conf_key_1[65];
     s32 key_buf_len = 0;
     s32 ret         = 0;
 
-    key_buf_len = ipc_file_read_once("/conf/conf_key_1", (pv8)conf_key_1, 64, __IPC_LOG__);
+    key_buf_len = ipc_file_read_once("/conf/conf_key_1", (pv8)conf_key_1, sizeof(conf_key_1), __IPC_LOG__);
 
-    if (key_buf_len > 0) {
+    if (key_buf_len == 64) {
         decrypt_data_with_otp_key(conf_key_1, key_buf_len);
 
         memcpy(_g_key[KEY_TYPE_CONF_KEY_1].key, conf_key_1, 32);
@@ -135,6 +181,10 @@ static s32 create_conf_key_1(void)
         // ipc_exec("md5sum /tmp/aes_conf_1_key.bin");
 
         return 0;
+    }
+    if (key_buf_len >= 0) {
+        printf("Error, invalid conf_key_1 length: %d\n", key_buf_len);
+        return IPC_READ_ERROR;
     }
 
     ret = get_random_bytes(conf_key_1, 64);
@@ -148,7 +198,11 @@ static s32 create_conf_key_1(void)
 
     encrypt_data_with_otp_key(conf_key_1, 64);
 
-    ipc_file_write_once("/conf/conf_key_1", (pv8)conf_key_1, 64, __IPC_LOG__);
+    ret = write_conf_key_1_atomic(conf_key_1);
+    if (ret < 0) {
+        printf("Error, write conf_key_1 failed: %d\n", ret);
+        return ret;
+    }
 
     return 0;
 }
@@ -250,7 +304,10 @@ s32 key_manage_init(void)
     try_create_root_key();
 
     // Generate or load configuration key 1
-    create_conf_key_1();
+    s32 ret = create_conf_key_1();
+    if (ret < 0) {
+        return ret;
+    }
 
     // Generate or load configuration key 2
     u8 conf_key_2[48];

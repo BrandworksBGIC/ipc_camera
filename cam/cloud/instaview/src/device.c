@@ -1034,6 +1034,9 @@ int MFG_RefreshWatchdog()
 static void ipc_ota_before_reboot_result(s32 ret)
 {
     printf("flasing:%d\n", ret);
+    if (ret == IPC_SUCCESS) {
+        ipc_handler_storage_shutdown();
+    }
 }
 
 static vptr instaview_ota_upgrade()

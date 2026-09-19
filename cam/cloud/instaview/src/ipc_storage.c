@@ -975,6 +975,12 @@ s32 ipc_handler_storage_reset(void)
         ret = _remove_if_exists(IPC_IV_STORAGE_PATH);
     }
     if (ret == IPC_SUCCESS) {
+        ret = key_manage_delete_conf_key_1();
+        if (ret == IPC_NOT_FOUND) {
+            ret = IPC_SUCCESS;
+        }
+    }
+    if (ret == IPC_SUCCESS) {
         ret = _remove_if_exists(IPC_IV_LEGACY_CONFIG_FILE);
     }
     for (s32 i = 0; ret == IPC_SUCCESS && i < ARRSIZE(_g_legacy_files); i++) {
