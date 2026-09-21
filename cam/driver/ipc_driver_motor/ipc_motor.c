@@ -225,6 +225,7 @@ static int motor_dev_move(struct step_motor_ctrl* dev)
 
                 dev->direction = (dev->direction == IPC_MOTOR_DIR_COUNTERCLOCKWISE) ? IPC_MOTOR_DIR_CLOCKWISE : IPC_MOTOR_DIR_COUNTERCLOCKWISE;
             }
+            break;
         }
         default:
             break;

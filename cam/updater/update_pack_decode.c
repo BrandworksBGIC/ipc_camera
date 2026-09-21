@@ -234,6 +234,10 @@ struct update_pack_image_desc* update_pack_decode(char* pack_name, int* image_nu
         }
 
         if (type == IPC_FIRMWARE_TYPE_IMAGE_LIST_DESC) {
+            if (part_list != NULL) {
+                goto err_exit;
+            }
+
             ret = ipc_read(fd, image_num, 4);
             if (ret != 4) {
                 goto err_exit;

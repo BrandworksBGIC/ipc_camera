@@ -72,7 +72,7 @@ static int _not_same_and_less(int arr[], int size, int max)
     int distinct_pairs = 0;
 
     for (i = 0; i < size; i++) {
-        if (arr[i] >= max) {
+        if (arr[i] < 0 || arr[i] >= max) {
             return 0;
         }
 
