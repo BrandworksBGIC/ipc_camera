@@ -1,0 +1,104 @@
+cd ipc_camera
+source setup.sh
+cd third
+./jmake_git_all.sh
+cd -
+cd tools
+./prepare_jmake_dirs.sh
+cd -
+cd chip/rts3917/sdk/rts39xx_sdk_v5.3/
+./launch.sh
+Choose: 3) rts3917n_base_defconfig	
+Choose default path
+cd -
+cd chip/rts3917/sdk/rts39xx_sdk_v5.3/out/rts3917n_base/
+make secure_boot M=1
+make 
+cd ../../../../fw/
+jmake --rebuild
+
+=========================================
+Firmware version changes on: /home/bwadmin/github/githubActions/ipc_camera/chip/rts3917/fw/build.js
+==========================================
+HSM Server creds
+1234567890A
+===============Root login===========================
+username: root
+pass: ipc**%%##--@@
+
+==================SonarQube================
+###Set heap size for sonar to 8GB
+export SONAR_SCANNER_OPTS="-Xmx8g"
+export _JAVA_OPTIONS="-Xmx8g"
+
+###Exports
+export PATH=$PATH:/home/bwadmin/github/build-wrapper-linux-x86/
+export PATH=$PATH:/home/bwadmin/github/sonar-scanner-cli-8.0.1.6346-linux-x64/sonar-scanner-8.0.1.6346-linux-x64/bin/
+export SONAR_TOKEN=f3ef9d5b37b180908637521d1f741c34d494cb7f
+
+###Wrapper commands on make
+build-wrapper-linux-x86-64 --out-dir "/home/bwadmin/github/bw-output-for-sonar_22nd_Sept_2026_3" make secure_boot M=1
+build-wrapper-linux-x86-64 --out-dir "/home/bwadmin/github/bw-output-for-sonar_22nd_Sept_2026_3" make
+cd ../../../../fw/
+build-wrapper-linux-x86-64 --out-dir "/home/bwadmin/github/bw-output-for-sonar_22nd_Sept_2026_3" jmake
+
+###Command to upload build logs to sonarqube
+Run the below command from ipc_camera parent directory
+
+sonar-scanner \
+  -Dsonar.organization=brandworksbgic \
+  -Dsonar.projectKey=BrandworksBGIC_ipc_camera \
+  -Dsonar.cfamily.compile-commands="/home/bwadmin/github/bw-output-for-sonar_22nd_Sept_2026_3/compile_commands.json" \
+  -Dsonar.c.file.suffixes=".c,.h" \
+  -Dsonar.cpp.file.suffixes=".cpp,.cc,.cxx,.hpp,.hh" \
+  -Dsonar.inclusions="**/*.c,**/*.h,**/*.cpp,**/*.cc,**/*.cxx,**/*.hpp,**/*.hh" \
+  -Dsonar.exclusions="**/node_modules/**,**/build/**,**/out/**,**/target/**,**/bin/**"
+
+
+Visit sonarcloud, left side dashbar, analysis, summary, see the report
+https://sonarcloud.io/dashboard?id=BrandworksBGIC_ipc_camera
+https://sonarcloud.io/api/ce/task?id=AaA9UzIdYibNoePAlK1M
+
+
+
+(.rts3917_build) bwadmin@ubuntu3:~/github/githubActions/ipc_camera$ sonar-scanner \
+  -Dsonar.organization=brandworksbgic \
+  -Dsonar.projectKey=BrandworksBGIC_ipc_camera \
+  -Dsonar.cfamily.compile-commands="/home/bwadmin/github/bw-output-for-sonar_26th_Aug_2026_1/compile_commands.json" \
+  -Dsonar.sources="/home/bwadmin/github/githubActions/ipc_camera/chip/rts3917/AI,/home/bwadmin/github/githubActions/ipc_camera/chip/rts3917/sdk/rts39xx_sdk_v5.3/platform/source"
+
+
+One more new command after exclusions suggested by GV
+
+sonar-scanner \
+  -Dsonar.organization=brandworksbgic \
+  -Dsonar.projectKey=BrandworksBGIC_ipc_camera \
+  -Dsonar.cfamily.compile-commands="/home/bwadmin/github/bw-output-for-sonar_26th_Aug_2026_1/compile_commands.json" \
+  -Dsonar.sources="/home/bwadmin/github/githubActions/ipc_camera/cam,/home/bwadmin/github/githubActions/ipc_camera/chip/rts3917/platform" \
+  -Dsonar.exclusions="**/chip/rts3917/sdk/rts39xx_sdk_v5.3/**,**/third/**,**/chip/rts3917/AI/**,**/chip/rts3917/third_lib/**,**/cam/cloud/instaview/sdk/**,**/build/**,**/chip/rts3917/fw/out/**,**/chip/rts3917/fw/staging/**"
+============================================
+Execute the following command in the directory "chip/rts3917/build_security_image":
+
+sha256sum public_key/ipc_upgrade_key.pem
+
+openssl pkey \
+ -pubin \
+ -in public_key/ipc_upgrade_key.pem \
+ -text \
+ -noout
+
+python --version
+
+python -c "import cryptography; print(cryptography.__version__)"
+
+openssl version
+============================================
+#Version check
+IPC login: ipc instaview_version:01.00.003
+
+#Firmware to choose
+
+============================================
+/home/bwadmin/github/githubActions/ipc_camera/chip/rts3917/fw/out/rts3917n_instaview_sign_01.00.003-20260910140636
+/home/bwadmin/github/githubActions/ipc_camera/chip/rts3917/fw/out/rts3917n_instaview_sign_01.00.003-20260911133959/rts3917nall.ippa.sign
+
