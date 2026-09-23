@@ -59,7 +59,11 @@ static void _gpio_io_change(P_IPC_MOTOR_GPIO_SEQ_S motor_gpio_seq)
 
     for (j = 0; j < IPC_MOTOR_PIN_GROUP_NUM; j++) {
         for (i = 0; i < IPC_MOTOR_PIN_NUM; i++) {
-            motor_gpio[j].gpio_num[i] = tmp_motor_gpio[j].gpio_num[motor_gpio_seq->motor_gpioH_seq[i]];
+            int gpio_index = motor_gpio_seq->motor_gpioH_seq[i];
+            if (gpio_index < 0 || gpio_index >= IPC_MOTOR_PIN_NUM) {
+                return;
+            }
+            motor_gpio[j].gpio_num[i] = tmp_motor_gpio[j].gpio_num[gpio_index];
         }
     }
 }
