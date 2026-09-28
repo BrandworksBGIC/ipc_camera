@@ -37,7 +37,7 @@ typedef enum {
 } ipc_file_mode_e;
 
 /**
- * @brief Open the file in read-write mode. If the file does not exist, create a file with permissions of 666
+ * @brief Open the file in read-write mode. If the file does not exist, create a file with permissions of 660
  * ps: The advantage of this cluster of functions is that it handles interrupts and has detailed logs, but it is
  * recommended to only use them in tool packaging in this library, and theoretically, external use is not necessary
  *

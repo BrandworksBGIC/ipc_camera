@@ -185,7 +185,7 @@ static void _daemon(void)
     setsid();
     if (chdir("/") != 0)
         exit(IPC_FAILED);
-    umask(0022);
+    umask(0027);
     close(0);
     // close(1);
     // close(2);

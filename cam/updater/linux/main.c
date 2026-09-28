@@ -20,7 +20,7 @@ static void _update_mtd_parts(int fd, struct update_pack_image_desc* desc, int i
         char partition_name[sizeof(desc[i].partition_name) + 1] = { 0 };
         memcpy(partition_name, desc[i].partition_name, sizeof(desc[i].partition_name));
         for (size_t j = 0; j < sizeof(desc[i].partition_name); j++) {
-            if ((unsigned char)partition_name[j] < 0x20 || (unsigned char)partition_name[j] == 0x7f)
+            if ((unsigned char)partition_name[j] < 0x20 || (unsigned char)partition_name[j] >= 0x7f)
                 partition_name[j] = '.';
         }
         printf("mtd_number:%d\n", desc[i].mtd_number);
