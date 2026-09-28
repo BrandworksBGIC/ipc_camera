@@ -310,7 +310,7 @@ void ipc_log_hexdump(ipc_log_p h_this, u8 level, vptr data, s32 len)
         for (cur_idx = line_idx; cur_idx < line_idx + IPC_LOG_LINE_DUMP_NUM && cur_idx < len; cur_idx++) {
             v8 ch = ((pv8)data)[cur_idx];
             // coverity[SECURE_CODING :SUPPRESS]
-            log_len += sprintf(buff + log_len, "%c", ch > 0x7f || ch < 0x20 ? '.' : ch);
+            log_len += sprintf(buff + log_len, "%c", ch >= 0x7f || ch < 0x20 ? '.' : ch);
         }
         ipc_log_printf(h_this, level, "%s", buff);
     }
