@@ -102,3 +102,15 @@ IPC login: ipc instaview_version:01.00.003
 /home/bwadmin/github/githubActions/ipc_camera/chip/rts3917/fw/out/rts3917n_instaview_sign_01.00.003-20260910140636
 /home/bwadmin/github/githubActions/ipc_camera/chip/rts3917/fw/out/rts3917n_instaview_sign_01.00.003-20260911133959/rts3917nall.ippa.sign
 
+============================================
+EMBA tool commandline for SBOM
+
+bwadmin@ubuntu3:~/emba_tool/emba$ sudo ./emba -l ~/log -f /home/bwadmin/github/githubActions/ipc_camera/chip/rts3917/fw/out/rts3917n_instaview_sign_01.00.004-20260921120949/rts3917nall.ippa -p ./scan-profiles/default-sbom.emba
+
+EMBA tool commandline for firmware scan
+
+sudo ./emba -l ~/log -f /home/bwadmin/github/githubActions/ipc_camera/chip/rts3917/fw/out/rts3917n_instaview_sign_01.00.004-20260921120949/rts3917nall.ippa -p ./scan-profiles/default-scan.emba
+
+Analyze report here: /home/bwadmin/log/html-report/index.html
+
+
