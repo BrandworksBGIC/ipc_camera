@@ -201,9 +201,11 @@ static s32 _encrypt_file(pcv8 persistent_path, pcu8 plain, size_t plain_len, mod
     memcpy(cipher, plain, plain_len);
     u8 padding = (u8)(cipher_len - plain_len);
     memset(cipher + plain_len, padding, padding);
-    key_manage_encrypt_with_conf_key_1((pv8)persistent_path, (pv8)cipher, (s32)cipher_len);
+    s32 ret = key_manage_encrypt_with_conf_key_1((pv8)persistent_path, (pv8)cipher, (s32)cipher_len);
 
-    s32 ret = _write_file_atomic(persistent_path, storage, storage_len, file_mode);
+    if (ret == IPC_SUCCESS) {
+        ret = _write_file_atomic(persistent_path, storage, storage_len, file_mode);
+    }
     explicit_bzero(storage, storage_len);
     free(storage);
     return ret;
@@ -237,7 +239,12 @@ static s32 _decrypt_file(pcv8 persistent_path, pu8* plain, size_t* plain_len, mo
     }
 
     pu8 cipher = storage + sizeof(*header);
-    key_manage_decrypt_with_conf_key_1((pv8)persistent_path, (pv8)cipher, (s32)cipher_len);
+    ret = key_manage_decrypt_with_conf_key_1((pv8)persistent_path, (pv8)cipher, (s32)cipher_len);
+    if (ret < 0) {
+        explicit_bzero(storage, storage_len);
+        free(storage);
+        return ret;
+    }
 
     u8 padding = cipher[cipher_len - 1];
     if (padding == 0 || padding > IPC_IV_CIPHER_BLOCK_SIZE
@@ -302,8 +309,10 @@ static s32 _validate_business_config(pcu8 expected, size_t expected_len)
         return ret;
     }
 
-    key_manage_decrypt_with_conf_key_1(IPC_IV_CONFIG_FILE, (pv8)encrypted, (s32)encrypted_len);
-    ret = _validate_json(encrypted, encrypted_len);
+    ret = key_manage_decrypt_with_conf_key_1(IPC_IV_CONFIG_FILE, (pv8)encrypted, (s32)encrypted_len);
+    if (ret == IPC_SUCCESS) {
+        ret = _validate_json(encrypted, encrypted_len);
+    }
     if (ret == IPC_SUCCESS && expected
         && (encrypted_len != expected_len || memcmp(encrypted, expected, expected_len) != 0)) {
         ret = IPC_NOT_MATCH;
@@ -321,8 +330,10 @@ static s32 _encrypt_business_config(pcu8 plain, size_t plain_len, mode_t file_mo
     }
     memcpy(encrypted, plain, plain_len);
     encrypted[plain_len] = '\0';
-    key_manage_encrypt_with_conf_key_1(IPC_IV_CONFIG_FILE, (pv8)encrypted, (s32)plain_len);
-    s32 ret = _write_file_atomic(IPC_IV_CONFIG_FILE, encrypted, plain_len, file_mode);
+    s32 ret = key_manage_encrypt_with_conf_key_1(IPC_IV_CONFIG_FILE, (pv8)encrypted, (s32)plain_len);
+    if (ret == IPC_SUCCESS) {
+        ret = _write_file_atomic(IPC_IV_CONFIG_FILE, encrypted, plain_len, file_mode);
+    }
     explicit_bzero(encrypted, plain_len);
     free(encrypted);
     return ret;
@@ -976,6 +987,12 @@ s32 ipc_handler_storage_reset(void)
     }
     if (ret == IPC_SUCCESS) {
         ret = key_manage_delete_conf_key_1();
+        if (ret == IPC_NOT_FOUND) {
+            ret = IPC_SUCCESS;
+        }
+    }
+    if (ret == IPC_SUCCESS) {
+        ret = key_manage_delete_conf_key_2();
         if (ret == IPC_NOT_FOUND) {
             ret = IPC_SUCCESS;
         }

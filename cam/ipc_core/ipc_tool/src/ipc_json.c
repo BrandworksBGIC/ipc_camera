@@ -602,7 +602,9 @@ s32 ipc_json_rdconf(pv8 session, ipc_json_t h_jsons[], s32 num)
         return ret;
 
     // Decrypt the config data using security keys
-    key_manage_decrypt_with_conf_key_1(path, buff, ret);
+    s32 decrypt_ret = key_manage_decrypt_with_conf_key_1(path, buff, ret);
+    if (decrypt_ret < 0)
+        return decrypt_ret;
 
     // Convert JSON text into structured data objects
     return ipc_json_parse(buff, h_jsons, num);
@@ -668,7 +670,11 @@ s32 ipc_json_wrconf(pv8 session, ipc_json_t h_jsons[], s32 num)
     buff[len] = '\0'; // Mark end of text
 
     // Decrypt existing configuration
-    key_manage_decrypt_with_conf_key_1(path, buff, len);
+    ret = key_manage_decrypt_with_conf_key_1(path, buff, len);
+    if (ret < 0) {
+        ipc_file_close(h_file);
+        return ret;
+    }
 
     // Get updated JSON text with new changes
     pv8 json = _json_update(buff, h_jsons, num);
@@ -680,12 +686,12 @@ s32 ipc_json_wrconf(pv8 session, ipc_json_t h_jsons[], s32 num)
     // Check if changes need to be saved (length or content changed)
     s32 new_len = strlen(json);
     if (new_len != len || strcmp(json, buff)) {
-        ipc_file_clear(h_file); // Clear old file contents
-
         // Encrypt updated config before saving
-        key_manage_encrypt_with_conf_key_1(path, json, new_len);
-
-        ret = ipc_file_write(h_file, json, new_len); // Write new data
+        ret = key_manage_encrypt_with_conf_key_1(path, json, new_len);
+        if (ret >= 0) {
+            ipc_file_clear(h_file); // Clear old file contents
+            ret = ipc_file_write(h_file, json, new_len); // Write new data
+        }
     } else {
         ipcdebug("Not need update json configure"); // No changes needed
     }

@@ -1,6 +1,7 @@
 /* Include system library for file access functions */
 #include <errno.h>
 #include <fcntl.h>
+#include <pthread.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -33,6 +34,9 @@ static struct {
     u8 key[32];         // 256-bit encryption key storage
     u8 iv[16];          // 128-bit initialization vector storage
 } _g_key[KEY_TYPE_NUM]; // Array holding all secret materials
+
+static pthread_rwlock_t _g_key_lock = PTHREAD_RWLOCK_INITIALIZER;
+static u8 _g_key_ready[KEY_TYPE_NUM];
 
 static s32 get_random_bytes(pu8 buff, s32 len)
 {
@@ -92,7 +96,11 @@ static s32 encrypt_data_with_otp_key(pu8 data, s32 data_len)
 
     ipc_aes_init_ctx_iv(&ctx, key, iv);
 
-    return ipc_aes_cbc_encrypt_buffer(&ctx, data, data_len);
+    s32 ret = ipc_aes_cbc_encrypt_buffer(&ctx, data, data_len);
+    explicit_bzero(&ctx, sizeof(ctx));
+    explicit_bzero(key, sizeof(key));
+    explicit_bzero(iv, sizeof(iv));
+    return ret;
 }
 
 /* Decrypt data using AES-256-CBC cipher with OTP-derived credentials */
@@ -112,7 +120,11 @@ static s32 decrypt_data_with_otp_key(pu8 data, s32 data_len)
 
     ipc_aes_init_ctx_iv(&ctx, key, iv);
 
-    return ipc_aes_cbc_decrypt_buffer(&ctx, data, data_len);
+    s32 ret = ipc_aes_cbc_decrypt_buffer(&ctx, data, data_len);
+    explicit_bzero(&ctx, sizeof(ctx));
+    explicit_bzero(key, sizeof(key));
+    explicit_bzero(iv, sizeof(iv));
+    return ret;
 }
 
 static s32 write_conf_key_1_atomic(pcu8 conf_key_1)
@@ -180,16 +192,19 @@ static s32 create_conf_key_1(void)
         // ipc_file_write_once("/tmp/aes_conf_1_key.bin", (pv8)conf_key_1, 64, __IPC_LOG__);
         // ipc_exec("md5sum /tmp/aes_conf_1_key.bin");
 
+        explicit_bzero(conf_key_1, sizeof(conf_key_1));
         return 0;
     }
     if (key_buf_len >= 0) {
         printf("Error, invalid conf_key_1 length: %d\n", key_buf_len);
+        explicit_bzero(conf_key_1, sizeof(conf_key_1));
         return IPC_READ_ERROR;
     }
 
     ret = get_random_bytes(conf_key_1, 64);
     if (ret < 0) {
         printf("Error get_random_bytes for conf_key_1\n");
+        explicit_bzero(conf_key_1, sizeof(conf_key_1));
         exit(-1);
     }
 
@@ -199,6 +214,7 @@ static s32 create_conf_key_1(void)
     encrypt_data_with_otp_key(conf_key_1, 64);
 
     ret = write_conf_key_1_atomic(conf_key_1);
+    explicit_bzero(conf_key_1, sizeof(conf_key_1));
     if (ret < 0) {
         printf("Error, write conf_key_1 failed: %d\n", ret);
         return ret;
@@ -280,9 +296,16 @@ static s32 run_decrypt_encrypt_data(KEY_TYPE key_type, u8 reverse, vptr buff, s3
         return IPC_INVALID_ARGS;
     }
 
+    /* Deletion waits until all AES contexts using the key have been cleared. */
+    pthread_rwlock_rdlock(&_g_key_lock);
+    if (!_g_key_ready[key_type]) {
+        pthread_rwlock_unlock(&_g_key_lock);
+        return IPC_NOT_INIT;
+    }
     AES_CBC_x_buffer_t aes_x = reverse ? ipc_aes_cbc_decrypt_buffer : ipc_aes_cbc_encrypt_buffer;
     s32 aligned_len = NEW_LEN(len, 16);
     if (aligned_len == 0) {
+        pthread_rwlock_unlock(&_g_key_lock);
         return IPC_SUCCESS;
     }
 
@@ -293,7 +316,10 @@ static s32 run_decrypt_encrypt_data(KEY_TYPE key_type, u8 reverse, vptr buff, s3
         aligned_len = 180000;
     }
     ipc_aes_init_ctx_iv(&ctx, _g_key[key_type].key, _g_key[key_type].iv);
-    return aes_x(&ctx, buff, aligned_len) < 0 ? IPC_FAILED : IPC_SUCCESS;
+    s32 ret = aes_x(&ctx, buff, aligned_len);
+    explicit_bzero(&ctx, sizeof(ctx));
+    pthread_rwlock_unlock(&_g_key_lock);
+    return ret < 0 ? IPC_FAILED : IPC_SUCCESS;
 }
 
 /* Initialize key management system */
@@ -303,11 +329,14 @@ s32 key_manage_init(void)
 
     try_create_root_key();
 
+    pthread_rwlock_wrlock(&_g_key_lock);
     // Generate or load configuration key 1
     s32 ret = create_conf_key_1();
     if (ret < 0) {
+        pthread_rwlock_unlock(&_g_key_lock);
         return ret;
     }
+    _g_key_ready[KEY_TYPE_CONF_KEY_1] = 1;
 
     // Generate or load configuration key 2
     u8 conf_key_2[48];
@@ -318,17 +347,30 @@ s32 key_manage_init(void)
         decrypt_data_with_otp_key(conf_key_2, key_buf_len);
         memcpy(_g_key[KEY_TYPE_CONF_KEY_2].key, conf_key_2, 32);
         memcpy(_g_key[KEY_TYPE_CONF_KEY_2].iv, conf_key_2 + 32, 16);
+        _g_key_ready[KEY_TYPE_CONF_KEY_2] = 1;
 
         // ipc_file_write_once("/tmp/conf_key_2", (pv8)conf_key_2, 64, __IPC_LOG__);
     }
 
+    explicit_bzero(conf_key_2, sizeof(conf_key_2));
+    pthread_rwlock_unlock(&_g_key_lock);
     return 0;
 }
 
 /* Remove configuration key file */
 s32 key_manage_delete_conf_key_1(void)
 {
-    return ipc_rm("/conf/conf_key_1");
+    pthread_rwlock_wrlock(&_g_key_lock);
+    s32 ret = ipc_rm("/conf/conf_key_1");
+    if (ret == IPC_NOT_FOUND && errno != ENOENT) {
+        ret = IPC_FAILED;
+    }
+    if (ret == IPC_SUCCESS || ret == IPC_NOT_FOUND) {
+        explicit_bzero(&_g_key[KEY_TYPE_CONF_KEY_1], sizeof(_g_key[KEY_TYPE_CONF_KEY_1]));
+        _g_key_ready[KEY_TYPE_CONF_KEY_1] = 0;
+    }
+    pthread_rwlock_unlock(&_g_key_lock);
+    return ret;
 }
 
 /* Conditional data decryption */
@@ -372,14 +414,12 @@ s32 key_manage_encrypt_with_root_key(pu8 data, s32 len)
 }
 s32 key_manage_encrypt_with_conf_key_2(pu8 data, s32 len)
 {
-    run_decrypt_encrypt_data(KEY_TYPE_CONF_KEY_2, 0, data, len);
-    return 0;
+    return run_decrypt_encrypt_data(KEY_TYPE_CONF_KEY_2, 0, data, len);
 }
 
 s32 key_manage_decrypt_with_conf_key_2(pu8 data, s32 len)
 {
-    run_decrypt_encrypt_data(KEY_TYPE_CONF_KEY_2, 1, data, len);
-    return 0;
+    return run_decrypt_encrypt_data(KEY_TYPE_CONF_KEY_2, 1, data, len);
 }
 
 s32 key_manage_create_conf_key_2(pv8 seed)
@@ -389,6 +429,7 @@ s32 key_manage_create_conf_key_2(pv8 seed)
         return -1;
     }
 
+    pthread_rwlock_wrlock(&_g_key_lock);
     u8 conf_key_2[48]   = { 0 };
     u8 existing_key[48] = { 0 };
     s32 key_buf_len     = 0;
@@ -423,7 +464,12 @@ s32 key_manage_create_conf_key_2(pv8 seed)
         need_update = memcmp(conf_key_2, existing_key, sizeof(conf_key_2)) != 0;
         if (!need_update) {
             printf("conf_key_2 matches existing key - no update needed\n");
-            return 0;
+            if (!_g_key_ready[KEY_TYPE_CONF_KEY_2]) {
+                memcpy(_g_key[KEY_TYPE_CONF_KEY_2].key, conf_key_2, 32);
+                memcpy(_g_key[KEY_TYPE_CONF_KEY_2].iv, conf_key_2 + 32, 16);
+                _g_key_ready[KEY_TYPE_CONF_KEY_2] = 1;
+            }
+            goto _exit;
         }
         printf("conf_key_2 differs from existing key - updating\n");
     }
@@ -431,15 +477,33 @@ s32 key_manage_create_conf_key_2(pv8 seed)
     // Store and persist key if different or new
     memcpy(_g_key[KEY_TYPE_CONF_KEY_2].key, conf_key_2, 32);
     memcpy(_g_key[KEY_TYPE_CONF_KEY_2].iv, conf_key_2 + 32, 16);
+    _g_key_ready[KEY_TYPE_CONF_KEY_2] = 1;
 
     encrypt_data_with_otp_key(conf_key_2, sizeof(conf_key_2));
     ipc_file_write_once("/conf/conf_key_2", (pv8)conf_key_2, sizeof(conf_key_2), __IPC_LOG__);
 
+_exit:
+    explicit_bzero(conf_key_2, sizeof(conf_key_2));
+    explicit_bzero(existing_key, sizeof(existing_key));
+    explicit_bzero(md_value, sizeof(md_value));
+    explicit_bzero(iv_seed, sizeof(iv_seed));
+    explicit_bzero(&sha_ctx, sizeof(sha_ctx));
+    pthread_rwlock_unlock(&_g_key_lock);
     return 0;
 }
 
 /* Remove configuration key file */
 s32 key_manage_delete_conf_key_2(void)
 {
-    return ipc_rm("/conf/conf_key_2");
+    pthread_rwlock_wrlock(&_g_key_lock);
+    s32 ret = ipc_rm("/conf/conf_key_2");
+    if (ret == IPC_NOT_FOUND && errno != ENOENT) {
+        ret = IPC_FAILED;
+    }
+    if (ret == IPC_SUCCESS || ret == IPC_NOT_FOUND) {
+        explicit_bzero(&_g_key[KEY_TYPE_CONF_KEY_2], sizeof(_g_key[KEY_TYPE_CONF_KEY_2]));
+        _g_key_ready[KEY_TYPE_CONF_KEY_2] = 0;
+    }
+    pthread_rwlock_unlock(&_g_key_lock);
+    return ret;
 }
