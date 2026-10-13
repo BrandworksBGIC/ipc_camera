@@ -41,6 +41,8 @@ static struct {
     u8 video_channel_started[2]; // 0: MAIN, 1: SUB - track manual video start/stop in non-thread mode
     s32 video_wdg_fd[2];         // 0: MAIN, 1: SUB - watchdog file descriptors for video channels
     s32 audio_wdg_fd;            // Audio watchdog file descriptor
+    s32 snapshot_wdg_fd;
+    u8 capture_paused;
 
     u8 qr_enable;
 } _gh_mpp = {
@@ -50,7 +52,9 @@ static struct {
     .f_play_finish = NOT_DO_ANYTHING,
     .video_wdg_fd  = {-1, -1},    // Initialize video watchdog file descriptors
     .audio_wdg_fd  = -1,          // Initialize audio watchdog file descriptor
+    .snapshot_wdg_fd = -1,
 };
+static pthread_mutex_t _g_mpp_stream_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /******************************** speak & player ********************************************/
 
@@ -655,9 +659,11 @@ s32 ipc_mpp_recv_video(IPC_VIDEO_CHN_TYPE chn,
     }
 
     // Check if video channel has been started via ipc_mpp_video_start
+    pthread_mutex_lock(&_g_mpp_stream_mutex);
     s32 idx = chn - IPC_VIDEO_CHN_MAIN;
     if (idx >= 0 && idx < 2) {
-        if (!_gh_mpp.video_channel_started[idx]) {
+        if (!_gh_mpp.gorun || !_gh_mpp.video_channel_started[idx]) {
+            pthread_mutex_unlock(&_g_mpp_stream_mutex);
             ipctrace("Video channel %d not started, call ipc_mpp_video_start first", chn);
             return IPC_NOT_INIT; // Channel not started
         }
@@ -666,10 +672,14 @@ s32 ipc_mpp_recv_video(IPC_VIDEO_CHN_TYPE chn,
     // Watchdog feeding logic - separate for each channel
     if (_gh_mpp.video_wdg_fd[idx] < 0) {
         _gh_mpp.video_wdg_fd[idx] = ipc_swdg_reg(1);
+        if (_gh_mpp.video_wdg_fd[idx] >= 0) {
+            ipcinfo("Video channel %d watchdog fd=[%d]", chn, _gh_mpp.video_wdg_fd[idx]);
+        }
     }
-    if (_gh_mpp.video_wdg_fd[idx] >= 0) {
+    if (_gh_mpp.video_wdg_fd[idx] >= 0 && !_gh_mpp.capture_paused) {
         ipc_swdg_feed(_gh_mpp.video_wdg_fd[idx], 10);
     }
+    pthread_mutex_unlock(&_g_mpp_stream_mutex);
 
     // Call platform API with user callback
     return h_plat->video_recv_frame(chn, callback, user_data, timeout_ms);
@@ -820,12 +830,21 @@ s32 ipc_mpp_recv_audio(void (*callback)(struct ipc_frame_data_s* frame, void* us
     }
 
     // Watchdog feeding logic
+    pthread_mutex_lock(&_g_mpp_stream_mutex);
+    if (!_gh_mpp.gorun) {
+        pthread_mutex_unlock(&_g_mpp_stream_mutex);
+        return IPC_NOT_INIT;
+    }
     if (_gh_mpp.audio_wdg_fd < 0) {
         _gh_mpp.audio_wdg_fd = ipc_swdg_reg(1);
+        if (_gh_mpp.audio_wdg_fd >= 0) {
+            ipcinfo("Audio watchdog fd=[%d]", _gh_mpp.audio_wdg_fd);
+        }
     }
-    if (_gh_mpp.audio_wdg_fd >= 0) {
+    if (_gh_mpp.audio_wdg_fd >= 0 && !_gh_mpp.capture_paused) {
         ipc_swdg_feed(_gh_mpp.audio_wdg_fd, 10);
     }
+    pthread_mutex_unlock(&_g_mpp_stream_mutex);
 
     // Create wrapper callback to calculate audio extended information
     ipc_audio_wrapper_ctx_t wrapper_ctx = {callback, user_data, extinfo};
@@ -848,10 +867,12 @@ s32 ipc_mpp_video_start(IPC_VIDEO_CHN_TYPE chn, s32 param)
     s32 ret = h_plat->video_start(chn, (vptr)(word)param);
     if (ret == IPC_SUCCESS) {
         // Record that this channel was started manually in non-thread mode
+        pthread_mutex_lock(&_g_mpp_stream_mutex);
         s32 idx = chn - IPC_VIDEO_CHN_MAIN;
         if (idx >= 0 && idx < 2) {
             _gh_mpp.video_channel_started[idx] = 1;
         }
+        pthread_mutex_unlock(&_g_mpp_stream_mutex);
     }
 
     return ret;
@@ -868,6 +889,7 @@ s32 ipc_mpp_video_stop(IPC_VIDEO_CHN_TYPE chn)
     }
 
       // Clear the manual start state for this channel
+    pthread_mutex_lock(&_g_mpp_stream_mutex);
     s32 idx = chn - IPC_VIDEO_CHN_MAIN;
     if (idx >= 0 && idx < 2) {
         _gh_mpp.video_channel_started[idx] = 0;
@@ -879,6 +901,7 @@ s32 ipc_mpp_video_stop(IPC_VIDEO_CHN_TYPE chn)
             ipctrace("Unregistered watchdog for video channel %d", chn);
         }
     }
+    pthread_mutex_unlock(&_g_mpp_stream_mutex);
 
     ipc_sleep(1);
 
@@ -1001,6 +1024,31 @@ static void __plat_recv_jpeg_frame_cb(struct ipc_frame_data_s* frame, vptr _user
     ipc_unlock(_gh_mpp.snapshot_lock);
 }
 
+void ipc_mpp_capture_pause(u8 pause)
+{
+    pthread_mutex_lock(&_g_mpp_stream_mutex);
+    if (!_gh_mpp.gorun || _gh_mpp.capture_paused == !!pause) {
+        pthread_mutex_unlock(&_g_mpp_stream_mutex);
+        return;
+    }
+    _gh_mpp.capture_paused = !!pause;
+    if (_gh_mpp.snapshot_wdg_fd >= 0) {
+        ipc_swdg_feed(_gh_mpp.snapshot_wdg_fd, pause ? 0 : 10);
+    }
+    if (pause) {
+        for (s32 i = 0; i < 2; i++) {
+            if (_gh_mpp.video_wdg_fd[i] >= 0) {
+                ipc_swdg_feed(_gh_mpp.video_wdg_fd[i], 0);
+            }
+        }
+        if (_gh_mpp.audio_wdg_fd >= 0) {
+            ipc_swdg_feed(_gh_mpp.audio_wdg_fd, 0);
+        }
+    }
+    pthread_mutex_unlock(&_g_mpp_stream_mutex);
+    ipcinfo("Capture %s", pause ? "paused" : "resumed");
+}
+
 static vptr _pth_jpeg(vptr arg)
 {
     s32 mpp_chn = (s32)(word)arg;
@@ -1015,12 +1063,27 @@ static vptr _pth_jpeg(vptr arg)
 
     _gh_mpp.alive[mpp_chn] = 1;
 
-    s32 wdg_fd = ipc_swdg_reg(1);
-    ipc_swdg_feed(wdg_fd, 10);
+    pthread_mutex_lock(&_g_mpp_stream_mutex);
+    if (_gh_mpp.gorun) {
+        _gh_mpp.snapshot_wdg_fd = ipc_swdg_reg(1);
+        ipc_swdg_feed(_gh_mpp.snapshot_wdg_fd, _gh_mpp.capture_paused ? 0 : 10);
+    }
+    s32 wdg_fd = _gh_mpp.snapshot_wdg_fd;
+    pthread_mutex_unlock(&_g_mpp_stream_mutex);
 
     ipcinfo("Snapshot watchdog fd=[%d]", wdg_fd);
 
-    while (_gh_mpp.gorun) {
+    while (1) {
+        pthread_mutex_lock(&_g_mpp_stream_mutex);
+        u8 gorun = _gh_mpp.gorun;
+        u8 paused = _gh_mpp.capture_paused;
+        pthread_mutex_unlock(&_g_mpp_stream_mutex);
+        if (!gorun)
+            break;
+        if (paused) {
+            ipc_msleep(40);
+            continue;
+        }
 
         ret = h_plat->video_recv_frame(chn, __plat_recv_jpeg_frame_cb, NULL, 1000);
         if (ret) {
@@ -1029,11 +1092,20 @@ static vptr _pth_jpeg(vptr arg)
             continue;
         }
 
-        ipc_swdg_feed(wdg_fd, 10);
+        pthread_mutex_lock(&_g_mpp_stream_mutex);
+        if (_gh_mpp.snapshot_wdg_fd >= 0 && !_gh_mpp.capture_paused) {
+            ipc_swdg_feed(_gh_mpp.snapshot_wdg_fd, 10);
+        }
+        pthread_mutex_unlock(&_g_mpp_stream_mutex);
     }
 
     h_plat->video_stop(chn);
-    ipc_swdg_unreg(wdg_fd);
+    pthread_mutex_lock(&_g_mpp_stream_mutex);
+    if (_gh_mpp.snapshot_wdg_fd >= 0) {
+        ipc_swdg_unreg(_gh_mpp.snapshot_wdg_fd);
+        _gh_mpp.snapshot_wdg_fd = -1;
+    }
+    pthread_mutex_unlock(&_g_mpp_stream_mutex);
 
     _gh_mpp.alive[mpp_chn] = 0;
 
@@ -1491,7 +1563,10 @@ s32 ipc_mpp_init(ipc_mpp_cb_p mpp_cb)
 
     struct ipc_api_s* h_plat = ipc_plat_api(0);
 
+    pthread_mutex_lock(&_g_mpp_stream_mutex);
     _gh_mpp.gorun = 1;
+    _gh_mpp.capture_paused = 0;
+    pthread_mutex_unlock(&_g_mpp_stream_mutex);
 
     ret = h_plat->sys_init(decrypt->product_type);
     if (ret < 0) {
@@ -1626,7 +1701,28 @@ s32 ipc_mpp_init(ipc_mpp_cb_p mpp_cb)
 
 void ipc_mpp_uninit(s32 is_wait)
 {
+    /* Cancel capture watchdogs before waiting for media threads to exit. */
+    pthread_mutex_lock(&_g_mpp_stream_mutex);
     _gh_mpp.gorun = 0;
+    _gh_mpp.capture_paused = 1;
+    if (_gh_mpp.snapshot_wdg_fd >= 0) {
+        ipcinfo("MPP exit: snapshot watchdog fd=[%d]", _gh_mpp.snapshot_wdg_fd);
+        ipc_swdg_unreg(_gh_mpp.snapshot_wdg_fd);
+        _gh_mpp.snapshot_wdg_fd = -1;
+    }
+    for (s32 i = 0; i < 2; i++) {
+        if (_gh_mpp.video_wdg_fd[i] >= 0) {
+            ipcinfo("MPP exit: video channel %d watchdog fd=[%d]", i, _gh_mpp.video_wdg_fd[i]);
+            ipc_swdg_unreg(_gh_mpp.video_wdg_fd[i]);
+            _gh_mpp.video_wdg_fd[i] = -1;
+        }
+    }
+    if (_gh_mpp.audio_wdg_fd >= 0) {
+        ipcinfo("MPP exit: audio watchdog fd=[%d]", _gh_mpp.audio_wdg_fd);
+        ipc_swdg_unreg(_gh_mpp.audio_wdg_fd);
+        _gh_mpp.audio_wdg_fd = -1;
+    }
+    pthread_mutex_unlock(&_g_mpp_stream_mutex);
     if (!is_wait)
         return;
 
@@ -1656,13 +1752,6 @@ void ipc_mpp_uninit(s32 is_wait)
             ipctrace("Auto-stopping video channel %d in uninit", chn);
             ipc_mpp_video_stop(chn);  // Use the wrapper interface instead of direct platform call
         }
-    }
-
-    // Stop audio and cleanup watchdog in non-thread mode
-    if (_gh_mpp.audio_wdg_fd >= 0) {
-        ipctrace("Auto-unregistering audio watchdog in uninit");
-        ipc_swdg_unreg(_gh_mpp.audio_wdg_fd);
-        _gh_mpp.audio_wdg_fd = -1;
     }
 
     ipc_sleep(1);

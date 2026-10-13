@@ -145,6 +145,12 @@ EXAPI s32 ipc_mpp_osd_dyn_font_attr(pcv8 ttf_path, ipc_osd_dyn_font_attr_p attr)
 EXAPI s32 ipc_mpp_snapshot(pv8 mem_or_path, s32 mem_size);
 
 /**
+ * @brief Pauses JPEG capture and capture watchdogs while external media clients stop.
+ * @param pause 1: Pause; 0: Resume (video/audio watchdogs restart on reception).
+ */
+EXAPI void ipc_mpp_capture_pause(u8 pause);
+
+/**
  * @brief Forces an I-frame (keyframe)
  * 
  * @param chn Channel to force the keyframe on

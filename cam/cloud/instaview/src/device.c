@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <pthread.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -187,11 +188,13 @@ int MFG_VideoStreamInit_callback(int stream_index)
     
     ipc_mpp_video_start(IPC_VIDEO_CHN_MAIN, 0);
     ipc_mpp_video_start(IPC_VIDEO_CHN_SUB, 0);
+    ipc_mpp_capture_pause(0);
     return 0;
 }
 
 int MFG_VideoStreamDeInit_callback(void)
 {
+    ipc_mpp_capture_pause(1);
     printf("Video channels stopped\n");
     return 0;
 }
@@ -1011,13 +1014,20 @@ int MFG_OsdSetLogo(MfgOsdLogo* logo)
     return 0;
 }
 
-static s32 _g_swdg_fd;
+static s32 _g_swdg_fd = -1;
+static pthread_mutex_t _g_watchdog_mutex = PTHREAD_MUTEX_INITIALIZER;
+static u32 _g_instaview_ota_deadline;
 static v8 _g_instaview_ota_path[35];
 int MFG_EnableWatchdog(int enabledog)
 {
-    _g_swdg_fd = ipc_swdg_reg(1);
+    pthread_mutex_lock(&_g_watchdog_mutex);
     if (_g_swdg_fd < 0) {
-        ipcfatal("Soft watchdog registration failed! retcode=[%d]", _g_swdg_fd);
+        _g_swdg_fd = ipc_swdg_reg(1);
+    }
+    s32 ret = _g_swdg_fd;
+    pthread_mutex_unlock(&_g_watchdog_mutex);
+    if (ret < 0) {
+        ipcfatal("Soft watchdog registration failed! retcode=[%d]", ret);
         exit(-1);
     }
     return 0;
@@ -1026,7 +1036,16 @@ int MFG_EnableWatchdog(int enabledog)
 int MFG_RefreshWatchdog()
 {
     printf("===feeddog===\r\n");
-    ipc_swdg_feed(_g_swdg_fd, 60 * 2);
+    pthread_mutex_lock(&_g_watchdog_mutex);
+    if (_g_instaview_ota_deadline) {
+        if ((s32)(_g_instaview_ota_deadline - ipc_mono_ts()) > 0) {
+            /* The SDK writes external OTA data; this only feeds the OTA watchdog. */
+            ipc_ota_writing(NULL, 0);
+        }
+    } else {
+        ipc_swdg_feed(_g_swdg_fd, 60 * 2);
+    }
+    pthread_mutex_unlock(&_g_watchdog_mutex);
     return 0;
 }
 
@@ -1045,11 +1064,6 @@ static vptr instaview_ota_upgrade()
     ipc_ota_upgrade(ipc_ota_before_reboot_result);
     return NULL;
 }
-static vptr instaview_ota_prepare()
-{
-    ipc_ota_prepare(_g_instaview_ota_path, -1, 0);
-    return NULL;
-}
 int MFG_OtaStart_callback(char* firmware_path)
 {
     v8 ota_dir[] = "/tmp/instaview-ota-XXXXXX";
@@ -1058,26 +1072,60 @@ int MFG_OtaStart_callback(char* firmware_path)
         || snprintf(_g_instaview_ota_path, sizeof(_g_instaview_ota_path), "%s/ota.bin", ota_dir) >= (s32)sizeof(_g_instaview_ota_path)) {
         return -1;
     }
+    pthread_mutex_lock(&_g_watchdog_mutex);
     ipc_swdg_unreg(_g_swdg_fd);
+    _g_swdg_fd = -1;
+    _g_instaview_ota_deadline = 0;
+    pthread_mutex_unlock(&_g_watchdog_mutex);
     printf("set ota firmware_path:%s\r\n", firmware_path);
-    ipc_create_thread("ota_prepare", instaview_ota_prepare, NULL, 256 * 1024, 0);
-
-    sleep(8);
-
+    s32 ret = ipc_ota_prepare(_g_instaview_ota_path, -1, 0);
+    if (ret == IPC_SUCCESS) {
+        pthread_mutex_lock(&_g_watchdog_mutex);
+        /* Allow the SDK's 300-second download timeout and failure report to finish. */
+        _g_instaview_ota_deadline = ipc_mono_ts() + 10 * 60;
+        pthread_mutex_unlock(&_g_watchdog_mutex);
+    } else {
+        printf("Error, OTA preparation failed: %d\n", ret);
+    }
+    return ret;
+}
+int MFG_OtaDownloadFailed_callback()
+{
+    pthread_mutex_lock(&_g_watchdog_mutex);
+    if (_g_instaview_ota_deadline) {
+        ipc_ota_writing(NULL, 0);
+        _g_instaview_ota_deadline = 0;
+    }
+    pthread_mutex_unlock(&_g_watchdog_mutex);
+    printf("Error, OTA download failed callback received\n");
+    iv_sdk_LogWrite(IVLOG_LEVEL_ERROR, "OTA download failed callback received");
     return 0;
 }
 int MFG_FlashFirmware_callback(FirmwareFlashContext* firmware)
 {
     struct stat stat_info;
 
+    printf("OTA flash callback received\n");
     if (firmware == NULL || firmware->firmwarePath == NULL || _g_instaview_ota_path[0] == '\0'
         || rename(firmware->firmwarePath, _g_instaview_ota_path) != 0
         || lstat(_g_instaview_ota_path, &stat_info) != 0 || !S_ISREG(stat_info.st_mode) || stat_info.st_nlink != 1
         || stat_info.st_uid != geteuid() || (stat_info.st_mode & (S_IWGRP | S_IWOTH))
         || chmod(_g_instaview_ota_path, 0600) != 0) {
+        printf("Error, OTA firmware file preparation failed\n");
         unlink(_g_instaview_ota_path);
         return -1;
     }
+    pthread_mutex_lock(&_g_watchdog_mutex);
+    if (_g_instaview_ota_deadline) {
+        ipc_ota_writing(NULL, 0);
+        _g_instaview_ota_deadline = 0;
+    } else {
+        pthread_mutex_unlock(&_g_watchdog_mutex);
+        printf("Error, OTA preparation incomplete\n");
+        unlink(_g_instaview_ota_path);
+        return -1;
+    }
+    pthread_mutex_unlock(&_g_watchdog_mutex);
     extern s32 frame_upgrade_falg;
     frame_upgrade_falg = 1;
     ipc_create_thread("ota_upgrade", instaview_ota_upgrade, NULL, 256 * 1024, 0);

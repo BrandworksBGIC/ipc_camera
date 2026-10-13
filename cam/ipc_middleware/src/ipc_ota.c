@@ -90,6 +90,7 @@ s32 ipc_ota_prepare(pv8 path, s32 pack_size, u8 has_backup)
     ipc_swdg_feed(_g_ota->swdg_fd, 30);
 
     /* step 1: Exit all internal modules to free up resources for OTA */
+    ipc_mpp_uninit(0);
     ipc_alarm_uninit(0);
     ipc_env_monitor_uninit(0);
     ipc_button_monitor_uninit(0);
@@ -103,9 +104,9 @@ s32 ipc_ota_prepare(pv8 path, s32 pack_size, u8 has_backup)
     ipc_tfcard_monitor_uninit(1);
     
     /* step 2: Delete all TF card upgrade packages to prevent rollback upgrade by TF card after OTA */
-    ipc_exec("rm %s/*all.cppa", TFCARD_PATH);
-    ipc_exec("rm %s/*sd.cppa", TFCARD_PATH);
-    ipc_exec("rm %s/*ota.cppa", TFCARD_PATH);
+    ipc_exec("rm -f %s/*all.ippa", TFCARD_PATH);
+    ipc_exec("rm -f %s/*sd.ippa", TFCARD_PATH);
+    ipc_exec("rm -f %s/*ota.ippa", TFCARD_PATH);
     ipc_exec("umount -f %s", TFCARD_PATH);
     ipc_exec("sync");
 
@@ -139,6 +140,7 @@ s32 ipc_ota_prepare(pv8 path, s32 pack_size, u8 has_backup)
         ipc_swdg_feed(_g_ota->swdg_fd, 5 * 60); // When the external upgrade package file is written, the watchdog timeout is changed to 5 minutes
     }
 
+    ipcinfo("OTA preparation complete, watchdog fd=[%d]", _g_ota->swdg_fd);
     return IPC_SUCCESS;
 }
 

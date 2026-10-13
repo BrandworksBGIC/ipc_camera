@@ -47,6 +47,7 @@ int MFG_EnableWatchdog(int enabledog);
 int MFG_RefreshWatchdog();
 int MFG_FlashFirmware_callback(FirmwareFlashContext *firmware);
 int MFG_OtaStart_callback(char *file_path);
+int MFG_OtaDownloadFailed_callback();
 void MFG_DeinitIRCut();
 int MFG_LedInit_callback();
 int MFG_OsdDeInit();

@@ -465,6 +465,7 @@ static void init_callback_functions()
     callback_functions.MFG_RefreshWatchdog_Callback     = MFG_RefreshWatchdog;
     callback_functions.MFG_FlashFirmware_Callback       = MFG_FlashFirmware_callback;
     callback_functions.MFG_OtaStart_Callback            = MFG_OtaStart_callback;
+    callback_functions.MFG_OtaDownloadFailed_Callback   = MFG_OtaDownloadFailed_callback;
     callback_functions.MFG_SDCardFormat_Callback        = MFG_SDCardFormat;
     callback_functions.MFG_SDCardMountStatus_Callback   = MFG_SDCardMountStatus;
     callback_functions.MfgEnableBluetooth_Callback      = NULL; //MFG_EnableBluetooth;
