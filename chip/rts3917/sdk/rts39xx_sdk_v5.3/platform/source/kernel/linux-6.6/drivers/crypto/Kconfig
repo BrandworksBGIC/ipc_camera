@@ -19,8 +19,8 @@ config CRYPTO_DEV_REALTEK
 	help
 	  This driver allows you to utilize the crypto engine of Realtek
 	  RTS39xx IPcam processor. Supported AES/DES/3DES algorithms. The
-	  supported modes of operation include ECB, CBC, CTR, GCM and CCM,
-	  which conform to NIST sp800-38(a/c/d).
+	  supported modes of operation include ECB, CBC, CTR and CCM,
+	  which conform to NIST sp800-38(a/c).
 
 	  To compile this driver as a module, choose M here: the module
           will be called rts-crypto.

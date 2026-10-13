@@ -66,7 +66,6 @@ do { \
 #define FLAGS_CBCCS3		BIT(9)
 #define FLAGS_CTR		BIT(10)
 #define FLAGS_CCM		BIT(11)
-#define FLAGS_GCM		BIT(12)
 
 #define CIPHER_STS_ERR		0x0
 #define CIPHER_STS_OK		0x1
@@ -101,8 +100,7 @@ enum {
 };
 
 enum {
-	AEAD_AES_GCM = 0,
-	AEAD_AES_CCM = 1,
+	AEAD_AES_CCM = 0,
 	AEAD_COUNT,
 };
 
@@ -408,8 +406,6 @@ static int rts_crypto_set_ctl(struct rts_crypto_data *cdata,
 		val = val | ((u32)0x5 << RLX_OPERATION_MODE);
 	else if (ctx->mask & FLAGS_CCM)
 		val = val | ((u32)0x6 << RLX_OPERATION_MODE);
-	else if (ctx->mask & FLAGS_GCM)
-		val = val | ((u32)0x7 << RLX_OPERATION_MODE);
 	else
 		return -EINVAL;
 
@@ -603,36 +599,6 @@ static int rts_blkcipher_map_out_data(struct rts_crypto_data *cdata,
 	return maps;
 }
 
-static int rts_gcm_map_in_data(struct rts_crypto_data *cdata,
-			struct rts_crypto_ctx *ctx,
-			struct aead_request *req,
-			struct rts_aead_reqctx *reqctx)
-{
-	int maps = 0;
-	struct scatterlist *sg;
-
-	dev_dbg(&cdata->pdev->dev, "map in data,= %d\n", req->cryptlen);
-
-	sg = scatterwalk_ffwd(reqctx->sg_in, req->src, req->assoclen);
-
-	maps = buf_table_map_sg(cdata, &ctx->table_in, &ctx->mapinfo[0],
-				sg, req->cryptlen, DMA_TO_DEVICE);
-	if (maps < 0)
-		return maps;
-
-	rts_crypto_write(cdata, RLX_REG_IN_BUF_NUM, maps);
-	rts_crypto_write(cdata, RLX_REG_DATA_IN_LENGTH, req->cryptlen);
-
-	dev_dbg(&cdata->pdev->dev,
-		"map in data, maps = %d, len = %d\n",
-		maps, req->cryptlen);
-
-	/* debug */
-	buf_table_printf(ctx->table_in);
-
-	return maps;
-}
-
 static int rts_ccm_map_in_data(struct rts_crypto_data *cdata,
 			struct rts_crypto_ctx *ctx,
 			struct aead_request *req,
@@ -818,7 +784,7 @@ static int rts_ccm_map_nonce_ad(struct rts_crypto_data *cdata,
 
 	maps_all = maps;
 	len = 16;
-	rts_crypto_write(cdata, RLX_REG_CCM_N_GCM_IV_LENGTH, n);
+	rts_crypto_write(cdata, RLX_REG_CCM_N_LENGTH, n);
 
 	/* in ad */
 	if (req->src && req->assoclen) {
@@ -871,8 +837,8 @@ static int rts_ccm_map_nonce_ad(struct rts_crypto_data *cdata,
 		len += align_len;
 	}
 
-	rts_crypto_write(cdata, RLX_REG_CCM_NA_GCM_A_LENGTH, len);
-	rts_crypto_write(cdata, RLX_REG_CCM_NA_GCM_A_BUF_NUM, maps_all);
+	rts_crypto_write(cdata, RLX_REG_CCM_NA_LENGTH, len);
+	rts_crypto_write(cdata, RLX_REG_CCM_NA_BUF_NUM, maps_all);
 
 	return maps_all;
 }
@@ -886,57 +852,6 @@ static inline void rts_ccm_set_ctr_flag(struct rts_crypto_data *cdata,
 	flag |= (req->iv[0] & 0x7);
 
 	rts_crypto_write(cdata, RLX_REG_CCM_CTR_FLAG, flag);
-}
-
-static int rts_gcm_map_iv(struct rts_crypto_data *cdata,
-			struct rts_crypto_ctx *ctx,
-			struct aead_request *req,
-			struct rts_aead_reqctx *reqctx)
-{
-	int maps = 0;
-	struct crypto_aead *tfm = crypto_aead_reqtfm(req);
-	unsigned int ivsize = crypto_aead_ivsize(tfm);
-	struct scatterlist *sg = &reqctx->sg_iv.sg;
-
-	dev_dbg(&cdata->pdev->dev, "map in iv = %d\n", ivsize);
-
-	sg_init_one(sg, req->iv, ivsize);
-
-	maps = buf_table_map_sg(cdata, &ctx->table_in,
-				&reqctx->sg_iv.mapinfo,
-				sg, ivsize, DMA_TO_DEVICE);
-	if (maps < 0)
-		return maps;
-
-	rts_crypto_write(cdata, RLX_REG_CCM_N_GCM_IV_LENGTH, ivsize);
-	rts_crypto_write(cdata, RLX_REG_GCM_IV_BUF_NUM, maps);
-
-	return maps;
-}
-
-static int rts_gcm_map_ad(struct rts_crypto_data *cdata,
-			struct rts_crypto_ctx *ctx,
-			struct aead_request *req,
-			struct rts_aead_reqctx *reqctx)
-{
-	int maps = 0;
-
-	dev_dbg(&cdata->pdev->dev,
-			"map associated data = %d\n", req->assoclen);
-
-	/* in */
-	maps = buf_table_map_sg(cdata, &ctx->table_in,
-				&reqctx->ad_mapinfo,
-				req->src, req->assoclen,
-				DMA_TO_DEVICE);
-	if (maps < 0)
-		return maps;
-
-	rts_crypto_write(cdata, RLX_REG_CCM_NA_GCM_A_LENGTH,
-				req->assoclen);
-	rts_crypto_write(cdata, RLX_REG_CCM_NA_GCM_A_BUF_NUM, maps);
-
-	return maps;
 }
 
 static void rts_aead_output_atag(struct rts_crypto_data *cdata,
@@ -1928,29 +1843,7 @@ static int rts_aead_crypt(struct aead_request *req)
 	/* clear iv regs */
 	rts_crypto_clear_iv(cdata);
 
-	if (ctx->mask & FLAGS_GCM) {
-		/* iv */
-		ret = rts_gcm_map_iv(cdata, ctx, req, reqctx);
-		if (ret < 0) {
-			dev_err(&cdata->pdev->dev, "map iv err\n");
-			goto out;
-		}
-
-		/* associated data*/
-		ret = rts_gcm_map_ad(cdata, ctx, req, reqctx);
-		if (ret < 0) {
-			dev_err(&cdata->pdev->dev,
-				"map in associated data err\n");
-			goto out;
-		}
-
-		/* in plaintext/ciphertext data*/
-		ret = rts_gcm_map_in_data(cdata, ctx, req, reqctx);
-		if (ret < 0) {
-			dev_err(&cdata->pdev->dev, "map in data err\n");
-			goto out;
-		}
-	} else if (ctx->mask & FLAGS_CCM) {
+	if (ctx->mask & FLAGS_CCM) {
 		ret = rts_ccm_map_nonce_ad(cdata, ctx, req, reqctx);
 		if (ret < 0) {
 			dev_err(&cdata->pdev->dev,
@@ -2008,7 +1901,7 @@ out:
 
 }
 
-static int rts_aes_gcm_setkey(struct crypto_aead *tfm, const u8 *key,
+static int rts_aes_ccm_setkey(struct crypto_aead *tfm, const u8 *key,
 			unsigned int keylen)
 {
 	struct rts_crypto_ctx *ctx = crypto_aead_ctx(tfm);
@@ -2027,51 +1920,7 @@ static int rts_aes_gcm_setkey(struct crypto_aead *tfm, const u8 *key,
 	return 0;
 }
 
-static int rts_aes_gcm_setauthsize(struct crypto_aead *tfm,
-			unsigned int authsize)
-{
-	dev_dbg(&rts_cdata->pdev->dev,
-			"rts set authsize = %d\n", authsize);
-
-	switch (authsize) {
-	case 4:
-	case 8:
-	case 12:
-	case 13:
-	case 14:
-	case 15:
-	case 16:
-		break;
-	default:
-		return -EINVAL;
-	}
-
-	return 0;
-}
-
-static int rts_aes_gcm_encrypt(struct aead_request *req)
-{
-	struct crypto_aead *tfm = crypto_aead_reqtfm(req);
-	struct rts_crypto_ctx *ctx = crypto_aead_ctx(tfm);
-
-	ctx->mask = FLAGS_ENCRYPT | FLAGS_AES | FLAGS_GCM;
-
-	return rts_aead_crypt(req);
-}
-
-static int rts_aes_gcm_decrypt(struct aead_request *req)
-{
-	struct crypto_aead *tfm = crypto_aead_reqtfm(req);
-	struct rts_crypto_ctx *ctx = crypto_aead_ctx(tfm);
-	unsigned int authsize = crypto_aead_authsize(tfm);
-
-	req->cryptlen -= authsize;
-	ctx->mask = FLAGS_DECRYPT | FLAGS_AES | FLAGS_GCM;
-
-	return rts_aead_crypt(req);
-}
-
-static int rts_aes_gcm_init(struct crypto_aead *tfm)
+static int rts_aes_ccm_init(struct crypto_aead *tfm)
 {
 	int ret = 0;
 	struct rts_crypto_ctx *ctx = crypto_aead_ctx(tfm);
@@ -2095,7 +1944,7 @@ dma_err:
 	return ret;
 }
 
-static void rts_aes_gcm_exit(struct crypto_aead *tfm)
+static void rts_aes_ccm_exit(struct crypto_aead *tfm)
 {
 	struct rts_crypto_ctx *ctx = crypto_aead_ctx(tfm);
 	struct rts_crypto_data *cdata = rts_cdata;
@@ -2146,26 +1995,6 @@ static int rts_aes_ccm_decrypt(struct aead_request *req)
 }
 
 static struct aead_alg rts_algs_aead[] = {
-	[AEAD_AES_GCM] = {
-		.base = {
-			.cra_name = "gcm(aes)",
-			.cra_driver_name = "gcm-aes-rlx",
-			.cra_priority = 300,
-			.cra_blocksize = 1,
-			.cra_ctxsize = sizeof(struct rts_crypto_ctx),
-			.cra_alignmask = 0x3,
-			.cra_module = THIS_MODULE,
-		},
-
-		.setkey = rts_aes_gcm_setkey,
-		.setauthsize = rts_aes_gcm_setauthsize,
-		.encrypt = rts_aes_gcm_encrypt,
-		.decrypt = rts_aes_gcm_decrypt,
-		.init = rts_aes_gcm_init,
-		.exit = rts_aes_gcm_exit,
-		.ivsize = 12,
-		.maxauthsize = AES_BLOCK_SIZE,
-	},
 	[AEAD_AES_CCM] = {
 		.base = {
 			.cra_name = "ccm(aes)",
@@ -2177,12 +2006,12 @@ static struct aead_alg rts_algs_aead[] = {
 			.cra_module = THIS_MODULE,
 		},
 
-		.setkey = rts_aes_gcm_setkey,
+		.setkey = rts_aes_ccm_setkey,
 		.setauthsize = rts_aes_ccm_setauthsize,
 		.encrypt = rts_aes_ccm_encrypt,
 		.decrypt = rts_aes_ccm_decrypt,
-		.init = rts_aes_gcm_init,
-		.exit = rts_aes_gcm_exit,
+		.init = rts_aes_ccm_init,
+		.exit = rts_aes_ccm_exit,
 		.ivsize = AES_BLOCK_SIZE,
 		.maxauthsize = AES_BLOCK_SIZE,
 	},
@@ -2226,7 +2055,6 @@ static int parse_dts(struct platform_device *pdev)
 		[MODE_CTR] = "ctr"
 	};
 	static const char * const aead_alg[] = {
-		[AEAD_AES_GCM] = "gcm(aes)",
 		[AEAD_AES_CCM] = "ccm(aes)"
 	};
 

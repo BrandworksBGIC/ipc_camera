@@ -966,7 +966,7 @@
 			reset-names = "rst", "sd";
 			/* power-domains = <&power RTS_PD_TOP_OFF>; */
 			aes = "ecb", "cbc", "ctr";
-			aead = "gcm(aes)", "ccm(aes)";
+			aead = "ccm(aes)";
 			status = "disabled";
 		};
 
