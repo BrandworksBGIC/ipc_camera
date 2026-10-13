@@ -24,6 +24,9 @@
 #include "ipc_decrypt.h"
 
 #define IPC_VIDEO_PRINT(fmt, ...) printf("[%s:%d]" fmt, __func__, __LINE__, ##__VA_ARGS__)
+#ifndef IPC_VIDEO_FRAME_DEBUG
+#define IPC_VIDEO_FRAME_DEBUG 0
+#endif
 
 #define IPRT_ALGO_AE_ID_D RTS_ISP_ALGO_AE_ID0
 #define IPRT_ALGO_AWB_ID_D RTS_ISP_ALGO_AWB_ID0
@@ -831,6 +834,7 @@ static void _gvrt_isp_uninit(void)
     rts_av_isp_cleanup();
 }
 
+#if IPC_VIDEO_FRAME_DEBUG
 static s32   _g_frame_cnt[4];
 static s32   _g_frame_size[4];
 static void* ___gvrt_thread_frame_rate(void* arg)
@@ -876,6 +880,7 @@ static void _gvrt_frame_rate_statistics(void)
     pthread_create(&tid, &attr, ___gvrt_thread_frame_rate, NULL);
     pthread_attr_destroy(&attr);
 }
+#endif
 
 static s32 _gvrt_init_sys_vmem(int vin_mode_0, int vin_mode_1)
 {
@@ -2182,7 +2187,9 @@ s32 ipc_plat_sys_init(IPC_PRODUCT_TYPE type)
     // }
 
     _gvrt_video_attr.init_ok = 1;
+#if IPC_VIDEO_FRAME_DEBUG
     _gvrt_frame_rate_statistics();
+#endif
     printf("====== %s success ======\n", __func__);
 
     return 0;
@@ -2369,8 +2376,10 @@ s32 ipc_plat_video_recv_frame(s32 channel, ipc_plat_recv_frame_cb_f cb, vptr __u
 
             _g_in_process_yuv = 0;
 
+#if IPC_VIDEO_FRAME_DEBUG
             _g_frame_cnt[channel]++;
             _g_frame_size[channel] += frame.pack[0].data_len;
+#endif
 
             return 0;
 
@@ -2388,6 +2397,7 @@ s32 ipc_plat_video_recv_frame(s32 channel, ipc_plat_recv_frame_cb_f cb, vptr __u
         return -2;
     }
 
+#if IPC_VIDEO_FRAME_DEBUG
     if ((IPC_VIDEO_CHN_MAIN == channel) && (buffer->flags & RTSTREAM_PKT_FLAG_KEY)) {
         IPC_VIDEO_PRINT(
             "[%ld]main channel I Frame size: %d, frame_idx: %d\n", time(NULL), buffer->bytesused, buffer->frame_idx);
@@ -2400,6 +2410,7 @@ s32 ipc_plat_video_recv_frame(s32 channel, ipc_plat_recv_frame_cb_f cb, vptr __u
 
     _g_frame_cnt[channel]++;
     _g_frame_size[channel] += buffer->bytesused;
+#endif
 
     struct ipc_frame_data_s frame = { 0 };
     frame.is_key                  = (buffer->flags & RTSTREAM_PKT_FLAG_KEY) ? 1 : 0;

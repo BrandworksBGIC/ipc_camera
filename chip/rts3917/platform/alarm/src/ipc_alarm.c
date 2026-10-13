@@ -33,6 +33,9 @@
 #include <rts_nn_log.h>
 #include <rts_nn_od.h>
 #include <rts_nn_types.h>
+#ifndef IPC_ALARM_DETECT_DEBUG
+#define IPC_ALARM_DETECT_DEBUG 0
+#endif
 
 struct iou_box {
     int left;
@@ -141,7 +144,9 @@ static void md_fliter(struct ipc_plat_alarm_result_s* result, struct rts_md2_res
         make_md_box(res, j, &g_alarm.md_box);
 
         res_iou = get_odtiny_md_iou(&g_alarm.md_box, &g_alarm.od_box);
+#if IPC_ALARM_DETECT_DEBUG
         printf("The IOU of person box and md box is %d %f score %f\n", j, res_iou, score);
+#endif
 
         if (res_iou > IOU_THRESH) {
 
@@ -428,7 +433,9 @@ s32 ipc_plat_alarm_recv_result(struct ipc_plat_alarm_result_s* result, s32 timeo
             return 0;
         }
 
+#if IPC_ALARM_DETECT_DEBUG
         printf("\nmd cnt %u\n", g_alarm.md_res.cc_info.cc_len);
+#endif
         img.virt[0] = buffer->vm_addr;
         img.phy[0]  = buffer->phy_addr;
 
@@ -444,7 +451,9 @@ s32 ipc_plat_alarm_recv_result(struct ipc_plat_alarm_result_s* result, s32 timeo
 
         /* 4. osd_tagging with result */
         if ((res->num > 0) && g_alarm.alarm_delay <= 0) {
+#if IPC_ALARM_DETECT_DEBUG
             printf("\nai cnt %d\n", res->num);
+#endif
             set_rectangle_parameter(result, res);
         } else {
             g_alarm.alarm_delay--;
