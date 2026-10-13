@@ -6,7 +6,13 @@
 
 ifeq ($(BR2_CONFIG_SECURE_BOOT),y)
 UBOOT_MAKE_OPTS += EXT_DTB=$(BINARIES_DIR)/u-boot_pubkey.dtb
+UBOOT_UPGRADE_KEY_DTB = $(BINARIES_DIR)/u-boot_pubkey.dtb
+else
+UBOOT_MAKE_OPTS += EXT_DTB=$(BINARIES_DIR)/u-boot_upgradekey.dtb
+UBOOT_UPGRADE_KEY_DTB = $(BINARIES_DIR)/u-boot_upgradekey.dtb
 endif
+UBOOT_UPGRADE_KEY_DIR = $(abspath $(BR2_EXTERNAL)/../../../build_security_image/public_key)
+UBOOT_DEPENDENCIES += host-dtc
 
 # This define build secure boot or normal boot
 ifeq ($(BR2_TARGET_ARM_TRUSTED_FIRMWARE),y)
@@ -94,4 +100,12 @@ UBOOT_PRE_BUILD_HOOKS += UBOOT_KCONFIG_CUSTOM_FIXUP
 ifneq ($(BR2_CONFIG_SECURE_BOOT),y)
 UBOOT_PRE_BUILD_HOOKS += UBOOT_PREBUILD_DTB
 endif
+
+define UBOOT_INSTALL_UPGRADE_KEY
+	$(if $(filter y,$(BR2_CONFIG_SECURE_BOOT)),,cp "$(@D)/u-boot.dtb" "$(UBOOT_UPGRADE_KEY_DTB)")
+	python3 "$(UBOOT_UPGRADE_KEY_DIR)/export_upgrade_key.py" "$(UBOOT_UPGRADE_KEY_DIR)/ipc_upgrade_key.pem" "$(@D)/ipc_upgrade_key.bin"
+	$(HOST_DIR)/bin/fdtput -p -t bx "$(UBOOT_UPGRADE_KEY_DTB)" /ipc-updater ed25519-public-key $$(od -An -tx1 -v "$(@D)/ipc_upgrade_key.bin")
+endef
+
+UBOOT_PRE_BUILD_HOOKS += UBOOT_INSTALL_UPGRADE_KEY
 

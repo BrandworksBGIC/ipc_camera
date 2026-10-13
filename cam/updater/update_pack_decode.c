@@ -3,6 +3,15 @@
 #include "ed25519/src/ed25519.h"
 #include "ed25519/src/sha512.h"
 
+#ifdef IPC_IS_UBOOT_BUILD
+#include <common.h>
+#include <linux/libfdt.h>
+
+DECLARE_GLOBAL_DATA_PTR;
+#else
+#include <errno.h>
+#endif
+
 
 static void hexdump(char* title, const void* p, int size)
 {
@@ -78,6 +87,51 @@ static int _open_update_pack(char* pack_name)
 
 #endif
 
+static int _read_upgrade_public_key(unsigned char* public_key)
+{
+#ifdef IPC_IS_UBOOT_BUILD
+    if (!gd->fdt_blob || (gd->fdt_src != FDTSRC_SEPARATE && gd->fdt_src != FDTSRC_EMBED)
+        || fdt_check_header(gd->fdt_blob) != 0) {
+        return -1;
+    }
+    int node = fdt_path_offset(gd->fdt_blob, "/ipc-updater");
+    if (node < 0) {
+        return -1;
+    }
+    int len = 0;
+    const void* key = fdt_getprop(gd->fdt_blob, node, "ed25519-public-key", &len);
+    if (!key || len != 32) {
+        return -1;
+    }
+    memcpy(public_key, key, 32);
+    return 0;
+#else
+    int fd = open("/app/keys/ipc_upgrade_key.bin", O_RDONLY | O_NOFOLLOW | O_NONBLOCK);
+    if (fd < 0) {
+        return -1;
+    }
+    struct stat st;
+    int ret = -1;
+    size_t offset = 0;
+    if (fstat(fd, &st) != 0 || !S_ISREG(st.st_mode) || st.st_size != 32) {
+        goto exit;
+    }
+    while (offset < 32) {
+        ssize_t len = read(fd, public_key + offset, 32 - offset);
+        if (len < 0 && errno == EINTR) {
+            continue;
+        }
+        if (len <= 0) {
+            goto exit;
+        }
+        offset += len;
+    }
+    ret = 0;
+exit:
+    close(fd);
+    return ret;
+#endif
+}
 
 static int read_update_pack_file_head(int fd)
 {
@@ -121,8 +175,11 @@ static int read_update_pack_file_head(int fd)
 
     sha512_final(&md, sha512sum);
 
-    unsigned char ed25519_pub[32] = { 0x84, 0xad, 0x2a, 0x49, 0x0a, 0x8b, 0x86, 0x11, 0xee, 0xcc, 0xc6, 0xa6, 0xd4, 0x86, 0x0a, 0x19,
-                                      0x4e, 0xc9, 0xef, 0x64, 0x38, 0xc4, 0x87, 0x45, 0xad, 0x88, 0x42, 0x33, 0x40, 0x45, 0xed, 0xec };
+    unsigned char ed25519_pub[32] = { 0 };
+    if (_read_upgrade_public_key(ed25519_pub) != 0) {
+        printf("read upgrade public key error\n");
+        return -3;
+    }
 
     hexdump("ed25519_pub", ed25519_pub, 32);
     

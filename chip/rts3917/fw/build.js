@@ -188,6 +188,10 @@ function buildFirmwarePackage() {
         throw new Error("Failed to copy app files");
     }
 
+    if (!shell.run(`python3 ../build_security_image/public_key/export_upgrade_key.py ../build_security_image/public_key/ipc_upgrade_key.pem '${tempAppDir}/keys/ipc_upgrade_key.bin'`)) {
+        throw new Error("Failed to export upgrade public key");
+    }
+
     // Copy modules and sensors to staging directory first, then to tempAppDir
     copyModulesAndSensorsToStaging();
 
